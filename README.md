@@ -8,4 +8,4 @@ git clone --recursive git@10.10.5.114:pgschwandtner/allscale-compiler.git
 ```
 
 ## Additional Information
-For more information about the AllScale compiler, which is largely based on the Insieme Compiler, please see [insieme/README.md](insieme/README.md).
+For more information about the AllScale compiler, which is largely based on the Insieme Compiler, please see [the Insieme README.md on GitHub](https://github.com/insieme/insieme/blob/master/README.md).
