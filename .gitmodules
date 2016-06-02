@@ -1,0 +1,3 @@
+[submodule "insieme"]
+	path = insieme
+	url = https://github.com/insieme/insieme.git
