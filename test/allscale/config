@@ -1,0 +1,3 @@
+excludeSteps="*_c_*", "*_ocl_*","*_run_*"
+includes=../include
+intercepted_header_file_dirs=../include/parec
