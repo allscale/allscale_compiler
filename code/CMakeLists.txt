@@ -1,7 +1,5 @@
 project(allscale CXX)
 
-enable_testing()
-
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment_common.cmake)
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment.cmake)
 
