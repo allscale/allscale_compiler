@@ -22,14 +22,11 @@ target_link_libraries(allscale insieme_transform)
 
 # ================================================== AllScale Driver ===================================================
 
-add_custom_target(allscale_drivers)
 file(GLOB_RECURSE allscale_executables src/*.cxx)
 foreach(exec_file ${allscale_executables})
 	get_filename_component(exec_name ${exec_file} NAME_WE)
 	add_executable(${exec_name} ${exec_file})
 	target_link_libraries(${exec_name} allscale)
-
-	add_dependencies(allscale_drivers ${exec_name})
 endforeach(exec_file)
 
 # ================================================== AllScale Tests ====================================================
