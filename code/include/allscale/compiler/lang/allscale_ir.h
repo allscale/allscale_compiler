@@ -3,22 +3,22 @@
 
 #include "insieme/core/lang/extension.h"
 
-namespace ic = insieme::core;
+namespace core = insieme::core;
 
 namespace allscale {
 namespace compiler {
 namespace lang {
 
-	class AllscaleModule : public ic::lang::Extension {
+	class AllscaleModule : public core::lang::Extension {
 		/**
 		 * Allow the node manager to create instances of this class.
 		 */
-		friend class ic::NodeManager;
+		friend class core::NodeManager;
 
 		/**
 		 * Creates a new instance based on the given node manager.
 		 */
-		AllscaleModule(ic::NodeManager& manager) : ic::lang::Extension(manager) {}
+		AllscaleModule(core::NodeManager& manager) : core::lang::Extension(manager) {}
 
 	  public:
 
@@ -40,7 +40,10 @@ namespace lang {
 
 		LANG_EXT_LITERAL(RecfunCall, "recfun_call", "(recfun<'a,'b>, 'a) -> treeture<'b, f>")
 
+		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a) => 'b>) -> ('a) => 'b")
 	};
+
+	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }
 }

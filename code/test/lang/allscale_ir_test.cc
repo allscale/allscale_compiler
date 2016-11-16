@@ -12,8 +12,8 @@ namespace compiler {
 namespace lang {
 
 	TEST(AllscaleModule, Fib) {
-		ic::NodeManager nm;
-		ic::IRBuilder builder(nm);
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
 		auto& as = nm.getLangExtension<AllscaleModule>();
 
 		auto fibIr = builder.parseExpr(R"I(
@@ -31,13 +31,13 @@ namespace lang {
 
 		EXPECT_TRUE(fibIr);
 
-		auto errs = ic::checks::check(fibIr);
-		ASSERT_EQ(errs.getAll().size(), 0) << ic::printer::dumpErrors(errs);
+		auto errs = core::checks::check(fibIr);
+		ASSERT_EQ(errs.getAll().size(), 0) << core::printer::dumpErrors(errs);
 	}
 
 	TEST(AllscaleModule, Mutual) {
-		ic::NodeManager nm;
-		ic::IRBuilder builder(nm);
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
 		auto& as = nm.getLangExtension<AllscaleModule>();
 
 		auto evenIr = builder.parseExpr(R"I(
@@ -60,8 +60,8 @@ namespace lang {
 
 		EXPECT_TRUE(evenIr);
 
-		auto errs = ic::checks::check(evenIr);
-		ASSERT_EQ(errs.getAll().size(), 0) << ic::printer::dumpErrors(errs);
+		auto errs = core::checks::check(evenIr);
+		ASSERT_EQ(errs.getAll().size(), 0) << core::printer::dumpErrors(errs);
 	}
 
 }
