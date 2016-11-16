@@ -43,6 +43,14 @@ namespace lang {
 		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a) => 'b>) -> ('a) => 'b")
 	};
 
+	class RecFun {
+		core::TypePtr param, ret;
+
+	  public:
+		RecFun(const core::TypePtr& param, const core::TypePtr& ret);
+		operator core::GenericTypePtr() const;
+	};
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }

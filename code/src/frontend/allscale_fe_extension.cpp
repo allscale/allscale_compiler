@@ -95,15 +95,26 @@ namespace frontend {
 
 			std::cout << "Base: " << dumpPretty(baseBind->getType()) << "\n";
 
+			// Handle step case
+			// ('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>
 
+			core::ExpressionPtr stepBind = nullptr;
 
-			//auto baseFunClang = call->getArg(1);
-			//auto stepFunClang = call->getArg(2);
+			{
+				auto stepFunClang = call->getArg(2);
+				auto stepIr = converter.convertExpr(stepFunClang);
 
-			//std::cout << "\n BASEFUN ====================\n ";
-			//baseFunClang->dumpColor();
-			//std::cout << "\n STEP ====================\n ";
-			//stepFunClang->dumpColor();
+				auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr)lang::RecFun(paramType, returnType)));
+
+				auto stepReturnType = returnType; // todo treeture
+
+				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
+
+				std::cout << "Step T: " << dumpPretty(stepClosureType) << "\n";
+
+				//dumpColor(converter.getIRTranslationUnit().resolve(stepIr));
+
+			}
 
 			exit(0);
 			return nullptr;

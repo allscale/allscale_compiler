@@ -7,13 +7,24 @@ namespace allscale {
 namespace compiler {
 namespace lang {
 
+	/////////////////////////////// RecFun
+
+	RecFun::RecFun(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
+
+	RecFun::operator core::GenericTypePtr() const {
+		core::IRBuilder builder(param->getNodeManager());
+
+		return builder.genericType("recfun", toVector(param, ret));
+	}
+
+	/////////////////////////////// Builders
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
-
 }
 }
 }
