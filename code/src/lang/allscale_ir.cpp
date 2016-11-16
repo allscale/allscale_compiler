@@ -2,6 +2,7 @@
 #include "allscale/compiler/lang/allscale_ir.h"
 
 #include "insieme/core/ir_builder.h"
+#include "insieme/core/lang/boolean_marker.h"
 
 namespace allscale {
 namespace compiler {
@@ -13,8 +14,20 @@ namespace lang {
 
 	RecFun::operator core::GenericTypePtr() const {
 		core::IRBuilder builder(param->getNodeManager());
-
 		return builder.genericType("recfun", toVector(param, ret));
+	}
+
+	/////////////////////////////// Treeture
+
+	Treeture::Treeture(const core::TypePtr& valueType, bool released) : valueType(valueType) {
+		auto& mgr = valueType->getNodeManager();
+		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
+		this->released = boolExt.getMarkerType(released);
+	}
+
+	Treeture::operator core::GenericTypePtr() const {
+		core::IRBuilder builder(valueType->getNodeManager());
+		return builder.genericType("treeture", toVector(valueType, released));
 	}
 
 	/////////////////////////////// Builders
@@ -25,6 +38,7 @@ namespace lang {
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
+
 }
 }
 }

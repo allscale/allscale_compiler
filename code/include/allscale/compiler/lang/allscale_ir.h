@@ -51,6 +51,14 @@ namespace lang {
 		operator core::GenericTypePtr() const;
 	};
 
+	class Treeture {
+		core::TypePtr valueType, released;
+
+	  public:
+		Treeture(const core::TypePtr& valueType, bool released);
+		operator core::GenericTypePtr() const;
+	};
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }

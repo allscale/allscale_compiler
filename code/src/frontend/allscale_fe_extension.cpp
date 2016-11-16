@@ -106,7 +106,7 @@ namespace frontend {
 
 				auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr)lang::RecFun(paramType, returnType)));
 
-				auto stepReturnType = returnType; // todo treeture
+				core::GenericTypePtr stepReturnType = lang::Treeture(returnType, false);
 
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
