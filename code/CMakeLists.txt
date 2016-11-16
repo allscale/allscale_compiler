@@ -3,6 +3,9 @@ project(allscale CXX)
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment_common.cmake)
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment.cmake)
 
+# required for llvm
+add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS)
+
 # ================================================== AllScale Library ==================================================
 
 file(GLOB_RECURSE allscale_srcs src/*.cpp include/*.h)
@@ -19,6 +22,7 @@ target_link_libraries(allscale insieme_frontend)
 target_link_libraries(allscale insieme_backend)
 target_link_libraries(allscale insieme_analysis)
 target_link_libraries(allscale insieme_transform)
+target_link_libraries(allscale insieme_driver)
 
 # ================================================== AllScale Driver ===================================================
 

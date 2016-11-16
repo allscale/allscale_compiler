@@ -1,11 +1,21 @@
 
 #include "allscale/compiler/frontend/allscale_fe_extension.h"
 
-insieme::core::ExpressionPtr allscale::compiler::frontend::AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
-	return nullptr;
-}
+using namespace insieme;
 
-insieme::core::TypePtr allscale::compiler::frontend::AllscaleExtension::Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) {
-	return nullptr;
+namespace allscale {
+namespace compiler {
+namespace frontend {
+
+	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
+		return nullptr;
+	}
+
+	core::TypePtr AllscaleExtension::Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) {
+		return nullptr;
+	}
+
+}
+}
 }
 
