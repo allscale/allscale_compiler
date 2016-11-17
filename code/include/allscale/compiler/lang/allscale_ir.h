@@ -95,6 +95,8 @@ namespace lang {
 	                                     const core::ExpressionList& baseBinds,
 	                                     const core::ExpressionList& stepBinds);
 
+	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns);
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }

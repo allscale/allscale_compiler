@@ -99,6 +99,17 @@ namespace lang {
 		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, stepBinds));
 	}
 
+	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns) {
+		assert_false(recFuns.empty()) << "recFuns must not be empty";
+		auto& firstRecFun = recFuns.front();
+		auto& mgr = firstRecFun->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto firstRecfunType = RecFunType(firstRecFun);
+		auto returnType = builder.functionType(firstRecfunType.getParamType(), firstRecfunType.getReturnType(), core::FK_CLOSURE);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getPrec(), builder.tupleExpr(recFuns));
+	}
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());

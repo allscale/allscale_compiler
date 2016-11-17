@@ -113,9 +113,12 @@ namespace frontend {
 				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
 			}
 
+			auto buildRecFun = lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
+			auto precCall = lang::buildPrec(toVector(buildRecFun));
+
 			std::cout << "Step: " << dumpPretty(stepBind->getType()) << "\n";
 
-			dumpColor(lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind))->getType());
+			dumpColor(precCall);
 
 			exit(0);
 			return nullptr;
