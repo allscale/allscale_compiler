@@ -10,22 +10,22 @@ namespace lang {
 
 	/////////////////////////////// RecFun
 
-	RecFun::RecFun(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
+	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
 
-	RecFun::operator core::GenericTypePtr() const {
+	RecFunType::operator core::GenericTypePtr() const {
 		core::IRBuilder builder(param->getNodeManager());
 		return builder.genericType("recfun", toVector(param, ret));
 	}
 
 	/////////////////////////////// Treeture
 
-	Treeture::Treeture(const core::TypePtr& valueType, bool released) : valueType(valueType) {
+	TreetureType::TreetureType(const core::TypePtr& valueType, bool released) : valueType(valueType) {
 		auto& mgr = valueType->getNodeManager();
 		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
 		this->released = boolExt.getMarkerType(released);
 	}
 
-	Treeture::operator core::GenericTypePtr() const {
+	TreetureType::operator core::GenericTypePtr() const {
 		core::IRBuilder builder(valueType->getNodeManager());
 		return builder.genericType("treeture", toVector(valueType, released));
 	}

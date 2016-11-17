@@ -104,9 +104,9 @@ namespace frontend {
 				auto stepFunClang = call->getArg(2);
 				auto stepIr = converter.convertExpr(stepFunClang);
 
-				auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr)lang::RecFun(paramType, returnType)));
+				auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr)lang::RecFunType(paramType, returnType)));
 
-				core::GenericTypePtr stepReturnType = lang::Treeture(returnType, false);
+				core::GenericTypePtr stepReturnType = lang::TreetureType(returnType, false);
 
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 

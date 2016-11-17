@@ -43,19 +43,19 @@ namespace lang {
 		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a) => 'b>) -> ('a) => 'b")
 	};
 
-	class RecFun {
+	class RecFunType {
 		core::TypePtr param, ret;
 
 	  public:
-		RecFun(const core::TypePtr& param, const core::TypePtr& ret);
+		RecFunType(const core::TypePtr& param, const core::TypePtr& ret);
 		operator core::GenericTypePtr() const;
 	};
 
-	class Treeture {
+	class TreetureType {
 		core::TypePtr valueType, released;
 
 	  public:
-		Treeture(const core::TypePtr& valueType, bool released);
+		TreetureType(const core::TypePtr& valueType, bool released);
 		operator core::GenericTypePtr() const;
 	};
 
