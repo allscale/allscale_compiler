@@ -3,6 +3,8 @@
 
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/lang/boolean_marker.h"
+#include "insieme/core/encoder/encoder.h"
+#include "insieme/core/encoder/lists.h"
 
 namespace allscale {
 namespace compiler {
@@ -31,6 +33,21 @@ namespace lang {
 	}
 
 	/////////////////////////////// Builders
+
+	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
+	                                     const core::ExpressionList& baseBinds,
+	                                     const core::ExpressionList& stepBinds) {
+		assert_false(baseBinds.empty()) << "baseBinds must not be empty";
+		assert_false(stepBinds.empty()) << "stepBinds must not be empty";
+		auto& mgr = cutoffBind->getNodeManager();
+		core::IRBuilder builder(mgr);
+		const auto& firstBaseType = baseBinds.front()->getType().as<core::FunctionTypePtr>();
+		core::GenericTypePtr returnType = RecFunType(firstBaseType.getParameterType(0), firstBaseType.getReturnType());
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getBuildRecfun(), cutoffBind,
+		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, baseBinds),
+		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, stepBinds));
+	}
 
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";

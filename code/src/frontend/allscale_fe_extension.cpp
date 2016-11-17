@@ -110,11 +110,12 @@ namespace frontend {
 
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
-				std::cout << "Step T: " << dumpPretty(stepClosureType) << "\n";
-
-				//dumpColor(converter.getIRTranslationUnit().resolve(stepIr));
-
+				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
 			}
+
+			std::cout << "Step: " << dumpPretty(stepBind->getType()) << "\n";
+
+			dumpColor(lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind))->getType());
 
 			exit(0);
 			return nullptr;

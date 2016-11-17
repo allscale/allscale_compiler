@@ -59,6 +59,10 @@ namespace lang {
 		operator core::GenericTypePtr() const;
 	};
 
+	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
+	                                     const core::ExpressionList& baseBinds,
+	                                     const core::ExpressionList& stepBinds);
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }
