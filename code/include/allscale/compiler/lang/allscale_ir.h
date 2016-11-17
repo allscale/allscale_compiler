@@ -26,7 +26,7 @@ namespace lang {
 		 * A constructor for functions usable within a prec call.
 		 * Each function has a cutoff check, at least one base case and at least one step case
 		 */
-		LANG_EXT_LITERAL(BuildRecfun, "build_recfun" , "(('a) -> bool, list<('a) => 'b>, list<('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>>) -> recfun<'a,'b>")
+		LANG_EXT_LITERAL(BuildRecfun, "build_recfun" , "(('a) => bool, list<('a) => 'b>, list<('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>>) -> recfun<'a,'b>")
 
 		LANG_EXT_LITERAL(Prec, "prec", "( (recfun<'a,'b>, 'c...) ) -> ('a) => treeture<'b,f>")
 		LANG_EXT_LITERAL(TreetureDone, "treeture_done", "('a) -> treeture<'a,f>")
