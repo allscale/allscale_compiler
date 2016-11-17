@@ -14,9 +14,31 @@ namespace lang {
 
 	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
 
+	RecFunType::RecFunType(const core::NodePtr& node) {
+		assert_true(node) << "Given node is null!";
+
+		// support expressions as input
+		auto type = node.isa<core::GenericTypePtr>();
+		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+
+		// check given node type
+		assert_true(isRecFunType(type)) << "Given node " << *node << " is not a RecFun type!";
+
+		*this = RecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
+	}
+
 	RecFunType::operator core::GenericTypePtr() const {
 		core::IRBuilder builder(param->getNodeManager());
 		return builder.genericType("recfun", toVector(param, ret));
+	}
+
+	bool RecFunType::isRecFunType(const core::NodePtr& node) {
+		// a quick check
+		auto type = node.isa<core::GenericTypePtr>();
+		if(!type) return false;
+
+		// check properties
+		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "recfun";
 	}
 
 	/////////////////////////////// Treeture
@@ -27,9 +49,37 @@ namespace lang {
 		this->released = boolExt.getMarkerType(released);
 	}
 
+	TreetureType::TreetureType(const core::NodePtr& node) {
+		assert_true(node) << "Given node is null!";
+
+		// support expressions as input
+		auto type = node.isa<core::GenericTypePtr>();
+		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+
+		// check given node type
+		assert_true(isTreetureType(type)) << "Given node " << *node << " is not a Treeture type!";
+
+		*this = TreetureType(type->getTypeParameter(0), type->getTypeParameter(1));
+	}
+
+	bool TreetureType::getReleased() {
+		auto& mgr = valueType->getNodeManager();
+		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
+		return boolExt.isTrueMarker(released);
+	}
+
 	TreetureType::operator core::GenericTypePtr() const {
 		core::IRBuilder builder(valueType->getNodeManager());
 		return builder.genericType("treeture", toVector(valueType, released));
+	}
+
+	bool TreetureType::isTreetureType(const core::NodePtr& node) {
+		// a quick check
+		auto type = node.isa<core::GenericTypePtr>();
+		if(!type) return false;
+
+		// check properties
+		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "treeture";
 	}
 
 	/////////////////////////////// Builders

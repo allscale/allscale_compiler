@@ -48,7 +48,24 @@ namespace lang {
 
 	  public:
 		RecFunType(const core::TypePtr& param, const core::TypePtr& ret);
+		RecFunType(const core::NodePtr& node);
+
+		core::TypePtr getParamType() {
+			return param;
+		}
+
+		core::TypePtr getReturnType() {
+			return ret;
+		}
+
 		operator core::GenericTypePtr() const;
+
+		static bool isRecFunType(const core::NodePtr& node);
+
+		RecFunType(const RecFunType&) = default;
+		RecFunType(RecFunType&&) = default;
+		RecFunType& operator=(const RecFunType&) = default;
+		RecFunType& operator=(RecFunType&&) = default;
 	};
 
 	class TreetureType {
@@ -56,7 +73,22 @@ namespace lang {
 
 	  public:
 		TreetureType(const core::TypePtr& valueType, bool released);
+		TreetureType(const core::NodePtr& node);
+
+		core::TypePtr getValueType() {
+			return valueType;
+		}
+
+		bool getReleased();
+
 		operator core::GenericTypePtr() const;
+
+		static bool isTreetureType(const core::NodePtr& node);
+
+		TreetureType(const TreetureType&) = default;
+		TreetureType(TreetureType&&) = default;
+		TreetureType& operator=(const TreetureType&) = default;
+		TreetureType& operator=(TreetureType&&) = default;
 	};
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
