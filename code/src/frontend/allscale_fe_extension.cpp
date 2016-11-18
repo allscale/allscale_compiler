@@ -1,31 +1,18 @@
 
 #include "allscale/compiler/frontend/allscale_fe_extension.h"
 
-#include "insieme/utils/name_mangling.h"
 #include "insieme/frontend/clang.h"
 #include "insieme/frontend/converter.h"
 #include "insieme/core/analysis/ir_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/utils.h"
 
 namespace allscale {
 namespace compiler {
 namespace frontend {
 
 	namespace {
-
-		core::FunctionTypePtr extractCallOperatorType(const core::StructPtr& sourceLambda) {
-			auto mems = sourceLambda->getMemberFunctions();
-			for(const auto& mem : mems) {
-				if(mem->getNameAsString() == insieme::utils::mangle("operator()")) {
-					return mem->getType().as<core::FunctionTypePtr>();
-				}
-			}
-
-			assert_fail() << "Could not extract type from callable lambda:\n" << dumpPretty(sourceLambda);
-			return {};
-		}
-
 
 		core::ExpressionPtr handlePrecCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 
@@ -66,7 +53,7 @@ namespace frontend {
 
 				auto genType = insieme::core::analysis::getReferencedType(cutoffIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto structType = tMap.at(genType)->getStruct();
-				paramType = extractCallOperatorType(structType)->getParameterType(1);
+				paramType = utils::extractCallOperatorType(structType)->getParameterType(1);
 
 				auto cutoffClosureType = builder.functionType(paramType, builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
 
@@ -86,7 +73,7 @@ namespace frontend {
 
 				auto genType = insieme::core::analysis::getReferencedType(baseIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto structType = tMap.at(genType)->getStruct();
-				returnType = extractCallOperatorType(structType)->getReturnType();
+				returnType = utils::extractCallOperatorType(structType)->getReturnType();
 
 				auto baseClosureType = builder.functionType(paramType, returnType, insieme::core::FK_CLOSURE);
 
