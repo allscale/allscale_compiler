@@ -130,8 +130,20 @@ namespace frontend {
 		return nullptr;
 	}
 
-	core::TypePtr AllscaleExtension::Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) {
-		return nullptr;
+	insieme::core::TypePtr AllscaleExtension::PostVisit(const clang::QualType& typeIn, const insieme::core::TypePtr& irType,
+	                                                    insieme::frontend::conversion::Converter& converter) {
+		const clang::Type* type = typeIn.getTypePtr();
+		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
+			type = autoType->getDeducedType().getTypePtr();
+		}
+		if(auto tagType = llvm::dyn_cast<clang::TagType>(type)) {
+			auto typeName = tagType->getDecl()->getQualifiedNameAsString();
+			if(typeName == "allscale::api::core::detail::completed_task") {
+				return (core::GenericTypePtr) lang::TreetureType(core::analysis::getReferencedType(irType.as<core::GenericTypePtr>()->getTypeParameter(0)), false);
+			}
+		}
+
+		return irType;
 	}
 
 }
