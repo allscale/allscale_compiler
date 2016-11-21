@@ -98,6 +98,11 @@ namespace frontend {
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
 				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
+
+				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
+				auto structType = tMap.at(genType)->getStruct();
+				structType = converter.getIRTranslationUnit().resolve(structType).as<core::StructPtr>();
+				std::cout << core::printer::PrettyPrinter(utils::extractCallOperator(structType), core::printer::PrettyPrinter::READABLE_NAMES) << std::endl;
 			}
 
 			auto buildRecFun = lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
@@ -105,10 +110,13 @@ namespace frontend {
 
 			std::cout << "Step: " << dumpPretty(stepBind->getType()) << "\n";
 
-			dumpColor(precCall);
+			dumpReadable(precCall);
 
-			exit(0);
-			return nullptr;
+			return precCall;
+		}
+
+		core::ExpressionPtr handleCoreDoneCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+			return lang::buildTreetureDone(converter.convertCxxArgExpr(call->getArg(0)));
 		}
 	}
 
@@ -123,6 +131,9 @@ namespace frontend {
 				}
 				if(name == "allscale::api::core::fun") {
 					return handleCoreFunCall(call, converter);
+				}
+				if(name == "allscale::api::core::done") {
+					return handleCoreDoneCall(call, converter);
 				}
 			}
 		}
