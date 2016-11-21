@@ -40,7 +40,7 @@ namespace lang {
 
 		LANG_EXT_LITERAL(RecfunCall, "recfun_call", "(recfun<'a,'b>, 'a) -> treeture<'b, f>")
 
-		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a) => 'b>) -> ('a) => 'b")
+		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
 	};
 
 	class RecFunType {

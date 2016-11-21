@@ -105,7 +105,8 @@ namespace lang {
 		auto& mgr = firstRecFun->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto firstRecfunType = RecFunType(firstRecFun);
-		auto returnType = builder.functionType(firstRecfunType.getParamType(), firstRecfunType.getReturnType(), core::FK_CLOSURE);
+		core::GenericTypePtr treetureType = TreetureType(firstRecfunType.getReturnType(), false);
+		auto returnType = builder.functionType(firstRecfunType.getParamType(), treetureType, core::FK_CLOSURE);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getPrec(), builder.tupleExpr(recFuns));
 	}
