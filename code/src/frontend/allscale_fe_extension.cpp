@@ -15,25 +15,9 @@ namespace frontend {
 	namespace {
 
 		core::ExpressionPtr handlePrecCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
-
-			return converter.convertExpr(call->getArg(0));
-
-			assert_eq(call->getNumArgs(), 3) << "handlePrecCall expects 3 arguments";
-
-			auto cutoffFunClang = call->getArg(0);
-			auto baseFunClang = call->getArg(1);
-			auto stepFunClang = call->getArg(2);
-
-			std::cout << "\n CUTOFF ====================\n ";
-			cutoffFunClang->dumpColor();
-			std::cout << "\n BASEFUN ====================\n ";
-			baseFunClang->dumpColor();
-			std::cout << "\n STEP ====================\n ";
-			stepFunClang->dumpColor();
-
-			return nullptr;
+			assert_eq(call->getNumArgs(), 1) << "handlePrecCall expects 1 argument only";
+			return lang::buildPrec(toVector(converter.convertCxxArgExpr(call->getArg(0))));
 		}
-
 
 		core::ExpressionPtr handleCoreFunCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 
@@ -60,8 +44,6 @@ namespace frontend {
 				cutoffBind = lang::buildLambdaToClosure(cutoffIr, cutoffClosureType);
 			}
 
-			std::cout << "Cutoff: " << dumpPretty(cutoffBind->getType()) << "\n";
-
 			// Handle Base Case
 
 			core::TypePtr returnType = nullptr;
@@ -80,10 +62,7 @@ namespace frontend {
 				baseBind = lang::buildLambdaToClosure(baseIr, baseClosureType);
 			}
 
-			std::cout << "Base: " << dumpPretty(baseBind->getType()) << "\n";
-
 			// Handle step case
-			// ('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>
 
 			core::ExpressionPtr stepBind = nullptr;
 
@@ -98,21 +77,9 @@ namespace frontend {
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
 				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
-
-				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
-				auto structType = tMap.at(genType)->getStruct();
-				structType = converter.getIRTranslationUnit().resolve(structType).as<core::StructPtr>();
-				std::cout << core::printer::PrettyPrinter(utils::extractCallOperator(structType), core::printer::PrettyPrinter::READABLE_NAMES) << std::endl;
 			}
 
-			auto buildRecFun = lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
-			auto precCall = lang::buildPrec(toVector(buildRecFun));
-
-			std::cout << "Step: " << dumpPretty(stepBind->getType()) << "\n";
-
-			dumpReadable(precCall);
-
-			return precCall;
+			return lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
 		}
 
 		core::ExpressionPtr handleCoreDoneCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
