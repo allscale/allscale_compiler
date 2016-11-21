@@ -4,3 +4,12 @@
 [submodule "api"]
 	path = api
 	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale_api.git
+[submodule "runtime"]
+	path = runtime
+	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale-runtime.git
+[submodule "runtime/allscale-runtime"]
+	path = runtime/allscale-runtime
+	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale-runtime.git
+[submodule "runtime/hpx"]
+	path = runtime/hpx
+	url = https://github.com/STEllAR-GROUP/hpx.git
