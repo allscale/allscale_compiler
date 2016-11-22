@@ -79,7 +79,13 @@ namespace lang {
 		if(!type) return false;
 
 		// check properties
-		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "treeture";
+		if(type->getTypeParameter().size() != 2 || !type->getParents().empty() || type->getName()->getValue() != "treeture") { return false; }
+
+		const auto& boolExt = node.getNodeManager().getLangExtension<core::lang::BooleanMarkerExtension>();
+		auto released = type->getTypeParameter(1);
+		bool isValidReleased = core::analysis::isGeneric(released) || boolExt.isTrueMarker(released) || boolExt.isFalseMarker(released);
+
+		return isValidReleased;
 	}
 
 	/////////////////////////////// Builders
