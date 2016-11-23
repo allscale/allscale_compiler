@@ -37,8 +37,11 @@ namespace frontend {
 
 		virtual insieme::core::TypePtr Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) override;
 
+		virtual insieme::core::ExpressionPtr PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
+			                                           insieme::frontend::conversion::Converter& converter) override;
+
 		virtual insieme::core::TypePtr PostVisit(const clang::QualType& type, const insieme::core::TypePtr& irType,
-		                                         insieme::frontend::conversion::Converter& converter) override;
+			                                     insieme::frontend::conversion::Converter& converter) override;
 
 		virtual insieme::core::ProgramPtr IRVisit(insieme::core::ProgramPtr& prog) override;
 	};

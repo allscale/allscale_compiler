@@ -196,6 +196,22 @@ namespace frontend {
 		return {};
 	}
 
+	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
+		                                                      insieme::frontend::conversion::Converter& converter) {
+		if(auto call = irExpr.isa<core::CallExprPtr>()) {
+			auto funTy = call->getFunctionExpr()->getType().as<core::FunctionTypePtr>();
+			auto funParms = funTy->getParameterTypeList();
+			if(funTy->isMemberFunction()) {
+				auto thisType = core::analysis::getReferencedType(funParms[0]);
+				if(auto calleeFunType = thisType.isa<core::FunctionTypePtr>()) {
+					core::IRBuilder builder(irExpr->getNodeManager());
+					return builder.callExpr(builder.deref(core::analysis::getArgument(call, 0)), core::analysis::getArgument(call, 1));
+				}
+			}
+		}
+		return irExpr;
+	}
+
 	insieme::core::TypePtr AllscaleExtension::PostVisit(const clang::QualType& typeIn, const insieme::core::TypePtr& irType,
 	                                                    insieme::frontend::conversion::Converter& converter) {
 		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();

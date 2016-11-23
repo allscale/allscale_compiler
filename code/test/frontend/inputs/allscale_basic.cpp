@@ -37,7 +37,7 @@ int main() {
 			}
 		};
 		{
-			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> v147 = prec(
+			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> prec_result_var = prec(
 					(build_recfun(
 							lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
@@ -53,6 +53,7 @@ int main() {
 							)]
 					))
 			);
+			(*prec_result_var)(12) materialize ;
 		}
 	)")
 	{
@@ -64,21 +65,12 @@ int main() {
 				}
 			)
 		);
-	}
 
-//	#pragma test expect_ir(R"({ var ref<int<4>> i = 42; })")
-//	{
-//		auto fib = prec(fun(
-//				[](int x)->bool { return x < 2; },
-//				[](int x)->int { return x; },
-//				[](int x, const auto& f) {
-//					return done(1);
-//				}
-//			)
-//		);
-//
-//		fib(10).get();
-//	}
+		/*auto f = */
+		fib(12);
+
+		//fib(10).get();
+	}
 
 	return 0;
 }
