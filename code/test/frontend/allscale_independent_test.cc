@@ -20,7 +20,9 @@ namespace frontend {
 	namespace {
 		void runAllscaleTestOn(const string& filename) {
 			insieme::frontend::utils::runIndependentTestOn(filename, [](insieme::frontend::ConversionJob& job) {
-				auto apiIncludeDir = std::string(ALLSCALE_ROOT_DIR) + "api/code/include";
+				job.setOption(insieme::frontend::ConversionJob::DumpClangAST, true);
+//				auto apiIncludeDir = std::string(ALLSCALE_ROOT_DIR) + "api/code/include";
+				auto apiIncludeDir = "/ssd/peterz/allscale/api/code/include";
 				job.addIncludeDirectory(apiIncludeDir);
 				job.addInterceptedHeaderDir(apiIncludeDir);
 				job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
@@ -34,7 +36,8 @@ namespace frontend {
 	}
 
 	TEST(AllScaleIndependentTest, Basic) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
+//		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
+		runAllscaleTestOn("/ssd/peterz/allscale/code/test/frontend/inputs/allscale_basic.cpp");
 	}
 
 } // end namespace frontend
