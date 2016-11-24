@@ -35,7 +35,7 @@ namespace backend {
 		// get a temporary file path
 		auto tmp = fs::unique_path(fs::temp_directory_path() / "allscale-trg-%%%%%%%%");
 
-		bool res = compileTo(code, tmp);
+		bool res = compileTo(code, tmp, true);
 
 		// delete the temporary
 		if (res) fs::remove(tmp);
@@ -57,6 +57,40 @@ namespace backend {
 
 		// convert with allscale backend
 		auto code = convert(program);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code);
+
+	}
+
+	TEST(CodeSnippet, SimpleExpression) {
+
+		NodeManager mgr;
+
+		// create an empty code snippet
+		auto expr = parse(mgr,"12");
+		ASSERT_TRUE(expr);
+
+		// convert with allscale backend
+		auto code = convert(expr);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code);
+
+	}
+
+	TEST(CodeSnippet, SimpleLambda) {
+
+		NodeManager mgr;
+
+		// create an empty code snippet
+		auto expr = parse(mgr,"()->int<4> { return 1; }");
+		ASSERT_TRUE(expr);
+
+		// convert with allscale backend
+		auto code = convert(expr);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
