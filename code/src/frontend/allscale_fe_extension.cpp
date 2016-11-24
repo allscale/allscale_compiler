@@ -16,18 +16,19 @@ namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	void AllscaleExtension::TranslationStateManager::pushState(const TranslationState translationState) {
+	void TranslationStateManager::pushState(const TranslationState translationState) {
 		translationStates.push_back(translationState);
 	}
-
-	AllscaleExtension::TranslationState AllscaleExtension::TranslationStateManager::getState() {
+	void TranslationStateManager::popState() {
+		assert_false(translationStates.empty()) << "No TranslationState to pop";
+		translationStates.pop_back();
+	}
+	TranslationState TranslationStateManager::getState() {
 		assert_false(translationStates.empty()) << "No TranslationState to pop";
 		return translationStates.back();
 	}
-
-	void AllscaleExtension::TranslationStateManager::popState() {
-		assert_false(translationStates.empty()) << "No TranslationState to pop";
-		translationStates.pop_back();
+	ClangIrTypeMap& TranslationStateManager::getTypeMappings() {
+		return typeMappings;
 	}
 
 	namespace {
@@ -49,13 +50,16 @@ namespace frontend {
 			});
 		}
 
-		core::ExpressionPtr handlePrecCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+		core::ExpressionPtr handlePrecCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter,
+			                               TranslationStateManager& translationState) {
 			assert_eq(call->getNumArgs(), 1) << "handlePrecCall expects 1 argument only";
-			return lang::buildPrec(toVector(converter.convertCxxArgExpr(call->getArg(0))));
+			auto ret = lang::buildPrec(toVector(converter.convertCxxArgExpr(call->getArg(0))));
+			translationState.getTypeMappings()[call->getCallReturnType()->getUnqualifiedDesugaredType()] = ret->getType();
+			return ret;
 		}
 
 		core::ExpressionPtr handleCoreFunCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter,
-		                                      AllscaleExtension::TranslationStateManager& translationStateManager) {
+		                                      TranslationStateManager& translationStateManager) {
 
 			assert_eq(call->getNumArgs(), 3) << "handleCoreFunCall expects 3 arguments";
 
@@ -131,18 +135,16 @@ namespace frontend {
 			return lang::buildTreetureDone(converter.convertCxxArgExpr(call->getArg(0)));
 		}
 
-		clang::CallExpr* extractCallExpr(clang::Expr* node) {
-			if(auto call = llvm::dyn_cast<clang::CallExpr>(node)) {
-				return call;
-
-			} else if(auto materialize = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(node)) {
-				return extractCallExpr(materialize->GetTemporaryExpr());
-
-			} else if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(node)) {
-				return extractCallExpr(construct->getArg(0));
-			}
-			return nullptr;
-		}
+		//clang::CallExpr* extractCallExpr(clang::Expr* node) {
+		//	if(auto call = llvm::dyn_cast<clang::CallExpr>(node)) {
+		//		return call;
+		//	} else if(auto materialize = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(node)) {
+		//		return extractCallExpr(materialize->GetTemporaryExpr());
+		//	} else if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(node)) {
+		//		return extractCallExpr(construct->getArg(0));
+		//	}
+		//	return nullptr;
+		//}
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
@@ -152,7 +154,7 @@ namespace frontend {
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 				auto name = funDecl->getQualifiedNameAsString();
 				if(name == "allscale::api::core::prec") {
-					return handlePrecCall(call, converter);
+					return handlePrecCall(call, converter, getTranslationStateManager());
 				}
 				if(name == "allscale::api::core::fun") {
 					return handleCoreFunCall(call, converter, getTranslationStateManager());
@@ -167,29 +169,11 @@ namespace frontend {
 	}
 
 	insieme::frontend::stmtutils::StmtWrapper AllscaleExtension::Visit(const clang::Stmt* stmt, insieme::frontend::conversion::Converter& converter) {
-		// for variable declarations which are inited with a call to prec, store the type of the prec call in our mapping to replace the variable type
-		if(auto declStmt = llvm::dyn_cast<clang::DeclStmt>(stmt)) {
-			for(auto decl : declStmt->decls()) {
-				if(auto varDecl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-					if(auto init = varDecl->getInit()) {
-						if(auto call = extractCallExpr(init)) {
-							auto decl = call->getCalleeDecl();
-							if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
-								auto name = funDecl->getQualifiedNameAsString();
-								if(name == "allscale::api::core::prec") {
-									auto precCall = handlePrecCall(call, converter);
-									typeMappings[varDecl->getType()->getUnqualifiedDesugaredType()] = precCall->getType();
-								}
-							}
-						}
-					}
-				}
-			}
-		}
 		return {};
 	}
 
 	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) {
+		auto& typeMappings = getTranslationStateManager().getTypeMappings();
 		if(typeMappings.find(type->getUnqualifiedDesugaredType()) != typeMappings.end()) {
 			return typeMappings.at(type->getUnqualifiedDesugaredType());
 		}
@@ -220,7 +204,12 @@ namespace frontend {
 		}
 		if(auto tagType = llvm::dyn_cast<clang::TagType>(type)) {
 			auto typeName = tagType->getDecl()->getQualifiedNameAsString();
+			std::cout << "TN: " << typeName << std::endl;
 			if(typeName == "allscale::api::core::detail::completed_task") {
+				return (core::GenericTypePtr) lang::TreetureType(core::analysis::getReferencedType(irType.as<core::GenericTypePtr>()->getTypeParameter(0)), false);
+			}
+			if(typeName == "allscale::api::core::impl::reference::treeture") {
+				std::cout << "OK! in: " << irType << std::endl;
 				return (core::GenericTypePtr) lang::TreetureType(core::analysis::getReferencedType(irType.as<core::GenericTypePtr>()->getTypeParameter(0)), false);
 			}
 			if(boost::starts_with(typeName, "allscale::api::core::detail::callable")) {
@@ -230,6 +219,40 @@ namespace frontend {
 		}
 
 		return irType;
+	}
+
+	std::pair<core::VariablePtr, core::ExpressionPtr> AllscaleExtension::PostVisit(const clang::VarDecl* varDecl, const core::VariablePtr& var,
+		                                                                           const core::ExpressionPtr& varInit,
+		                                                                           insieme::frontend::conversion::Converter& converter) {
+		core::IRBuilder builder(var->getNodeManager());
+
+		std::cout << "CALLED FOR\n";
+		varDecl->dumpColor();
+		std::cout << std::endl;
+
+		if(varInit) {
+			std::cout << "AAAAAAA\n" << dumpReadable(varInit) << std::endl;
+			auto initT = varInit->getType();
+			if(core::analysis::isRefType(initT)) initT = core::analysis::getReferencedType(initT);
+			if(auto funT = initT.isa<core::FunctionTypePtr>()) {
+				std::cout << "BBBBBB\n";
+				if(funT->getKind() == core::FK_CLOSURE) {
+					std::cout << "CCCCCC\n";
+					auto retT = funT->getReturnType();
+					if(lang::TreetureType::isTreetureType(retT)) {
+						std::cout << "DDDDDD\n";
+						auto varT = var->getType();
+						assert_true(core::analysis::isRefType(varT));
+						auto varRefT = core::lang::ReferenceType(varT);
+						varRefT.setElementType(initT);
+						auto ret = std::make_pair(builder.variable((core::GenericTypePtr)varRefT), varInit);
+						std::cout << "Bla:\n" << (core::GenericTypePtr)varRefT  << "\n";
+						return ret;
+					}
+				}
+			}
+		}
+		return {var, varInit};
 	}
 
 	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& prog) {

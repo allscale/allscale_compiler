@@ -66,8 +66,8 @@ int main() {
 			)
 		);
 
-		/*auto f = */
-		fib(12);
+		//fib(12);
+		auto f = fib(12);
 
 		//fib(10).get();
 	}
