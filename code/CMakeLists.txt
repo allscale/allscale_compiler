@@ -6,6 +6,8 @@ include(${CMAKE_SOURCE_DIR}/insieme/code/environment.cmake)
 # required for llvm
 add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS)
 
+msvc_file_completion(allscale_frontend_test_inputs test/frontend/inputs c cpp h)
+
 # ================================================== AllScale Library ==================================================
 
 file(GLOB_RECURSE allscale_srcs src/*.cpp include/*.h)

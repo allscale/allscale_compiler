@@ -83,7 +83,13 @@ namespace lang {
 		if(!type) return false;
 
 		// check properties
-		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "treeture";
+		if(type->getTypeParameter().size() != 2 || !type->getParents().empty() || type->getName()->getValue() != "treeture") { return false; }
+
+		const auto& boolExt = node.getNodeManager().getLangExtension<core::lang::BooleanMarkerExtension>();
+		auto released = type->getTypeParameter(1);
+		bool isValidReleased = core::analysis::isGeneric(released) || boolExt.isTrueMarker(released) || boolExt.isFalseMarker(released);
+
+		return isValidReleased;
 	}
 
 	/////////////////////////////// Builders
@@ -109,9 +115,29 @@ namespace lang {
 		auto& mgr = firstRecFun->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto firstRecfunType = RecFunType(firstRecFun);
-		auto returnType = builder.functionType(firstRecfunType.getParamType(), firstRecfunType.getReturnType(), core::FK_CLOSURE);
+		core::GenericTypePtr treetureType = TreetureType(firstRecfunType.getReturnType(), false);
+		auto returnType = builder.functionType(firstRecfunType.getParamType(), treetureType, core::FK_CLOSURE);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getPrec(), builder.tupleExpr(recFuns));
+	}
+
+	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		core::GenericTypePtr returnType = TreetureType(param->getType(), false);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getTreetureDone(), param);
+	}
+
+	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto treetureType = TreetureType(param);
+		core::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getTreetureRun(), param);
 	}
 
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {

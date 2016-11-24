@@ -5,7 +5,7 @@
 
 namespace allscale {
 namespace compiler {
-namespace lang {
+namespace frontend {
 
 	TEST(AllscaleExtension, Basic) {
 	}
