@@ -155,18 +155,71 @@ namespace backend {
 	namespace {
 
 		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun) {
+			auto& mgr = stepCase->getNodeManager();
 			core::IRBuilder builder(stepCase->getNodeManager());
 
+			assert_true(stepCase.isa<core::LambdaExprPtr>())
+				<< "Only supported for lambdas so far!";
+
+			// This function does:
+			//  - remove the recursive function parameter
+			//  - replace the recursive function parameter by recFun in body
+			//  - remove treeture_run, treeture_get and treeture_done in body
+			//  - remove treeture in return type
+
+			// get incoming lambda
+			auto in = stepCase.as<core::LambdaExprPtr>();
+
+			// get body, replace treeture operations and recFun calls
+			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+			auto body = core::transform::transformBottomUp(in->getBody(), [&](const core::NodePtr& node)->core::NodePtr {
+
+				// only interested in calls
+				auto call = node.isa<core::CallExprPtr>();
+				if (!call) return node;
+
+				if (core::analysis::isCallOf(call,ext.getRecfunToFun())) {
+					return recFun;
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
+					return call->getArgument(0);
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
+					return call->getArgument(0);
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
+					return call->getArgument(0);
+				}
+
+				// not of interest either
+				return node;
+			});
 
 
-			// TODO: return something like this:
-			std::map<std::string,core::NodePtr> symbols;
-			symbols["rec"] = recFun;
-			return builder.parseExpr(
-					"( x : int<4> ) -> int<4> { return rec(x-1) + rec(x-2); }",
-					symbols
+			// replace all treeture types by their value types
+			body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
+
+				// check whether it is a treeture type
+				if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
+					return lang::TreetureType(node).getValueType();
+				}
+
+				// not of interest either
+				return node;
+			});
+
+
+			// build resulting function type
+			auto funType = builder.functionType(
+				in->getFunctionType()->getParameterType(0),
+				lang::TreetureType(in->getFunctionType()->getReturnType()).getValueType()
 			);
 
+			// build up resulting function
+			return builder.lambdaExpr(funType,{ in->getParameterList()[0] }, body.as<core::CompoundStmtPtr>());
 		}
 
 
