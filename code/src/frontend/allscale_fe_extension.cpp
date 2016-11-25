@@ -239,9 +239,14 @@ namespace frontend {
 		                                                                           const core::ExpressionPtr& varInit,
 		                                                                           insieme::frontend::conversion::Converter& converter) {
 		core::IRBuilder builder(var->getNodeManager());
+		auto& refExt = var->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+
 		if(varInit) {
+			// Change variable type for calls to AllScale API functions
 			auto initT = varInit->getType();
 			if(core::analysis::isRefType(initT)) initT = core::analysis::getReferencedType(initT);
+
+			// handle prec call result
 			if(auto funT = initT.isa<core::FunctionTypePtr>()) {
 				if(funT->getKind() == core::FK_CLOSURE) {
 					auto retT = funT->getReturnType();
@@ -254,6 +259,16 @@ namespace frontend {
 						return ret;
 					}
 				}
+			}
+
+			// handle treetures
+			if(lang::TreetureType::isTreetureType(initT)) {
+				auto irInit = varInit;
+				// remove unnecessary refCasts
+				if(refExt.isCallOfRefCast(irInit)) {
+					irInit = core::analysis::getArgument(irInit, 0);
+				}
+				return {var, irInit};
 			}
 		}
 		return {var, varInit};

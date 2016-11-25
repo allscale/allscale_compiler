@@ -53,7 +53,7 @@ int main() {
 							)]
 					))
 			);
-			(*prec_result_var)(12) materialize ;
+			var ref<treeture<int<4>,f>,f,f,plain> v151 = (*prec_result_var)(12) materialize ;
 		}
 	)")
 	{
