@@ -20,6 +20,18 @@ namespace backend {
 	};
 
 
+	/**
+	 * A pre-processor step converting prec operator calls into code utilizing the runtimes
+	 * work and data item infrastructure.
+	 */
+	class PrecConverter : public insieme::backend::PreProcessor {
+	  public:
+
+		virtual insieme::core::NodePtr process(const insieme::backend::Converter& converter, const insieme::core::NodePtr& code) override;
+
+		virtual std::ostream& printTo(std::ostream& out) const override { return out << "PrecConverter"; }
+	};
+
 } // end namespace backend
 } // end namespace compiler
 } // end namespace allscale

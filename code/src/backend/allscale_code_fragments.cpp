@@ -260,7 +260,7 @@ namespace backend {
 	}
 
 	const WorkItemDescriptionInfo& WorkItemDescriptions::getDescriptionType(backend::ConversionContext& context, const core::ExpressionPtr& desc) {
-		return getDescriptionType(context,WorkItemDescription::toValue(desc));
+		return getDescriptionType(context,WorkItemDescription::fromIR(desc));
 	}
 
 	std::ostream& WorkItemDescriptions::printTo(std::ostream& out) const {

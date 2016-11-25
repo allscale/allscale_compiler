@@ -48,6 +48,35 @@ namespace backend {
 				// create the call
 				return c_ast::call(trg,args);
 			};
+
+
+			table[ext.getSpawnWorkItem()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// resolve the work item
+				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(0));
+
+				// add dependency to definition
+				context.addDependency(info.definition);
+
+				// extract defining type
+				auto workItemDescType = info.description_type;
+
+				// create the target
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn");
+				trg = c_ast::instantiate(trg,workItemDescType);
+
+				// create the arguments
+				std::vector<c_ast::NodePtr> args;
+				for(unsigned i=1; i<call->getArgumentList().size(); ++i) {
+					args.push_back(CONVERT_EXPR(call->getArgument(i)));
+				}
+
+				// create the call
+				return c_ast::call(trg,args);
+			};
 		}
 
 
@@ -66,6 +95,39 @@ namespace backend {
 						CONVERT_ARG(0)
 				);
 			};
+		}
+
+
+		// intersect tuple component access code
+		{
+			auto& refExt = manager.getLangExtension<core::lang::ReferenceExtension>();
+
+			table[refExt.getRefComponentAccess()] = OP_CONVERTER {
+
+				// signature of operation:
+				//		(ref<'a>, uint<8>, type<'b>) -> ref<'b>
+
+				// add a dependency to the accessed type definition before accessing the type
+				const core::TypePtr tupleType = core::analysis::getReferencedType(ARG(0)->getType());
+				const TypeInfo& info = context.getConverter().getTypeManager().getTypeInfo(context, tupleType);
+				context.getDependencies().insert(info.definition);
+
+				core::ExpressionPtr index = ARG(1);
+				while(auto cast = index.isa<core::CastExprPtr>()) {
+					index = cast->getSubExpression();
+				}
+				assert_eq(index->getNodeType(), core::NT_Literal);
+				auto field = C_NODE_MANAGER->create<c_ast::NamedType>(
+						C_NODE_MANAGER->create(index.as<core::LiteralPtr>()->getStringValue())
+				);
+
+				// access the type
+				return c_ast::call(
+						c_ast::instantiate(C_NODE_MANAGER->create("hpx::util::get"),field),
+						c_ast::derefIfNotImplicit(CONVERT_ARG(0), ARG(0))
+				);
+			};
+
 		}
 
 

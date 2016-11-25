@@ -35,7 +35,7 @@ namespace backend {
 		// get a temporary file path
 		auto tmp = fs::unique_path(fs::temp_directory_path() / "allscale-trg-%%%%%%%%");
 
-		bool res = compileTo(code, tmp, true);
+		bool res = compileTo(code, tmp, 0, true);
 
 		// delete the temporary
 		if (res) fs::remove(tmp);
@@ -98,7 +98,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, Fib) {
+	TEST(CodeSnippet, Fib) {
 
 		NodeManager mgr;
 

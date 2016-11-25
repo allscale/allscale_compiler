@@ -64,6 +64,45 @@ namespace lang {
 		ASSERT_EQ(errs.getAll().size(), 0) << core::printer::dumpErrors(errs);
 	}
 
-}
-}
-}
+
+	TEST(PrecOperation, Fib) {
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
+		auto& as = nm.getLangExtension<AllscaleModule>();
+
+		auto fib = builder.parseExpr(R"I(
+			prec((build_recfun(
+				  (i : int<4>) -> bool { return i < 2; },
+				[ (i : int<4>) -> int<4> { return i; } ],
+				[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+					auto step = (j : int<4>) => recfun_call(steps.0, j);
+					auto a = treeture_run(step(i-1));
+					auto b = treeture_run(step(i-2));
+					return treeture_done(treeture_get(a) + treeture_get(b));
+				} ]
+			)))
+		)I", as.getDefinedSymbols());
+
+		EXPECT_TRUE(fib);
+
+		ASSERT_TRUE(PrecOperation::isEncoding(fib));
+
+		// try to 'parse'
+		PrecOperation op = PrecOperation::fromIR(fib);
+
+		EXPECT_EQ("int<4>", 						toString(*op.getResultType()));
+		EXPECT_EQ("int<4>", 						toString(*op.getParameterType()));
+		EXPECT_EQ("treeture<int<4>,f>", 			toString(*op.getTreetureType().toIRType()));
+
+		EXPECT_EQ(1, op.getFunctions().size());
+		EXPECT_EQ("((int<4>)->bool)", 				toString(*op.getFunction().getBaseCaseTestType()));
+		EXPECT_EQ("((int<4>)->int<4>)", 			toString(*op.getFunction().getBaseCaseType()));
+		EXPECT_EQ("((int<4>,(recfun<int<4>,int<4>>))->treeture<int<4>,f>)", toString(*op.getFunction().getStepCaseType()));
+
+		EXPECT_EQ(fib, op.toIR(nm));
+
+	}
+
+} // end namespace lang
+} // end namespace compiler
+} // end namespace allscale

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "insieme/core/lang/extension.h"
+#include "insieme/core/encoder/encoder.h"
 
 namespace core = insieme::core;
 
@@ -92,6 +93,130 @@ namespace lang {
 		TreetureType& operator=(const TreetureType&) = default;
 		TreetureType& operator=(TreetureType&&) = default;
 	};
+
+
+	/**
+	 * A convenience wrapper for prec operation functions.
+	 */
+	class PrecFunction : public core::encoder::encodable {
+
+		core::ExpressionPtr baseCaseTest;
+
+		core::ExpressionList baseCases;
+
+		core::ExpressionList stepCases;
+
+	public:
+
+		PrecFunction(const core::ExpressionPtr& baseCaseTest, const core::ExpressionList& baseCases, const core::ExpressionList& stepCases);
+
+		static bool isPrecOperation(const core::NodePtr&);
+
+
+		// -- getters and setters --
+
+		const core::ExpressionPtr& getBaseCaseTest() const {
+			return baseCaseTest;
+		}
+
+		void setBaseCaseTest(const core::ExpressionPtr&);
+
+		const core::ExpressionList& getBaseCases() const {
+			return baseCases;
+		}
+
+		void setBaseCases(const core::ExpressionList&);
+
+		void addBaseCase(const core::ExpressionPtr&);
+
+		const core::ExpressionList& getStepCases() const {
+			return stepCases;
+		}
+
+		void setStepCases(const core::ExpressionList&);
+
+		void addStepCase(const core::ExpressionPtr&);
+
+
+		// -- more observers --
+
+		core::FunctionTypePtr getBaseCaseTestType() const;
+
+		core::FunctionTypePtr getBaseCaseType() const;
+
+		core::FunctionTypePtr getStepCaseType() const;
+
+		core::TypePtr getParameterType() const;
+
+		core::TypePtr getResultType() const;
+
+		TreetureType getTreetureType() const;
+
+		core::TypePtr getRecursiveFunctionType() const;
+
+		core::TypeList getRecursiveFunctionParameterTypes() const;
+
+
+
+		// -- encoder interface --
+
+		static core::TypePtr getEncodedType(core::NodeManager&);
+
+		static bool isEncoding(const core::ExpressionPtr&);
+
+		core::ExpressionPtr toIR(core::NodeManager&) const;
+
+		static PrecFunction fromIR(const core::ExpressionPtr&);
+
+	};
+
+
+	/**
+	 * A convenience wrapper for prec operations.
+	 */
+	class PrecOperation : public core::encoder::encodable {
+
+		std::vector<PrecFunction> functions;
+
+	public:
+
+		PrecOperation(const std::vector<PrecFunction>& functions);
+
+		static bool isPrecOperation(const core::NodePtr&);
+
+
+		// -- getters and setters --
+
+		const PrecFunction& getFunction() const {
+			return functions[0];
+		}
+
+		const std::vector<PrecFunction>& getFunctions() const {
+			return functions;
+		}
+
+
+		// -- more observers --
+
+		core::TypePtr getParameterType() const;
+
+		core::TypePtr getResultType() const;
+
+		TreetureType getTreetureType() const;
+
+
+		// -- encoder interface --
+
+		static core::TypePtr getEncodedType(core::NodeManager&);
+
+		static bool isEncoding(const core::ExpressionPtr&);
+
+		core::ExpressionPtr toIR(core::NodeManager&) const;
+
+		static PrecOperation fromIR(const core::ExpressionPtr&);
+
+	};
+
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
 	                                     const core::ExpressionList& baseBinds,

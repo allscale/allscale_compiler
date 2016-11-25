@@ -16,12 +16,12 @@ int main(int argc, char** argv) {
 
 	// the target file
 	std::string target;
-	int opt_level;
+	unsigned opt_level;
 
 	// Step 1: parse input parameters
 	auto parser = driver::cmd::Options::getParser();
 	parser.addParameter<std::string>("o",target,"a.out","the target file");
-	parser.addParameter<int>("O",opt_level,0,"optimization level");
+	parser.addParameter<unsigned>("O",opt_level,0,"optimization level");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 	auto program = options.job.execute(mgr);
 
 	// Step 4: produce target code and build binary
-	auto ok = allscale::compiler::backend::compileTo(program, target, opt_level < 3);
+	auto ok = allscale::compiler::backend::compileTo(program, target, opt_level);
 
 	// return result
 	return (ok)?0:1;

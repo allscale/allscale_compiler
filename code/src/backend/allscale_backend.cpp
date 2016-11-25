@@ -43,6 +43,7 @@ namespace backend {
 
 			// set up pre-processing
 			converter.setPreProcessor(be::makePreProcessorSequence(
+				be::makePreProcessor<PrecConverter>(),
 				be::makePreProcessor<EntryPointWrapper>(),
 				be::getBasicPreProcessorSequence()
 			));
@@ -65,7 +66,7 @@ namespace backend {
 		return AllScaleBackend().convert(code);
 	}
 
-	bool compileTo(const be::TargetCodePtr& code, const boost::filesystem::path& targetBinary, bool debug) {
+	bool compileTo(const be::TargetCodePtr& code, const boost::filesystem::path& targetBinary, unsigned optimization_level, bool syntax_only) {
 		namespace ic = insieme::utils::compiler;
 
 		// check the input code
@@ -77,12 +78,13 @@ namespace backend {
 		// - customize compiler -
 
 		// optimization level
-		if (debug) {
-			compiler.addFlag("-O0");
+		compiler.addFlag(format("-O%d", optimization_level));
+		if (optimization_level == 0) {
 			compiler.addFlag("-g3");
-		} else {
-			compiler.addFlag("-O3");
 		}
+
+		// add syntax only flag
+		if (syntax_only) compiler.addFlag("-fsyntax-only");
 
 		// include directories
 		compiler.addIncludeDir(ALLSCALE_RUNTIME_INCLUDE_DIR);

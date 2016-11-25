@@ -6,6 +6,8 @@
 #include "insieme/core/encoder/encoder.h"
 #include "insieme/core/encoder/lists.h"
 
+#include "insieme/utils/container_utils.h"
+
 namespace allscale {
 namespace compiler {
 namespace lang {
@@ -92,6 +94,273 @@ namespace lang {
 		return isValidReleased;
 	}
 
+
+	/////////////////////////////// PrecOperation utility
+
+
+	PrecFunction::PrecFunction(const core::ExpressionPtr& baseCaseTest, const core::ExpressionList& baseCases, const core::ExpressionList& stepCases)
+		: baseCaseTest(baseCaseTest), baseCases(baseCases), stepCases(stepCases) {
+
+		// check that actual values are present
+		assert_true(baseCaseTest);
+		assert_false(baseCases.empty());
+		assert_false(stepCases.empty());
+
+		assert_true(all(baseCases, id<core::ExpressionPtr>()));
+		assert_true(all(stepCases, id<core::ExpressionPtr>()));
+
+		// check that all cases have the same type
+		assert_true(all(baseCases, [&](const core::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
+		assert_true(all(stepCases, [&](const core::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
+
+		// check that they are all functions
+		assert_true(baseCaseTest->getType().isa<core::FunctionTypePtr>());
+		assert_true(baseCases[0]->getType().isa<core::FunctionTypePtr>());
+		assert_true(stepCases[0]->getType().isa<core::FunctionTypePtr>());
+
+		// check the write arity of those functions
+		assert_eq(1, getBaseCaseTestType()->getParameterTypes().size());
+		assert_eq(1, getBaseCaseType()->getParameterTypes().size());
+		assert_eq(2, getStepCaseType()->getParameterTypes().size());
+
+		// check that they all have the same first parameter type
+		assert_eq(*getParameterType(), *getBaseCaseTestType()->getParameterTypes()[0]);
+		assert_eq(*getParameterType(), *getBaseCaseType()->getParameterTypes()[0]);
+		assert_eq(*getParameterType(), *getStepCaseType()->getParameterTypes()[0]);
+
+		// check that cases have all the same type
+		assert_true(all(baseCases,[&](const core::ExpressionPtr& cur) { return *baseCases[0]->getType() == *cur->getType(); }));
+		assert_true(all(stepCases,[&](const core::ExpressionPtr& cur) { return *stepCases[0]->getType() == *cur->getType(); }));
+
+		// check the return type of those
+		assert_eq("bool", toString(*getBaseCaseTestType()->getReturnType()));
+		assert_eq(getTreetureType().getValueType(), getBaseCaseType()->getReturnType());
+		assert_eq(getTreetureType().toIRType(), getStepCaseType()->getReturnType());
+
+		// check the recursive parameter of the step cases
+		assert_true(getStepCaseType()->getParameterType(1).isa<core::TupleTypePtr>());
+		assert_true(all(getRecursiveFunctionParameterTypes(),[&](const core::TypePtr& type){
+			auto genType = type.isa<core::GenericTypePtr>();
+			return genType && genType->getFamilyName() == "recfun" && genType->getTypeParameter()->size() == 2;
+		}));
+
+	}
+
+
+	// -- getters and setters --
+
+	void PrecFunction::setBaseCaseTest(const core::ExpressionPtr& test) {
+		assert_eq(*getBaseCaseTestType(), *test->getType());
+		baseCaseTest = test;
+	}
+
+	void PrecFunction::setBaseCases(const core::ExpressionList& cases) {
+		assert_false(cases.empty());
+		assert_true(all(cases, [&](const core::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
+		baseCases = cases;
+	}
+
+	void PrecFunction::addBaseCase(const core::ExpressionPtr& baseCase) {
+		assert_eq(*getBaseCaseType(),*baseCase->getType());
+		baseCases.push_back(baseCase);
+	}
+
+	void PrecFunction::setStepCases(const core::ExpressionList& cases) {
+		assert_false(cases.empty());
+		assert_true(all(cases, [&](const core::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
+		stepCases = cases;
+	}
+
+	void PrecFunction::addStepCase(const core::ExpressionPtr& stepCase) {
+		assert_eq(*getStepCaseType(),*stepCase->getType());
+		stepCases.push_back(stepCase);
+	}
+
+
+	// -- more observers --
+
+	core::FunctionTypePtr PrecFunction::getBaseCaseTestType() const {
+		return baseCaseTest->getType().as<core::FunctionTypePtr>();
+	}
+
+	core::FunctionTypePtr PrecFunction::getBaseCaseType() const {
+		assert_false(baseCases.empty());
+		return baseCases.front()->getType().as<core::FunctionTypePtr>();
+	}
+
+	core::FunctionTypePtr PrecFunction::getStepCaseType() const {
+		assert_false(stepCases.empty());
+		return stepCases.front()->getType().as<core::FunctionTypePtr>();
+	}
+
+	core::TypePtr PrecFunction::getParameterType() const {
+		return getBaseCaseTestType()->getParameterTypes()[0];
+	}
+
+	core::TypePtr PrecFunction::getResultType() const {
+		return getBaseCaseType()->getReturnType();
+	}
+
+	TreetureType PrecFunction::getTreetureType() const {
+		return TreetureType(getResultType(), false);
+	}
+
+	core::TypePtr PrecFunction::getRecursiveFunctionType() const {
+		auto& mgr = baseCaseTest->getNodeManager();
+		return core::GenericType::get(mgr, "recfun", { getParameterType(), getResultType() });
+	}
+
+	core::TypeList PrecFunction::getRecursiveFunctionParameterTypes() const {
+		return getStepCaseType()->getParameterType(1).as<core::TupleTypePtr>()->getElementTypes();
+	}
+
+
+	// -- encoder interface --
+
+	core::TypePtr PrecFunction::getEncodedType(core::NodeManager&) {
+		assert_fail() << "This object is encoded as a generic type, and thus has no general type!";
+		return core::TypePtr();
+	}
+
+	bool PrecFunction::isEncoding(const core::ExpressionPtr& expr) {
+		auto& mgr = expr->getNodeManager();
+		auto& ext = mgr.getLangExtension<AllscaleModule>();
+
+		// check that the given expression is a build_recfun call
+		if (!core::analysis::isCallOf(expr,ext.getBuildRecfun())) return false;
+
+		// check that the arguments are list encodings
+		auto recFunCall = expr.as<core::CallExprPtr>();
+		if (!core::encoder::isEncodingOf<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(1))) return false;
+		if (!core::encoder::isEncodingOf<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(2))) return false;
+
+		// ok, test passed
+		return true;
+	}
+
+	core::ExpressionPtr PrecFunction::toIR(core::NodeManager&) const {
+		// build up the rec operator
+		return buildBuildRecFun(baseCaseTest, baseCases, stepCases);
+	}
+
+	PrecFunction PrecFunction::fromIR(const core::ExpressionPtr& expr) {
+		assert_pred1(isEncoding,expr);
+
+		// decompose the rec fun call
+		auto recFunCall = expr.as<core::CallExprPtr>();
+
+		// extract the parameters
+		auto baseCaseTest = recFunCall->getArgument(0);
+		auto baseCases = core::encoder::toValue<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(1));
+		auto stepCases = core::encoder::toValue<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(2));
+
+		// build up result
+		return PrecFunction(baseCaseTest, baseCases, stepCases);
+	}
+
+
+
+	// - PrecOperation -
+
+	PrecOperation::PrecOperation(const std::vector<PrecFunction>& functions) : functions(functions) {
+
+		// there must be at least one function
+		assert_false(functions.empty());
+
+		// check that functions are compatible
+		assert_decl(
+			{
+				// assemble the recursive function parameter type
+				std::vector<core::TypePtr> types;
+				for(const auto& cur : functions) {
+					types.push_back(cur.getRecursiveFunctionType());
+				}
+
+				// make sure all functions have the proper recursive function type parameters
+				for(const auto& cur : functions) {
+					assert_eq(types, cur.getRecursiveFunctionParameterTypes());
+				}
+			}
+		);
+
+	}
+
+	bool PrecOperation::isPrecOperation(const core::NodePtr& node) {
+		auto expr = node.isa<core::ExpressionPtr>();
+		return expr && isEncoding(expr);
+	}
+
+	// -- more observers --
+
+	core::TypePtr PrecOperation::getParameterType() const {
+		return getFunction().getParameterType();
+	}
+
+	core::TypePtr PrecOperation::getResultType() const {
+		return getFunction().getResultType();
+	}
+
+	TreetureType PrecOperation::getTreetureType() const {
+		return getFunction().getTreetureType();
+	}
+
+
+	// -- encoder interface --
+
+	core::TypePtr PrecOperation::getEncodedType(core::NodeManager&) {
+		assert_fail() << "This object is encoded as a generic type, and thus has no general type!";
+		return core::TypePtr();
+	}
+
+	bool PrecOperation::isEncoding(const core::ExpressionPtr& expr) {
+		auto& mgr = expr->getNodeManager();
+		auto& ext = mgr.getLangExtension<AllscaleModule>();
+
+		// check that it is a prec call
+		if (!core::analysis::isCallOf(expr, ext.getPrec())) return false;
+
+		// check that the argument is a tuple
+		auto arg = expr.as<core::CallExprPtr>()->getArgument(0);
+		if (!arg.isa<core::TupleExprPtr>()) return false;
+
+		// check that all elements in the tuple are recursive functions
+		for(const auto& cur : arg.as<core::TupleExprPtr>()->getExpressions()) {
+			if (!PrecFunction::isEncoding(cur)) return false;
+		}
+
+		// ok, in this way we accept
+		return true;
+	}
+
+	core::ExpressionPtr PrecOperation::toIR(core::NodeManager& mgr) const {
+
+		// convert the recursive functions
+		core::ExpressionList funs;
+		for(const auto& cur : functions) {
+			funs.push_back(cur.toIR(mgr));
+		}
+
+		// build up the prec call
+		return buildPrec(funs);
+	}
+
+	PrecOperation PrecOperation::fromIR(const core::ExpressionPtr& expr) {
+		assert_pred1(isEncoding,expr);
+
+		// decompose the prec call
+		auto encodedFuns = expr.as<core::CallExprPtr>()->getArgument(0).as<core::TupleExprPtr>()->getExpressions();
+
+		// convert the encoded functions
+		std::vector<PrecFunction> funs;
+		for(const auto& cur : encodedFuns) {
+			funs.push_back(PrecFunction::fromIR(cur));
+		}
+
+		// build up result
+		return PrecOperation(funs);
+	}
+
+
 	/////////////////////////////// Builders
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
@@ -147,6 +416,6 @@ namespace lang {
 		return builder.callExpr(closureType, allS.getLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
 
-}
-}
-}
+} // end namespace lang
+} // end namespace compiler
+} // end namespace allscale

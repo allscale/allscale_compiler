@@ -80,7 +80,7 @@ namespace backend {
 		return ie::toIR(mgr, work_item_variant_tuple{ implementation });
 	}
 
-	WorkItemVariant WorkItemVariant::toValue(const core::ExpressionPtr& e) {
+	WorkItemVariant WorkItemVariant::fromIR(const core::ExpressionPtr& e) {
 		auto tuple = ie::toValue<work_item_variant_tuple>(e);
 		return WorkItemVariant(std::get<0>(tuple));
 	}
@@ -143,7 +143,7 @@ namespace backend {
 		);
 	}
 
-	WorkItemDescription WorkItemDescription::toValue(const core::ExpressionPtr& e) {
+	WorkItemDescription WorkItemDescription::fromIR(const core::ExpressionPtr& e) {
 		// make sure it is a proper encoding
 		assert_pred1(isEncoding, e);
 

@@ -57,7 +57,7 @@ namespace backend {
 
 		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
-		static WorkItemVariant toValue(const insieme::core::ExpressionPtr&);
+		static WorkItemVariant fromIR(const insieme::core::ExpressionPtr&);
 
 	};
 
@@ -148,7 +148,7 @@ namespace backend {
 
 		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
-		static WorkItemDescription toValue(const insieme::core::ExpressionPtr&);
+		static WorkItemDescription fromIR(const insieme::core::ExpressionPtr&);
 
 	};
 

@@ -152,6 +152,182 @@ namespace backend {
 
 	}
 
+	namespace {
+
+		// TODO: add closure support
+
+		core::LambdaExprPtr convertToLambda(const core::LambdaExprPtr& expr) {
+
+			core::NodeManager& mgr = expr.getNodeManager();
+			core::IRBuilder builder(mgr);
+
+			// create the new parameter type
+			core::TypePtr paramType = builder.refType(
+					builder.tupleType(expr->getFunctionType()->getParameterTypeList()),
+					true,false,core::lang::ReferenceType::Kind::CppReference
+			);
+
+			// create a new parameter
+			auto param = builder.variable(paramType);
+
+			// create expressions unpacking the arguments
+			core::ExpressionList args;
+			for(unsigned i=0; i<expr->getParameterList().size(); ++i) {
+				args.push_back(builder.deref(builder.refComponent(param,i)));
+			}
+
+			// create wrapper function body
+			auto body = builder.compoundStmt(
+					builder.returnStmt(
+							builder.callExpr(expr,args)
+					)
+			);
+
+			// create the new function type
+			auto funType = builder.functionType(paramType, expr->getFunctionType()->getReturnType());
+
+			// create resulting function
+			return builder.lambdaExpr(funType,{ param }, body);
+
+		}
+
+		core::LambdaExprPtr convertToLambda(const core::BindExprPtr& expr) {
+			assert_not_implemented() << "Not yet implemented!";
+			return {};
+		}
+
+		/**
+		 * This function converts the given lambda or bind into a
+		 * lambda accepting all its parameters as a tuple, not capturing
+		 * any values implicitly, and a list of expressions describing
+		 * the captured values.
+		 */
+		core::LambdaExprPtr convertToLambda(const core::ExpressionPtr& expr) {
+			// distinguish the supported cases
+			if (auto lambda = expr.isa<core::LambdaExprPtr>()) {
+				return convertToLambda(lambda);
+			}
+			if (auto bind = expr.isa<core::BindExprPtr>()) {
+				return convertToLambda(bind);
+			}
+
+			// all others are not supported
+			assert_fail() << "Unsupported expression of type " << expr->getNodeType();
+			return {};
+		}
+
+
+		WorkItemVariant getProcessVariant(const lang::PrecOperation& op) {
+
+			// pick the base case implementation
+			// TODO: create the actual implementation
+			// TODO: implement a tool converting a bind into a function
+			auto impl = op.getFunction().getBaseCases()[0];
+
+			core::NodeManager& mgr = impl.getNodeManager();
+			core::IRBuilder builder(mgr);
+			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+
+			// convert into a lambda, making captured parameters explicit
+			core::LambdaExprPtr lambda = convertToLambda(impl);
+
+			// create a wrapper which is spawning a treeture
+			auto body =
+				builder.compoundStmt(
+					builder.returnStmt(
+						builder.callExpr(
+							ext.getTreetureDone(),
+							builder.callExpr(lambda,lambda->getParameterList()[0])
+						)
+					)
+				);
+
+			// create the resultig function type
+			auto funType = builder.functionType(
+				lambda->getFunctionType()->getParameterType(0),
+				lang::TreetureType(lambda->getFunctionType()->getReturnType(),false).toIRType()
+			);
+
+			// use this lambda for creating the work item variant
+			return WorkItemVariant(builder.lambdaExpr(funType, lambda->getParameterList(), body));
+		}
+
+		WorkItemVariant getSplitVariant(const lang::PrecOperation& op) {
+			// return the process function for now
+			return getProcessVariant(op);
+		}
+
+		core::NodePtr convertPrecOperator(const core::NodePtr& code) {
+
+			// only interested in prec operators
+			if (!lang::PrecOperation::isPrecOperation(code)) return code;
+
+			// get build utilities
+			core::NodeManager& mgr = code.getNodeManager();
+			core::IRBuilder builder(mgr);
+			auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
+
+			// parse prec operation
+			lang::PrecOperation op = lang::PrecOperation::fromIR(code.as<core::ExpressionPtr>());
+
+			// extract a sequential implementation of the prec operation
+			auto process = getProcessVariant(op);
+
+			// extract a parallel implementation of the prec operation
+			auto split = getSplitVariant(op);
+
+			// wrap it up in a work item
+			WorkItemDescription desc("name",process,split);
+
+			// create a function wrapping the spawn call (need for bind)
+			core::VariableList params;
+
+			// TODO: add closure values to parameters
+
+			// add the input parameter
+			params.push_back(builder.variable(builder.refType(op.getFunction().getParameterType())));
+
+			core::ExpressionList args;
+			args.push_back(desc.toIR(mgr));
+			for(const auto& cur : params) args.push_back(builder.deref(cur));
+
+			// build the nested lambda
+			auto nestedLambda = builder.lambdaExpr(
+				op.getFunction().getTreetureType().toIRType(),
+				params,
+				builder.compoundStmt(
+					builder.returnStmt(
+						builder.callExpr(
+							ext.getSpawnWorkItem(), args
+						)
+					)
+				)
+			);
+
+			// create a bind spawning the work item - TODO: include closure values
+			auto param = builder.variable(op.getParameterType());
+			return builder.bindExpr({ param }, builder.callExpr(nestedLambda, param));
+		}
+
+	}
+
+
+
+	core::NodePtr PrecConverter::process(const be::Converter& converter, const core::NodePtr& code) {
+
+		// replace all prec calls with actual lambdas
+		auto res = core::transform::transformBottomUp(code, convertPrecOperator, core::transform::globalReplacement);
+
+		// check that the result is properly typed
+		assert_true(core::checks::check(res).empty())
+			<< core::checks::check(res);
+
+		// return result
+		return res;
+
+	}
+
+
 } // end namespace backend
 } // end namespace compiler
 } // end namespace allscale
