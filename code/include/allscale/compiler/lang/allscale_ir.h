@@ -101,6 +101,8 @@ namespace lang {
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
 
+	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param);
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }
