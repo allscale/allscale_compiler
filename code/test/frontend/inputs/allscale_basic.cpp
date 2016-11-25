@@ -37,7 +37,7 @@ int main() {
 			}
 		};
 		{
-			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> prec_result_var = prec(
+			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> simpleFun = prec(
 					(build_recfun(
 							lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
@@ -53,11 +53,13 @@ int main() {
 							)]
 					))
 			);
-			(*prec_result_var)(12) materialize ;
+			var ref<treeture<int<4>,f>,f,f,plain> res = (*simpleFun)(12) materialize ;
+			treeture_get(*res);
+			var ref<int<4>,f,f,plain> i = treeture_get(*(*simpleFun)(13) materialize );
 		}
 	)")
 	{
-		auto fib = prec(fun(
+		auto simpleFun = prec(fun(
 				[](int x)->bool { return x < 2; },
 				[](int x)->int { return x; },
 				[](int x, const auto& f) {
@@ -66,10 +68,10 @@ int main() {
 			)
 		);
 
-		/*auto f = */
-		fib(12);
+		auto res = simpleFun(12);
+		res.get();
 
-		//fib(10).get();
+		auto i = simpleFun(13).get();
 	}
 
 	return 0;

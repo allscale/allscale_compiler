@@ -24,7 +24,7 @@ namespace lang {
 		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 
 		// check given node type
-		assert_true(isRecFunType(type)) << "Given node " << *node << " is not a RecFun type!";
+		assert_true(isRecFun(type)) << "Given node " << *node << " is not a RecFun type!";
 
 		*this = RecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
@@ -35,6 +35,10 @@ namespace lang {
 	}
 
 	bool RecFunType::isRecFunType(const core::NodePtr& node) {
+		return isRecFun(node);
+	}
+
+	bool isRecFun(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
 		if(!type) return false;
@@ -59,7 +63,7 @@ namespace lang {
 		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 
 		// check given node type
-		assert_true(isTreetureType(type)) << "Given node " << *node << " is not a Treeture type!";
+		assert_true(isTreeture(type)) << "Given node " << *node << " is not a Treeture type!";
 
 		*this = TreetureType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
@@ -80,6 +84,10 @@ namespace lang {
 	}
 
 	bool TreetureType::isTreetureType(const core::NodePtr& node) {
+		return isTreeture(node);
+	}
+
+	bool isTreeture(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
 		if(!type) return false;
@@ -407,6 +415,16 @@ namespace lang {
 		core::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureRun(), param);
+	}
+
+	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		TreetureType treeture(param);
+		auto returnType = treeture.getValueType();
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getTreetureGet(), param);
 	}
 
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {

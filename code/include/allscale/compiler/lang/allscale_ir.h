@@ -61,6 +61,7 @@ namespace lang {
 
 		operator core::GenericTypePtr() const;
 
+		//TODO: remove in favor of function isRecFun below
 		static bool isRecFunType(const core::NodePtr& node);
 
 		RecFunType(const RecFunType&) = default;
@@ -86,6 +87,7 @@ namespace lang {
 
 		operator core::GenericTypePtr() const;
 
+		//TODO: remove in favor of function isTreeture below
 		static bool isTreetureType(const core::NodePtr& node);
 
 		TreetureType(const TreetureType&) = default;
@@ -93,7 +95,6 @@ namespace lang {
 		TreetureType& operator=(const TreetureType&) = default;
 		TreetureType& operator=(TreetureType&&) = default;
 	};
-
 
 	/**
 	 * A convenience wrapper for prec operation functions.
@@ -217,6 +218,9 @@ namespace lang {
 
 	};
 
+	bool isRecFun(const core::NodePtr& node);
+
+	bool isTreeture(const core::NodePtr& node);
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
 	                                     const core::ExpressionList& baseBinds,
@@ -227,6 +231,8 @@ namespace lang {
 	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param);
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
+
+	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param);
 
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
