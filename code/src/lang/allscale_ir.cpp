@@ -68,9 +68,13 @@ namespace lang {
 		return boolExt.isTrueMarker(released);
 	}
 
-	TreetureType::operator core::GenericTypePtr() const {
+	core::GenericTypePtr TreetureType::toIRType() const {
 		core::IRBuilder builder(valueType->getNodeManager());
 		return builder.genericType("treeture", toVector(valueType, released));
+	}
+
+	TreetureType::operator core::GenericTypePtr() const {
+		return toIRType();
 	}
 
 	bool TreetureType::isTreetureType(const core::NodePtr& node) {

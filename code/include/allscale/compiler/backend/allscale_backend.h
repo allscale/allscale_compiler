@@ -25,9 +25,10 @@ namespace backend {
 	 *
 	 * @param code the target code to be compiled
 	 * @param targetBinary the target binary to be created (if it already exists, it will be overriden)
+	 * @param whether the compilation should be in debug mode
 	 * @return true on success, false otherwise
 	 */
-	bool compileTo(const insieme::backend::TargetCodePtr& code, const boost::filesystem::path& targetBinary);
+	bool compileTo(const insieme::backend::TargetCodePtr& code, const boost::filesystem::path& targetBinary, bool debug = false);
 
 	/**
 	 * Converts and compiles the given IR code into a binary located at the given target location using
@@ -35,10 +36,11 @@ namespace backend {
 	 *
 	 * @param code the code to be converted and compiled
 	 * @param targetBinary the target binary to be created (if it already exists, it will be overriden)
+	 * * @param whether the compilation should be in debug mode
 	 * @return true on success, false otherwise
 	 */
-	bool compileTo(const insieme::core::NodePtr& code, const boost::filesystem::path& targetBinary) {
-		return compileTo(convert(code), targetBinary);
+	bool compileTo(const insieme::core::NodePtr& code, const boost::filesystem::path& targetBinary, bool debug = false) {
+		return compileTo(convert(code), targetBinary, debug);
 	}
 
 

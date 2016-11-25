@@ -15,6 +15,7 @@ insieme_glob_headers(allscale__incs include)
 
 add_library(allscale ${LINKING_TYPE} ${allscale_srcs} ${allscale_incs})
 target_include_directories(allscale PUBLIC include)
+target_include_directories(allscale PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/../ )
 
 target_link_libraries(allscale insieme_common)
 target_link_libraries(allscale insieme_utils)
