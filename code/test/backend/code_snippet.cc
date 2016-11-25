@@ -108,7 +108,7 @@ namespace backend {
 						  (i : int<4>) -> bool { return i < 2; },
 						[ (i : int<4>) -> int<4> { return i; } ],
 						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
-							auto step = (j : int<4>) => recfun_call(steps.0, j);
+							auto step = recfun_to_fun(steps.0);
 							auto a = treeture_run(step(i-1));
 							auto b = treeture_run(step(i-2));
 							return treeture_done(treeture_get(a) + treeture_get(b));
@@ -118,9 +118,13 @@ namespace backend {
 		);
 		ASSERT_TRUE(fib);
 
+		dumpPretty(fib);
+
 		// convert with allscale backend
 		auto code = convert(fib);
 		ASSERT_TRUE(code);
+
+		std::cout << "Code:\n" << *code << "\n";
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;

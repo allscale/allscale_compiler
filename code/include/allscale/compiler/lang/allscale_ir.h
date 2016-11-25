@@ -39,7 +39,7 @@ namespace lang {
 
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
-		LANG_EXT_LITERAL(RecfunCall, "recfun_call", "(recfun<'a,'b>, 'a) -> treeture<'b, f>")
+		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 
 		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
 	};

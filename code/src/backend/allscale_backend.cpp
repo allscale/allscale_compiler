@@ -39,7 +39,7 @@ namespace backend {
 			be::Converter converter(manager, "AllScaleBackend", getConfiguration());
 
 			// set up name manager
-			converter.setNameManager(std::make_shared<be::SimpleNameManager>("allscale"));
+			converter.setNameManager(std::make_shared<be::SimpleNameManager>("allscale_"));
 
 			// set up pre-processing
 			converter.setPreProcessor(be::makePreProcessorSequence(

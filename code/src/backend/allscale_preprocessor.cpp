@@ -154,6 +154,71 @@ namespace backend {
 
 	namespace {
 
+		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun) {
+			core::IRBuilder builder(stepCase->getNodeManager());
+
+
+
+			// TODO: return something like this:
+			std::map<std::string,core::NodePtr> symbols;
+			symbols["rec"] = recFun;
+			return builder.parseExpr(
+					"( x : int<4> ) -> int<4> { return rec(x-1) + rec(x-2); }",
+					symbols
+			);
+
+		}
+
+
+		core::ExpressionPtr getSequentialImplementation(const lang::PrecOperation& op) {
+			core::IRBuilder builder(op.getFunction().getBaseCaseTest()->getNodeManager());
+
+			// -- build up the sequential implementation of this function --
+
+			assert_eq(1,op.getFunctions().size())
+				<< "Mutual recursive functions not yet supported!";
+
+			// get the function to be encoded
+			const auto& fun = op.getFunction();
+
+			// get the type of the resulting function (same as the base case type)
+			auto funType = fun.getBaseCaseType();
+
+			// create the recursive function reference
+			auto recFun = builder.lambdaReference(funType,"rec");
+
+			// get the in-parameter
+			auto in = builder.variable(builder.refType(fun.getParameterType()));
+			auto inVal = builder.deref(in);
+
+			// get instantiated step implementation
+			auto stepFun = inlineStep(fun.getStepCases()[0],recFun);
+
+			// create the body of the lambda
+			auto body = builder.compoundStmt(
+				builder.ifStmt(
+					// check the base case test
+					builder.callExpr(fun.getBaseCaseTest(), inVal),
+					// if in the base case => run base case
+					builder.returnStmt(builder.callExpr(fun.getBaseCases()[0],inVal)),
+					// else run step case
+					builder.returnStmt(builder.callExpr(stepFun,inVal))
+				)
+			);
+
+			// build a lambda ..
+			auto lambda = builder.lambda(funType,{in},body);
+
+			// .. the enclosing definition ..
+			core::LambdaBindingMap bindings;
+			bindings[recFun] = lambda;
+			auto lambdaDef = builder.lambdaDefinition(bindings);
+
+			// and the resulting lambda expression
+			return builder.lambdaExpr(recFun,lambdaDef);
+		}
+
+
 		// TODO: add closure support
 
 		core::LambdaExprPtr convertToLambda(const core::LambdaExprPtr& expr) {
@@ -222,7 +287,7 @@ namespace backend {
 			// pick the base case implementation
 			// TODO: create the actual implementation
 			// TODO: implement a tool converting a bind into a function
-			auto impl = op.getFunction().getBaseCases()[0];
+			auto impl = getSequentialImplementation(op);
 
 			core::NodeManager& mgr = impl.getNodeManager();
 			core::IRBuilder builder(mgr);
@@ -320,6 +385,7 @@ namespace backend {
 
 		// check that the result is properly typed
 		assert_true(core::checks::check(res).empty())
+			<< dumpPretty(res) << "\n"
 			<< core::checks::check(res);
 
 		// return result

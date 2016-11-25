@@ -21,7 +21,7 @@ namespace lang {
 				  (i : int<4>) -> bool { return i < 2; },
 				[ (i : int<4>) -> int<4> { return i; } ],
 				[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
-					auto step = (j : int<4>) => recfun_call(steps.0, j);
+					auto step = recfun_to_fun(steps.0);
 					auto a = treeture_run(step(i-1));
 					auto b = treeture_run(step(i-2));
 					return treeture_done(treeture_get(a) + treeture_get(b));
@@ -45,14 +45,14 @@ namespace lang {
 				  (i : int<4>) -> bool { return i == 0; },
 				[ (i : int<4>) -> bool { return true; }],
 				[ (i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
-					auto odd = (j : int<4>) => recfun_call(steps.1, j);
+					auto odd = recfun_to_fun(steps.1);
 					return odd(i-1);
 				} ] ),
 				build_recfun(
 				  (i : int<4>) -> bool { return i == 0; },
 				[ (i : int<4>) -> bool { return false; }],
 				[ (i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
-					auto even = (j : int<4>) => recfun_call(steps.0, j);
+					auto even = recfun_to_fun(steps.0);
 					return even(i-1);
 				} ] )
 			))
@@ -75,7 +75,7 @@ namespace lang {
 				  (i : int<4>) -> bool { return i < 2; },
 				[ (i : int<4>) -> int<4> { return i; } ],
 				[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
-					auto step = (j : int<4>) => recfun_call(steps.0, j);
+					auto step = recfun_to_fun(steps.0);
 					auto a = treeture_run(step(i-1));
 					auto b = treeture_run(step(i-2));
 					return treeture_done(treeture_get(a) + treeture_get(b));
