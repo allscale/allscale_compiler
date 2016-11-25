@@ -172,10 +172,11 @@ namespace frontend {
 		return {};
 	}
 
-	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) {
+	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& typeIn, insieme::frontend::conversion::Converter& converter) {
+		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
 		auto& typeMappings = getTranslationStateManager().getTypeMappings();
-		if(typeMappings.find(type->getUnqualifiedDesugaredType()) != typeMappings.end()) {
-			return typeMappings.at(type->getUnqualifiedDesugaredType());
+		if(typeMappings.find(type) != typeMappings.end()) {
+			return typeMappings.at(type);
 		}
 		return {};
 	}
@@ -198,24 +199,37 @@ namespace frontend {
 
 	insieme::core::TypePtr AllscaleExtension::PostVisit(const clang::QualType& typeIn, const insieme::core::TypePtr& irType,
 	                                                    insieme::frontend::conversion::Converter& converter) {
-		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
+		// extract relevant type
+		const clang::Type* type = typeIn.getTypePtr();
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
-			type = autoType->getDeducedType().getTypePtr();
+			if(autoType->isSugared()) { type = autoType->desugar().getTypePtr(); }
+			if(autoType->isDeduced()) { type = autoType->getDeducedType().getTypePtr(); }
+		}
+		if(auto injectedType = llvm::dyn_cast<clang::InjectedClassNameType>(type)) {
+			type = injectedType->getInjectedSpecializationType().getTypePtr();
+		}
+		type = type->getUnqualifiedDesugaredType();
+
+		// extract type name from clang type
+		std::string typeName;
+		if(auto tempSpecType = llvm::dyn_cast<clang::TemplateSpecializationType>(type)) {
+			if(auto templateDecl = tempSpecType->getTemplateName().getAsTemplateDecl()) {
+				typeName = templateDecl->getQualifiedNameAsString();
+			}
 		}
 		if(auto tagType = llvm::dyn_cast<clang::TagType>(type)) {
-			auto typeName = tagType->getDecl()->getQualifiedNameAsString();
-			std::cout << "TN: " << typeName << std::endl;
-			if(typeName == "allscale::api::core::detail::completed_task") {
-				return (core::GenericTypePtr) lang::TreetureType(core::analysis::getReferencedType(irType.as<core::GenericTypePtr>()->getTypeParameter(0)), false);
-			}
-			if(typeName == "allscale::api::core::impl::reference::treeture") {
-				std::cout << "OK! in: " << irType << std::endl;
-				return (core::GenericTypePtr) lang::TreetureType(core::analysis::getReferencedType(irType.as<core::GenericTypePtr>()->getTypeParameter(0)), false);
-			}
-			if(boost::starts_with(typeName, "allscale::api::core::detail::callable")) {
-				auto translationState = getTranslationStateManager().getState();
-				return (core::GenericTypePtr) lang::RecFunType(translationState.first, translationState.second);
-			}
+			typeName = tagType->getDecl()->getQualifiedNameAsString();
+		}
+
+		// handle conversion
+		if(typeName == "allscale::api::core::detail::completed_task" || typeName == "allscale::api::core::impl::reference::treeture") {
+			auto innerType = irType.as<core::GenericTypePtr>()->getTypeParameter(0);
+			if(core::analysis::isRefType(innerType)) { innerType = core::analysis::getReferencedType(innerType); }
+			return (core::GenericTypePtr) lang::TreetureType(innerType, false);
+		}
+		if(boost::starts_with(typeName, "allscale::api::core::detail::callable")) {
+			auto translationState = getTranslationStateManager().getState();
+			return (core::GenericTypePtr) lang::RecFunType(translationState.first, translationState.second);
 		}
 
 		return irType;
@@ -225,28 +239,18 @@ namespace frontend {
 		                                                                           const core::ExpressionPtr& varInit,
 		                                                                           insieme::frontend::conversion::Converter& converter) {
 		core::IRBuilder builder(var->getNodeManager());
-
-		std::cout << "CALLED FOR\n";
-		varDecl->dumpColor();
-		std::cout << std::endl;
-
 		if(varInit) {
-			std::cout << "AAAAAAA\n" << dumpReadable(varInit) << std::endl;
 			auto initT = varInit->getType();
 			if(core::analysis::isRefType(initT)) initT = core::analysis::getReferencedType(initT);
 			if(auto funT = initT.isa<core::FunctionTypePtr>()) {
-				std::cout << "BBBBBB\n";
 				if(funT->getKind() == core::FK_CLOSURE) {
-					std::cout << "CCCCCC\n";
 					auto retT = funT->getReturnType();
 					if(lang::TreetureType::isTreetureType(retT)) {
-						std::cout << "DDDDDD\n";
 						auto varT = var->getType();
 						assert_true(core::analysis::isRefType(varT));
 						auto varRefT = core::lang::ReferenceType(varT);
 						varRefT.setElementType(initT);
 						auto ret = std::make_pair(builder.variable((core::GenericTypePtr)varRefT), varInit);
-						std::cout << "Bla:\n" << (core::GenericTypePtr)varRefT  << "\n";
 						return ret;
 					}
 				}
