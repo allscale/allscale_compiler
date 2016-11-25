@@ -33,6 +33,10 @@ namespace frontend {
 
 		virtual insieme::core::ExpressionPtr Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) override;
 
+		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr,
+		                                           insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
+		                                           insieme::frontend::conversion::Converter& converter) override ;
+
 		virtual insieme::frontend::stmtutils::StmtWrapper Visit(const clang::Stmt* stmt, insieme::frontend::conversion::Converter& converter) override;
 
 		virtual insieme::core::TypePtr Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) override;

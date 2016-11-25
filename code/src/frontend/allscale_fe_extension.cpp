@@ -168,6 +168,20 @@ namespace frontend {
 		return nullptr;
 	}
 
+	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CastExpr* castExpr,
+	                                                      insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
+	                                                      insieme::frontend::conversion::Converter& converter) {
+		auto& allscaleExt = irExpr->getNodeManager().getLangExtension<lang::AllscaleModule>();
+
+		// treeture_get has different semantics
+		if(castExpr->getCastKind() == clang::CK_LValueToRValue) {
+			if(allscaleExt.isCallOfTreetureGet(irExpr)) {
+				return irExpr;
+			}
+		}
+		return nullptr;
+	}
+
 	insieme::frontend::stmtutils::StmtWrapper AllscaleExtension::Visit(const clang::Stmt* stmt, insieme::frontend::conversion::Converter& converter) {
 		return {};
 	}
@@ -183,14 +197,24 @@ namespace frontend {
 
 	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
 		                                                      insieme::frontend::conversion::Converter& converter) {
+		core::IRBuilder builder(irExpr->getNodeManager());
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
-			auto funTy = call->getFunctionExpr()->getType().as<core::FunctionTypePtr>();
+			// replace call to operator() on prec return value (closure) with simple call
+			auto funExpr = call->getFunctionExpr();
+			auto funTy = funExpr->getType().as<core::FunctionTypePtr>();
 			auto funParms = funTy->getParameterTypeList();
 			if(funTy->isMemberFunction()) {
 				auto thisType = core::analysis::getReferencedType(funParms[0]);
 				if(auto calleeFunType = thisType.isa<core::FunctionTypePtr>()) {
 					core::IRBuilder builder(irExpr->getNodeManager());
 					return builder.callExpr(builder.deref(core::analysis::getArgument(call, 0)), core::analysis::getArgument(call, 1));
+				}
+			}
+
+			if(auto lit = funExpr.isa<core::LiteralPtr>()) {
+				auto name = lit->getStringValue();
+				if(name == "treeture::IMP_get") {
+					return lang::buildTreetureGet(builder.deref(core::analysis::getArgument(call, 0)));
 				}
 			}
 		}
