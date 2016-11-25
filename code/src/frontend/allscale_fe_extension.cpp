@@ -274,7 +274,7 @@ namespace frontend {
 			if(auto funT = initT.isa<core::FunctionTypePtr>()) {
 				if(funT->getKind() == core::FK_CLOSURE) {
 					auto retT = funT->getReturnType();
-					if(lang::TreetureType::isTreetureType(retT)) {
+					if(lang::isTreeture(retT)) {
 						auto varT = var->getType();
 						assert_true(core::analysis::isRefType(varT));
 						auto varRefT = core::lang::ReferenceType(varT);
@@ -286,7 +286,7 @@ namespace frontend {
 			}
 
 			// handle treetures
-			if(lang::TreetureType::isTreetureType(initT)) {
+			if(lang::isTreeture(initT)) {
 				auto irInit = varInit;
 				// remove unnecessary refCasts
 				if(refExt.isCallOfRefCast(irInit)) {

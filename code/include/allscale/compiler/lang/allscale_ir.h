@@ -60,6 +60,7 @@ namespace lang {
 
 		operator core::GenericTypePtr() const;
 
+		//TODO: remove in favor of function isRecFun below
 		static bool isRecFunType(const core::NodePtr& node);
 
 		RecFunType(const RecFunType&) = default;
@@ -85,6 +86,7 @@ namespace lang {
 
 		operator core::GenericTypePtr() const;
 
+		//TODO: remove in favor of function isTreeture below
 		static bool isTreetureType(const core::NodePtr& node);
 
 		TreetureType(const TreetureType&) = default;
@@ -92,6 +94,10 @@ namespace lang {
 		TreetureType& operator=(const TreetureType&) = default;
 		TreetureType& operator=(TreetureType&&) = default;
 	};
+
+	bool isRecFun(const core::NodePtr& node);
+
+	bool isTreeture(const core::NodePtr& node);
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
 	                                     const core::ExpressionList& baseBinds,
