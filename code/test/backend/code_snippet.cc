@@ -126,6 +126,40 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
 	}
 
+	TEST(DISABLED_CodeSnippet, FibFull) {
+
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+					int<4> main() {
+						auto p = 44;
+						auto r = treeture_get(prec((build_recfun(
+							  (i : int<4>) -> bool { return i < 2; },
+							[ (i : int<4>) -> int<4> { return i; } ],
+							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+								let step = recfun_to_fun(steps.0);
+								auto a = treeture_run(step(i-1));
+								auto b = treeture_run(step(i-2));
+								return treeture_done(treeture_get(a) + treeture_get(b));
+							} ]
+						)))(p));
+						print("fib(%d)=%d\n",p,r);
+						return 0;
+					}
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// compile to an actual binary
+		EXPECT_TRUE(backend::compileTo(fib, "fib_art",3));
+	}
+
+
 } // end namespace backend
 } // end namespace compiler
 } // end namespace allscale
