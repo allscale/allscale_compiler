@@ -118,13 +118,9 @@ namespace backend {
 		);
 		ASSERT_TRUE(fib);
 
-		dumpPretty(fib);
-
 		// convert with allscale backend
 		auto code = convert(fib);
 		ASSERT_TRUE(code);
-
-		std::cout << "Code:\n" << *code << "\n";
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;

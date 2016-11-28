@@ -32,11 +32,16 @@ namespace backend {
 
 		LANG_EXT_LITERAL(CreateWorkItemDescription, "art_wi_desc_create", "('a,type<('Args...)>,type<'Res>)->art_wi_desc<('Args...),'Res>");
 
+		LANG_EXT_LITERAL(CreateWorkItemDescriptionReference, "art_wi_desc_ref", "(identifier,type<('Args...)>,type<'Res>)->art_wi_desc<('Args...),'Res>");
+
 
 		// --- a primitive to start a work item ---
 
 		// the operator for spawning a work item
 		LANG_EXT_LITERAL(SpawnWorkItem, "art_spawn", "(art_wi_desc<('Args...),'Res>,'Args...)->treeture<'Res,f>");
+
+		// the operator for spawning a recursively nested work item
+		LANG_EXT_LITERAL(RecSpawnWorkItem, "art_rec_spawn", "(art_wi_desc<('Args...),'Res>)->('Args...)->treeture<'Res,f>");
 
 		// the operator for wrapping the execution of the main function
 		LANG_EXT_LITERAL(ProcessMain, "art_main", "(art_wi_desc<('Args...),'Res>,'Args...)->'Res");

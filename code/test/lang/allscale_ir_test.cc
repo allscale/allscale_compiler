@@ -103,6 +103,31 @@ namespace lang {
 
 	}
 
+	TEST(TreetureType, Basic) {
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
+
+		auto t1 = builder.parseType("treeture<int<4>,f>");
+		EXPECT_TRUE(t1);
+		EXPECT_PRED1(isTreeture, t1);
+
+		// check value type
+		EXPECT_EQ(builder.parseType("int<4>"),TreetureType(builder.parseType("treeture<int<4>,f>")).getValueType());
+		EXPECT_EQ(builder.parseType("bool"),TreetureType(builder.parseType("treeture<bool,f>")).getValueType());
+
+		// check release state
+		EXPECT_FALSE(TreetureType(builder.parseType("treeture<int<4>,f>")).isReleased());
+		EXPECT_TRUE (TreetureType(builder.parseType("treeture<int<4>,t>")).isReleased());
+		EXPECT_FALSE(TreetureType(builder.parseType("treeture<int<4>,'a>")).isReleased());
+		EXPECT_FALSE(TreetureType(builder.parseType("treeture<int<4>,'b>")).isReleased());
+
+		// check back-conversion
+		EXPECT_EQ(builder.parseType("treeture<int<4>,f>"),TreetureType(builder.parseType("treeture<int<4>,f>")).toIRType());
+		EXPECT_EQ(builder.parseType("treeture<int<4>,t>"),TreetureType(builder.parseType("treeture<int<4>,t>")).toIRType());
+		EXPECT_EQ(builder.parseType("treeture<int<4>,'a>"),TreetureType(builder.parseType("treeture<int<4>,'a>")).toIRType());
+		EXPECT_EQ(builder.parseType("treeture<int<4>,'b>"),TreetureType(builder.parseType("treeture<int<4>,'b>")).toIRType());
+	}
+
 } // end namespace lang
 } // end namespace compiler
 } // end namespace allscale

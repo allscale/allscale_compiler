@@ -77,6 +77,31 @@ namespace backend {
 				// create the call
 				return c_ast::call(trg,args);
 			};
+
+			table[ext.getRecSpawnWorkItem()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// resolve the name
+				const auto& lit = call->getArgument(0).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
+
+				// resolve the work item
+				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, lit->getStringValue());
+
+				// add dependency to definition
+				context.addDependency(info.definition);
+
+				// extract defining type
+				auto workItemDescType = info.description_type;
+
+				// create the target
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn");
+				trg = c_ast::instantiate(trg,workItemDescType);
+
+				// return just the function, arguments follow
+				return trg;
+			};
 		}
 
 
@@ -94,6 +119,26 @@ namespace backend {
 						resTypeInfo.rValueType,
 						CONVERT_ARG(0)
 				);
+			};
+
+			table[ext.getTreetureRun()] = OP_CONVERTER {
+
+				// add dependency to result type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// just forward treeture
+				return CONVERT_ARG(0);
+			};
+
+			table[ext.getTreetureGet()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
 			};
 		}
 

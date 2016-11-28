@@ -75,13 +75,16 @@ namespace lang {
 
 	  public:
 		TreetureType(const core::TypePtr& valueType, bool released);
+		TreetureType(const core::TypePtr& valueType, const core::TypePtr& released);
+
 		TreetureType(const core::NodePtr& node);
 
 		core::TypePtr getValueType() const {
 			return valueType;
 		}
 
-		bool getReleased();
+		// NOTE: unknown is treated as not released
+		bool isReleased() const;
 
 		core::GenericTypePtr toIRType() const;
 

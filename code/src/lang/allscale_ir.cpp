@@ -55,6 +55,9 @@ namespace lang {
 		this->released = boolExt.getMarkerType(released);
 	}
 
+	TreetureType::TreetureType(const core::TypePtr& valueType, const core::TypePtr& released)
+		: valueType(valueType), released(released) {}
+
 	TreetureType::TreetureType(const core::NodePtr& node) {
 		assert_true(node) << "Given node is null!";
 
@@ -68,7 +71,7 @@ namespace lang {
 		*this = TreetureType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
 
-	bool TreetureType::getReleased() {
+	bool TreetureType::isReleased() const {
 		auto& mgr = valueType->getNodeManager();
 		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
 		return boolExt.isTrueMarker(released);

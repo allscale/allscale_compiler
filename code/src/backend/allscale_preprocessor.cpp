@@ -10,6 +10,7 @@
 #include "insieme/core/transform/node_replacer.h"
 
 #include "insieme/backend/preprocessor.h"
+#include "insieme/backend/name_manager.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -154,7 +155,7 @@ namespace backend {
 
 	namespace {
 
-		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun) {
+		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun, bool serialize) {
 			auto& mgr = stepCase->getNodeManager();
 			core::IRBuilder builder(stepCase->getNodeManager());
 
@@ -170,56 +171,78 @@ namespace backend {
 			// get incoming lambda
 			auto in = stepCase.as<core::LambdaExprPtr>();
 
-			// get body, replace treeture operations and recFun calls
+			// get the result type
+			auto resType = in->getFunctionType()->getReturnType();
+
+			// get the body
+			auto body = in->getBody();
+
+			// replace calls to recursive token by actual recursive call
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
-			auto body = core::transform::transformBottomUp(in->getBody(), [&](const core::NodePtr& node)->core::NodePtr {
+			body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
 
-				// only interested in calls
-				auto call = node.isa<core::CallExprPtr>();
-				if (!call) return node;
-
-				if (core::analysis::isCallOf(call,ext.getRecfunToFun())) {
+				// replace recursive calls
+				if (core::analysis::isCallOf(node,ext.getRecfunToFun())) {
 					return recFun;
 				}
 
-				if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
-					return call->getArgument(0);
-				}
-
-				if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
-					return call->getArgument(0);
-				}
-
-				if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
-					return call->getArgument(0);
-				}
-
-				// not of interest either
+				// everything else remains untouched
 				return node;
-			});
+
+			}).as<core::CompoundStmtPtr>();
 
 
-			// replace all treeture types by their value types
-			body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
+			// if serialization should be applied, do so
+			if (serialize) {
 
-				// check whether it is a treeture type
-				if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
-					return lang::TreetureType(node).getValueType();
-				}
+				// get body, replace treeture operations and recFun calls
+				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
 
-				// not of interest either
-				return node;
-			});
+					// only interested in calls
+					auto call = node.isa<core::CallExprPtr>();
+					if (!call) return node;
 
+					if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
+						return call->getArgument(0);
+					}
+
+					if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
+						return call->getArgument(0);
+					}
+
+					if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
+						return call->getArgument(0);
+					}
+
+					// not of interest either
+					return node;
+				}).as<core::CompoundStmtPtr>();
+
+
+				// replace all treeture types by their value types
+				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
+
+					// check whether it is a treeture type
+					if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
+						return lang::TreetureType(node).getValueType();
+					}
+
+					// not of interest either
+					return node;
+				}).as<core::CompoundStmtPtr>();
+
+				// also remove the treeture wrapper from the result type
+				resType = lang::TreetureType(resType).getValueType();
+			}
 
 			// build resulting function type
 			auto funType = builder.functionType(
 				in->getFunctionType()->getParameterType(0),
-				lang::TreetureType(in->getFunctionType()->getReturnType()).getValueType()
+				resType
 			);
 
 			// build up resulting function
-			return builder.lambdaExpr(funType,{ in->getParameterList()[0] }, body.as<core::CompoundStmtPtr>());
+			return builder.lambdaExpr(funType,{ in->getParameterList()[0] }, body);
 		}
 
 
@@ -245,7 +268,7 @@ namespace backend {
 			auto inVal = builder.deref(in);
 
 			// get instantiated step implementation
-			auto stepFun = inlineStep(fun.getStepCases()[0],recFun);
+			auto stepFun = inlineStep(fun.getStepCases()[0],recFun,true);
 
 			// create the body of the lambda
 			auto body = builder.compoundStmt(
@@ -270,6 +293,59 @@ namespace backend {
 			// and the resulting lambda expression
 			return builder.lambdaExpr(recFun,lambdaDef);
 		}
+
+		core::ExpressionPtr getParallelImplementation(const string& wi_name, const lang::PrecOperation& op) {
+			auto& mgr = op.getFunction().getBaseCaseTest()->getNodeManager();
+			core::IRBuilder builder(mgr);
+			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+			auto& ext2 = mgr.getLangExtension<AllScaleBackendModule>();
+
+			// -- build up the sequential implementation of this function --
+
+			assert_eq(1,op.getFunctions().size())
+				<< "Mutual recursive functions not yet supported!";
+
+			// get the function to be encoded
+			const auto& fun = op.getFunction();
+
+			// get the type of the resulting function
+			auto funType = builder.functionType(op.getParameterType(), op.getTreetureType().toIRType());
+
+			// create the recursive function reference
+			auto recFun =
+					builder.callExpr(
+						ext2.getRecSpawnWorkItem(),
+						builder.callExpr(
+							ext2.getCreateWorkItemDescriptionReference(),
+							builder.getIdentifierLiteral(wi_name),
+							builder.getTypeLiteral(builder.tupleType({ op.getParameterType() })),
+							builder.getTypeLiteral(op.getResultType())
+						)
+					);
+
+			// get the in-parameter
+			auto in = builder.variable(builder.refType(fun.getParameterType()));
+			auto inVal = builder.deref(in);
+
+			// get instantiated step implementation
+			auto stepFun = inlineStep(fun.getStepCases()[0],recFun,false);
+
+			// create the body of the lambda
+			auto body = builder.compoundStmt(
+				builder.ifStmt(
+					// check the base case test
+					builder.callExpr(fun.getBaseCaseTest(), inVal),
+					// if in the base case => run base case
+					builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(fun.getBaseCases()[0],inVal))),
+					// else run step case
+					builder.returnStmt(builder.callExpr(stepFun,inVal))
+				)
+			);
+
+			// build the resulting lambda
+			return builder.lambdaExpr(funType,{in},body);
+		}
+
 
 
 		// TODO: add closure support
@@ -338,7 +414,6 @@ namespace backend {
 		WorkItemVariant getProcessVariant(const lang::PrecOperation& op) {
 
 			// pick the base case implementation
-			// TODO: create the actual implementation
 			// TODO: implement a tool converting a bind into a function
 			auto impl = getSequentialImplementation(op);
 
@@ -370,12 +445,20 @@ namespace backend {
 			return WorkItemVariant(builder.lambdaExpr(funType, lambda->getParameterList(), body));
 		}
 
-		WorkItemVariant getSplitVariant(const lang::PrecOperation& op) {
-			// return the process function for now
-			return getProcessVariant(op);
+		WorkItemVariant getSplitVariant(const std::string& wi_name, const lang::PrecOperation& op) {
+
+			// pick the base case implementation
+			// TODO: implement a tool converting a bind into a function
+			auto impl = getParallelImplementation(wi_name,op);
+
+			// convert into a lambda, making captured parameters explicit
+			core::LambdaExprPtr lambda = convertToLambda(impl);
+
+			// use this lambda for creating the work item variant
+			return WorkItemVariant(lambda);
 		}
 
-		core::NodePtr convertPrecOperator(const core::NodePtr& code) {
+		core::NodePtr convertPrecOperator(const be::Converter& converter, const core::NodePtr& code) {
 
 			// only interested in prec operators
 			if (!lang::PrecOperation::isPrecOperation(code)) return code;
@@ -385,6 +468,9 @@ namespace backend {
 			core::IRBuilder builder(mgr);
 			auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
 
+			// get a name for the work item
+			const auto& name = converter.getNameManager().getName(code,"wi");
+
 			// parse prec operation
 			lang::PrecOperation op = lang::PrecOperation::fromIR(code.as<core::ExpressionPtr>());
 
@@ -392,10 +478,10 @@ namespace backend {
 			auto process = getProcessVariant(op);
 
 			// extract a parallel implementation of the prec operation
-			auto split = getSplitVariant(op);
+			auto split = getSplitVariant(name,op);
 
 			// wrap it up in a work item
-			WorkItemDescription desc("name",process,split);
+			WorkItemDescription desc(name,process,split);
 
 			// create a function wrapping the spawn call (need for bind)
 			core::VariableList params;
@@ -434,7 +520,9 @@ namespace backend {
 	core::NodePtr PrecConverter::process(const be::Converter& converter, const core::NodePtr& code) {
 
 		// replace all prec calls with actual lambdas
-		auto res = core::transform::transformBottomUp(code, convertPrecOperator, core::transform::globalReplacement);
+		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur){
+			return convertPrecOperator(converter,cur);
+		}, core::transform::globalReplacement);
 
 		// check that the result is properly typed
 		assert_true(core::checks::check(res).empty())

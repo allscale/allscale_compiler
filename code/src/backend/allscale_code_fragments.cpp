@@ -43,6 +43,18 @@ namespace backend {
 				return getDescriptionType(context, desc);
 			}
 
+			const WorkItemDescriptionInfo& lookupDescriptionType(const std::string& name) const {
+				// search the corresponding work item
+				for(const auto& cur : index) {
+					if (cur.first.getName() == name) {
+						return cur.second;
+					}
+				}
+				// this should not happen
+				assert_fail() << "Requesting unresolved Work-Item name: " << name << "\n";
+				return index.begin()->second;
+			}
+
 		private:
 
 			// a utility for returning results of generator functions within this class
@@ -52,22 +64,33 @@ namespace backend {
 				backend::c_ast::CodeFragmentPtr definition;
 			};
 
+			struct WorkItemDescInfo {
+				backend::c_ast::TypePtr type;
+				backend::c_ast::NamedTypePtr defining_type;
+				backend::c_ast::CodeFragmentPtr definition;
+			};
+
 			void resolve(backend::ConversionContext& context, const WorkItemDescription& desc) {
 
 				// check that it is not yet resolved
 				assert_true(index.find(desc) == index.end());
-
-				// TODO: built up
-				auto definition = backend::c_ast::CCodeFragment::createNew(fragmentManager);
 
 				// 1) get a name
 				auto name = getName(desc);
 
 				// 2) create the struct containing the function returning the name
 				auto nameFactory = createNameFactory(name);
-				definition->addDependency(nameFactory.definition);
 
-				// 3) convert variants
+				// 3) create the work item description code
+				auto descInfo = createWorkItemDescription(context,desc,name,nameFactory);
+
+				// 4) register info without variants before resolving variants for supporting recursive references
+				index[desc] = WorkItemDescriptionInfo{
+					descInfo.definition,
+					descInfo.type
+				};
+
+				// 5) convert variants
 				std::vector<TypeInfo> variants;
 				int i = 0;
 				variants.push_back(createVariantImplementation(context,desc.getProcessVariant(),name,i++));
@@ -76,14 +99,8 @@ namespace backend {
 					variants.push_back(createVariantImplementation(context,cur,name,i++));
 				}
 
-				// 4) create work-item description using clause (type alias)
-				auto descInfo = createWorkItemDescription(context,desc,name,nameFactory,variants);
-
-				// 5) build up result
-				index[desc] = WorkItemDescriptionInfo{
-					descInfo.definition,
-					descInfo.type
-				};
+				// 6) add variants to the description info
+				addWorkItemVariants(descInfo, variants);
 			}
 
 			std::string getName(const WorkItemDescription& desc) {
@@ -201,7 +218,7 @@ namespace backend {
 				return TypeInfo{ strct, dec, def };
 			}
 
-			TypeInfo createWorkItemDescription(backend::ConversionContext& context, const WorkItemDescription& desc, const std::string& name, const TypeInfo& nameFactory, const std::vector<TypeInfo>& variants) {
+			WorkItemDescInfo createWorkItemDescription(backend::ConversionContext& context, const WorkItemDescription& desc, const std::string& name, const TypeInfo& nameFactory) {
 
 				// get the C-Node Manager
 				auto& mgr = getCNodeManager();
@@ -222,9 +239,6 @@ namespace backend {
 				// add list of template parameters
 				definition->parameters.push_back(resTypeInfo.rValueType);
 				definition->parameters.push_back(nameFactory.type);
-				for(const auto& cur : variants) {
-					definition->parameters.push_back(cur.type);
-				}
 
 				// create the defining type alias
 				auto alias = backend::c_ast::alias(namedType,definition);
@@ -235,12 +249,22 @@ namespace backend {
 				// add dependencies to parameter types
 				fragment->addDependency(nameFactory.declaration);
 				fragment->addRequirement(nameFactory.definition);
+
+				return WorkItemDescInfo{ namedType, definition, fragment };
+			}
+
+			void addWorkItemVariants(const WorkItemDescInfo& info, const std::vector<TypeInfo>& variants) {
+
+				// add work item variants as parameters to the definition
 				for(const auto& cur : variants) {
-					fragment->addDependency(cur.declaration);
-					fragment->addRequirement(cur.definition);
+					info.defining_type->parameters.push_back(cur.type);
 				}
 
-				return TypeInfo{ namedType, fragment, fragment };
+				// add dependencies to parameter types
+				for(const auto& cur : variants) {
+					info.definition->addDependency(cur.declaration);
+					info.definition->addRequirement(cur.definition);
+				}
 
 			}
 
@@ -261,6 +285,10 @@ namespace backend {
 
 	const WorkItemDescriptionInfo& WorkItemDescriptions::getDescriptionType(backend::ConversionContext& context, const core::ExpressionPtr& desc) {
 		return getDescriptionType(context,WorkItemDescription::fromIR(desc));
+	}
+
+	const WorkItemDescriptionInfo& WorkItemDescriptions::getDescriptionType(insieme::backend::ConversionContext& context, const std::string& name) {
+		return impl->lookupDescriptionType(name);
 	}
 
 	std::ostream& WorkItemDescriptions::printTo(std::ostream& out) const {

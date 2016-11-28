@@ -68,6 +68,11 @@ namespace backend {
 		const WorkItemDescriptionInfo& getDescriptionType(insieme::backend::ConversionContext&, const insieme::core::ExpressionPtr&);
 
 		/**
+		 * Retrieves the type the description associated to the given name is mapped to.
+		 */
+		const WorkItemDescriptionInfo& getDescriptionType(insieme::backend::ConversionContext&, const std::string&);
+
+		/**
 		 * Prints this code fragment to some output stream.
 		 */
 		std::ostream& printTo(std::ostream&) const override;

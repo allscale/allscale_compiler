@@ -48,6 +48,11 @@ namespace backend {
 			auto& mgr = converter.getCNodeManager();
 			auto& fragmentManager = converter.getFragmentManager();
 
+			// only resolve the released type (and map all to this one)
+			if (!type.isReleased()) {
+				auto released = lang::TreetureType(type.getValueType(), true).toIRType();
+				return &context.getConverter().getTypeManager().getTypeInfo(context, released);
+			}
 
 			// resolve
 			auto elementTypeInfo = converter.getTypeManager().getTypeInfo(context, type.getValueType());
