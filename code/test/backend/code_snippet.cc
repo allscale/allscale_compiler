@@ -133,7 +133,8 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					int<4> main() {
-						auto p = 44;
+						var ref<int<4>> p;
+						scan("%d",p);
 						auto r = treeture_get(prec((build_recfun(
 							  (i : int<4>) -> bool { return i < 2; },
 							[ (i : int<4>) -> int<4> { return i; } ],
@@ -143,8 +144,8 @@ namespace backend {
 								auto b = treeture_run(step(i-2));
 								return treeture_done(treeture_get(a) + treeture_get(b));
 							} ]
-						)))(p));
-						print("fib(%d)=%d\n",p,r);
+						)))(*p));
+						print("fib(%d)=%d\n",*p,r);
 						return 0;
 					}
 				)"
@@ -157,6 +158,8 @@ namespace backend {
 
 		// compile to an actual binary
 		EXPECT_TRUE(backend::compileTo(fib, "fib_art",3));
+
+		// NOTE: run result with "echo N | ./fib_art"
 	}
 
 
