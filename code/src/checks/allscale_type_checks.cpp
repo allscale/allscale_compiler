@@ -54,13 +54,13 @@ namespace checks {
 			                 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
 
 		// check the tuple with the recursive step function arguments if we are checking a step case here
-//		if(operatorType->getParameterTypeList().size() == 3) {
-//			expectedParamType = funType.getParameterType(1);
-//			actualParamType = operatorType.getParameterType(2);
-//			if(expectedParamType != actualParamType)
-//				add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
-//												 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
-//		}
+		if(operatorType->getParameterTypeList().size() == 3) {
+			expectedParamType = funType.getParameterType(1);
+			actualParamType = operatorType.getParameterType(2);
+			if(expectedParamType != actualParamType)
+				add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
+												 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
+		}
 
 		// check return type
 		auto expectedReturnType = funType.getReturnType();

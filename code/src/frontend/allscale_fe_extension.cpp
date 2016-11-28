@@ -7,6 +7,7 @@
 #include "insieme/frontend/converter.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/transform/node_replacer.h"
+#include "insieme/core/transform/materialize.h"
 #include "insieme/utils/name_mangling.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
@@ -37,7 +38,7 @@ namespace frontend {
 			return core::transform::transformBottomUpGen(tagType, [](const core::MemberFunctionsPtr& memFuns) {
 				core::MemberFunctionList newMemFuns;
 				bool alreadyPresent = false;
-				for(const auto& memFun : memFuns) {
+				for(const auto& memFun : memFuns->getMembers()) {
 					if(memFun->getNameAsString() == insieme::utils::mangle("operator()")) {
 						if(alreadyPresent) {
 							continue;
@@ -47,6 +48,41 @@ namespace frontend {
 					newMemFuns.push_back(memFun);
 				}
 				return core::IRBuilder(memFuns->getNodeManager()).memberFunctions(newMemFuns);
+			});
+		}
+
+		core::LambdaExprPtr fixCallOperator(const core::LambdaExprPtr& oldOperator, const core::TupleTypePtr& recFunTupleType) {
+			core::IRBuilder builder(oldOperator->getNodeManager());
+			const auto& oldFunType = oldOperator->getFunctionType();
+			core::TypeList funTypeParamTypes(oldFunType->getParameterTypeList());
+			core::VariableList params(oldOperator->getParameterList()->getParameters());
+
+			// drop generated params and create mappings
+			for(unsigned i = 0; i < funTypeParamTypes.size() - 2; ++i) {
+				funTypeParamTypes.pop_back();
+				params.pop_back();
+				//TODO: create mappings
+			}
+			// add recfun tuple type and param
+			funTypeParamTypes.push_back(recFunTupleType);
+			params.push_back(builder.variable(core::transform::materialize(recFunTupleType)));
+
+			auto functionType = builder.functionType(funTypeParamTypes, oldFunType->getReturnType(), core::FK_MEMBER_FUNCTION);
+			return builder.lambdaExpr(functionType, params, oldOperator->getBody(), oldOperator->getReference()->getNameAsString());
+		}
+
+		core::TagTypePtr replaceCallOperator(const core::TagTypePtr& tagType, const core::LiteralPtr& operatorLit, const core::LambdaExprPtr& newOperator) {
+			return core::transform::transformBottomUpGen(tagType, [&](const core::MemberFunctionsPtr& memFuns) {
+				core::IRBuilder builder(memFuns->getNodeManager());
+				core::MemberFunctionList newMemFuns;
+				for(const auto& memFun : memFuns->getMembers()) {
+					core::ExpressionPtr impl = memFun->getImplementation();
+					if(impl == operatorLit) {
+						impl = builder.literal(newOperator->getType(), operatorLit->getValue());
+					}
+					newMemFuns.push_back(builder.memberFunction(memFun->isVirtual(), memFun->getNameAsString(), impl));
+				}
+				return builder.memberFunctions(newMemFuns);
 			});
 		}
 
@@ -123,6 +159,13 @@ namespace frontend {
 				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto tagType = tMap.at(genType);
 				auto newTagType = removeDuplicateCallOperators(tagType);
+
+				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
+				auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
+				newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
+
+				converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
+				converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
 				converter.getIRTranslationUnit().replaceType(genType, newTagType);
 			}
 

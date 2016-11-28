@@ -7,7 +7,7 @@ using namespace allscale::api::core;
 int main() {
 	; // this is required because of the clang compound source location bug
 
-	#pragma test expect_ir(R"({ var ref<treeture<int<4>,f>,f,f,plain> v0 = treeture_done(1); })")
+	#pragma test expect_ir(R"({ var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1); })")
 	{
 		auto a = done(1);
 	}
@@ -18,12 +18,12 @@ int main() {
 		decl struct __any_string__step;
 		decl IMP__operator_call_:const __any_string__cutoff::(int<4>) -> bool;
 		decl IMP__operator_call_:const __any_string__base::(int<4>) -> int<4>;
-		decl IMP__operator_call_:const __any_string__step::(int<4>, ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> treeture<int<4>,f>;
+		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
-		def struct __any_string__step {
-			const function IMP__operator_call_ = (v133 : ref<int<4>,f,f,plain>, v134 : ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> treeture<int<4>,f> {
-				return treeture_done(1);
+		def struct __any_string__cutoff {
+			const function IMP__operator_call_ = (v35 : ref<int<4>,f,f,plain>) -> bool {
+				return *v35<2;
 			}
 		};
 		def struct __any_string__base {
@@ -31,9 +31,9 @@ int main() {
 				return *v81;
 			}
 		};
-		def struct __any_string__cutoff {
-			const function IMP__operator_call_ = (v35 : ref<int<4>,f,f,plain>) -> bool {
-				return *v35<2;
+		def struct __any_string__step {
+			const function IMP__operator_call_ = (v133 : ref<int<4>,f,f,plain>, v134 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
+				return treeture_done(1);
 			}
 		};
 		{
