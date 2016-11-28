@@ -3,6 +3,7 @@
 // - check treeture validity (generic type components) -- based on "TreetureType" impl like "RefType"
 // - all elements in each list of build_recfun must be of the same type
 // - all elements in the tuple of prec must be of the same type
+// - checks for all the assertions in the ctors of PrecFunction and PrecOperation
 
 #pragma once
 
