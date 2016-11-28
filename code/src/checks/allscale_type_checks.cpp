@@ -24,9 +24,6 @@ namespace checks {
 
 		if(!allscaleExt.isCallOfLambdaToClosure(address)) return res;
 
-		// TODO remove
-		// LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a) => 'b>) -> ('a) => 'b")
-
 		// strip ref
 		auto initType = analysis::getArgument(address, 0)->getType();
 		if(analysis::isRefType(initType)) initType = analysis::getReferencedType(initType);
@@ -38,28 +35,39 @@ namespace checks {
 			return res;
 		}
 
+		auto funType = address->getType().as<FunctionTypePtr>();
+
+		//check that we found a call operator with the correct number of arguments
 		auto structType = lambdaType.getStruct();
 		auto operatorType = utils::extractCallOperatorType(structType);
-		if(!operatorType || operatorType->getParameterTypeList().size() != 2) {
-			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, "passed lambda is not provide a valid call operator", Message::ERROR));
+		if(!operatorType || operatorType->getParameterTypeList().size() < 2 || operatorType->getParameterTypeList().size() > 3
+				|| operatorType->getParameterTypeList().size() != funType.getParameterTypeList().size() + 1) {
+			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, "passed lambda does not provide a valid call operator", Message::ERROR));
 			return res;
 		}
-
-		auto funType = address->getType().as<FunctionTypePtr>();
 
 		// check first parameter type
 		auto expectedParamType = funType.getParameterType(0);
 		auto actualParamType = operatorType.getParameterType(1);
 		if(expectedParamType != actualParamType)
 			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
-			                 format("wrong parameter type for lambda, expected: %s actual %s", expectedParamType, actualParamType), Message::ERROR));
+			                 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
+
+		// check the tuple with the recursive step function arguments if we are checking a step case here
+//		if(operatorType->getParameterTypeList().size() == 3) {
+//			expectedParamType = funType.getParameterType(1);
+//			actualParamType = operatorType.getParameterType(2);
+//			if(expectedParamType != actualParamType)
+//				add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
+//												 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
+//		}
 
 		// check return type
-		auto expectedReturnTYpe = funType.getReturnType();
+		auto expectedReturnType = funType.getReturnType();
 		auto actualReturnType = operatorType.getReturnType();
-		if(expectedReturnTYpe != actualReturnType)
+		if(expectedReturnType != actualReturnType)
 			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
-			                 format("wrong return type for lambda, expected: %s actual %s", expectedReturnTYpe, actualReturnType), Message::ERROR));
+			                 format("wrong return type for lambda, expected: %s actual: %s", *expectedReturnType, *actualReturnType), Message::ERROR));
 
 		return res;
 	}
