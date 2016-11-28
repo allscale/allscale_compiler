@@ -7,6 +7,7 @@
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/frontend/extensions/test_pragma_extension.h"
 
+#include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/frontend/allscale_fe_extension.h"
 
@@ -29,7 +30,7 @@ namespace frontend {
 			}, [](insieme::core::NodeManager& mgr, insieme::core::lang::symbol_map& symbols) {
 				auto allscaleSymbols = mgr.getLangExtension<compiler::lang::AllscaleModule>().getSymbols();
 				symbols.insert(allscaleSymbols.begin(), allscaleSymbols.end());
-			});
+			}, [](const insieme::core::NodePtr& node) { return allscale::compiler::checks::check(node); });
 		}
 	}
 
