@@ -44,7 +44,7 @@ namespace frontend {
 				core::MemberFunctionList newMemFuns;
 				bool alreadyPresent = false;
 				for(const auto& memFun : memFuns->getMembers()) {
-					if(memFun->getNameAsString() == insieme::utils::mangle("operator()")) {
+					if(memFun->getNameAsString() == insieme::utils::getMangledOperatorCallName()) {
 						if(alreadyPresent) {
 							continue;
 						}
@@ -67,17 +67,38 @@ namespace frontend {
 			core::VariableList params(oldOperator->getParameterList()->getParameters());
 
 			// drop generated params and create mappings
+			core::VariableList removedParams;
 			for(unsigned i = 0; i < funTypeParamTypes.size() - 2; ++i) {
 				funTypeParamTypes.pop_back();
+				removedParams.insert(removedParams.begin(), params.back());
 				params.pop_back();
-				//TODO: create mappings
 			}
 			// add recfun tuple type and param
 			funTypeParamTypes.push_back(recFunTupleType);
-			params.push_back(builder.variable(core::transform::materialize(recFunTupleType)));
+			auto recfunTupleParam = builder.variable(core::transform::materialize(recFunTupleType));
+			params.push_back(recfunTupleParam);
+
+			// transform body and replace accesses to the dropped params with the desired accesses to the passed recfun tuple
+			auto body = core::transform::transformBottomUpGen(oldOperator->getBody(), [&](const core::CallExprPtr& call) {
+				// we only handle calls to the literal "recfun::IMP__operator_call_"
+				const auto& callee = call->getFunctionExpr();
+				if(auto lit = callee.isa<core::LiteralPtr>()) {
+					if(lit->getStringValue() == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
+						// here we need to replace the call
+						// the index of our tupple access relates to the index of the dropped variable in our removedParams list
+						const auto& originalParam = core::analysis::getArgument(call, 0);
+						auto index = std::find(removedParams.begin(), removedParams.end(), originalParam) - removedParams.begin();
+						//assert_lt((unsigned) index, removedParams.size()) << "recfun::IMP__operator_call_ to a variable " << *originalParam << " which has not been dropped";
+						if((unsigned) index < removedParams.size()) {
+							return builder.callExpr(lang::buildRecfunToFun(builder.accessComponent(builder.deref(recfunTupleParam), index)), core::analysis::getArgument(call, 1));
+						}
+					}
+				}
+				return call;
+			});
 
 			auto functionType = builder.functionType(funTypeParamTypes, oldFunType->getReturnType(), core::FK_MEMBER_FUNCTION);
-			return builder.lambdaExpr(functionType, params, oldOperator->getBody(), oldOperator->getReference()->getNameAsString());
+			return builder.lambdaExpr(functionType, params, body, oldOperator->getReference()->getNameAsString());
 		}
 
 		/**
@@ -177,12 +198,15 @@ namespace frontend {
 
 				// now we fix the call operator and replace it with a correctly translated one
 				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
-				auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
-				newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
+				// only fix the operator if it doesn't have the correct tuple type already
+				if(!oldOperatorLit->getType().as<core::FunctionTypePtr>()->getParameterType(2).isa<core::TupleTypePtr>()) {
+					auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
+					newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
 
-				// finally we communicate the changes to the IR-TU
-				converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
-				converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
+					// finally we communicate the changes to the IR-TU
+					converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
+					converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
+				}
 				converter.getIRTranslationUnit().replaceType(genType, newTagType);
 			}
 

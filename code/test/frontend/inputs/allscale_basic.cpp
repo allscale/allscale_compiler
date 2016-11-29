@@ -33,6 +33,9 @@ int main() {
 		};
 		def struct __any_string__step {
 			const function IMP__operator_call_ = (v133 : ref<int<4>,f,f,plain>, v134 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
+				recfun_to_fun(
+						tuple_member_access(*v134, 0ul, type_lit(recfun<int<4>,int<4>>))
+				)(*v133-1);
 				return treeture_done(1);
 			}
 		};
@@ -63,6 +66,7 @@ int main() {
 				[](int x)->bool { return x < 2; },
 				[](int x)->int { return x; },
 				[](int x, const auto& f) {
+					f(x - 1);
 					return done(1);
 				}
 			)
