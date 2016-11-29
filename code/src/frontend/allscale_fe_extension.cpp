@@ -36,6 +36,15 @@ namespace frontend {
 
 		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
 
+
+		core::ExpressionPtr removeUndesiredRefCasts(const core::ExpressionPtr& input) {
+			auto& refExt = input->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+			if(refExt.isCallOfRefCast(input) || refExt.isCallOfRefKindCast(input)) {
+				return core::analysis::getArgument(input, 0);
+			}
+			return input;
+		}
+
 		/**
 		 * Removes all duplicate call operators in the passed type
 		 */
@@ -61,7 +70,10 @@ namespace frontend {
 		 * The new operator will have the correct function type and a matching body which uses the passed recFun argument(s) correctly
 		 */
 		core::LambdaExprPtr fixCallOperator(const core::LambdaExprPtr& oldOperator, const core::TupleTypePtr& recFunTupleType) {
-			core::IRBuilder builder(oldOperator->getNodeManager());
+
+			auto& mgr = oldOperator->getNodeManager();
+			core::IRBuilder builder(mgr);
+			auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
 			const auto& oldFunType = oldOperator->getFunctionType();
 			core::TypeList funTypeParamTypes(oldFunType->getParameterTypeList());
 			core::VariableList params(oldOperator->getParameterList()->getParameters());
@@ -80,25 +92,21 @@ namespace frontend {
 
 			// transform body and replace accesses to the dropped params with the desired accesses to the passed recfun tuple
 			auto body = core::transform::transformBottomUpGen(oldOperator->getBody(), [&](const core::CallExprPtr& call) {
-				// we only handle calls to the literal "recfun::IMP__operator_call_"
-				const auto& callee = call->getFunctionExpr();
-				if(auto lit = callee.isa<core::LiteralPtr>()) {
-					if(lit->getStringValue() == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
-						// here we need to replace the call
-						// the index of our tupple access relates to the index of the dropped variable in our removedParams list
-						const auto& originalParam = core::analysis::getArgument(call, 0);
-						auto index = std::find(removedParams.begin(), removedParams.end(), originalParam) - removedParams.begin();
-						//assert_lt((unsigned) index, removedParams.size()) << "recfun::IMP__operator_call_ to a variable " << *originalParam << " which has not been dropped";
-						if((unsigned) index < removedParams.size()) {
-							return builder.callExpr(lang::buildRecfunToFun(builder.accessComponent(builder.deref(recfunTupleParam), index)), core::analysis::getArgument(call, 1));
-						}
+				if(refExt.isCallOfRefDeref(call)) {
+					auto inner = call->getArgument(0);
+					// here we need to replace the call
+					// the index of our tuple access relates to the index of the dropped variable in our removedParams list
+					auto index = std::find(removedParams.begin(), removedParams.end(), inner) - removedParams.begin();
+					if((unsigned) index < removedParams.size()) {
+						return builder.accessComponent(builder.deref(recfunTupleParam), index);
 					}
 				}
 				return call;
 			});
 
 			auto functionType = builder.functionType(funTypeParamTypes, oldFunType->getReturnType(), core::FK_MEMBER_FUNCTION);
-			return builder.lambdaExpr(functionType, params, body, oldOperator->getReference()->getNameAsString());
+			auto ret = builder.lambdaExpr(functionType, params, body, oldOperator->getReference()->getNameAsString());
+			return ret;
 		}
 
 		/**
@@ -219,16 +227,6 @@ namespace frontend {
 			return lang::buildTreetureDone(converter.convertCxxArgExpr(call->getArg(0)));
 		}
 
-		//clang::CallExpr* extractCallExpr(clang::Expr* node) {
-		//	if(auto call = llvm::dyn_cast<clang::CallExpr>(node)) {
-		//		return call;
-		//	} else if(auto materialize = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(node)) {
-		//		return extractCallExpr(materialize->GetTemporaryExpr());
-		//	} else if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(node)) {
-		//		return extractCallExpr(construct->getArg(0));
-		//	}
-		//	return nullptr;
-		//}
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
@@ -290,16 +288,46 @@ namespace frontend {
 	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
 		                                                      insieme::frontend::conversion::Converter& converter) {
 		core::IRBuilder builder(irExpr->getNodeManager());
+		auto& basic = irExpr->getNodeManager().getLangBasic();
+
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
-			// replace call to operator() on prec return value (closure) with simple call
 			auto funExpr = call->getFunctionExpr();
-			auto funTy = funExpr->getType().as<core::FunctionTypePtr>();
-			auto funParms = funTy->getParameterTypeList();
-			if(funTy->isMemberFunction()) {
-				auto thisType = core::analysis::getReferencedType(funParms[0]);
-				if(auto calleeFunType = thisType.isa<core::FunctionTypePtr>()) {
-					core::IRBuilder builder(irExpr->getNodeManager());
-					return builder.callExpr(builder.deref(core::analysis::getArgument(call, 0)), core::analysis::getArgument(call, 1));
+
+			// replace calls to operator() on intercepted types
+			{
+				auto funTy = funExpr->getType().as<core::FunctionTypePtr>();
+				auto funParms = funTy->getParameterTypeList();
+				if(funTy->isMemberFunction()) {
+					// on prec return value (closure) with simple call
+					auto thisType = core::analysis::getReferencedType(funParms[0]);
+					if(auto calleeFunType = thisType.isa<core::FunctionTypePtr>()) {
+						core::IRBuilder builder(irExpr->getNodeManager());
+						return builder.callExpr(builder.deref(core::analysis::getArgument(call, 0)), core::analysis::getArgument(call, 1));
+					}
+					// on call operator of recfun
+					if(auto lit = funExpr.isa<core::LiteralPtr>()) {
+						if(lit->getStringValue() == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
+							const auto& originalThis = core::analysis::getArgument(call, 0);
+							return builder.callExpr(lang::buildRecfunToFun(builder.deref(originalThis)), core::analysis::getArgument(call, 1));
+						}
+					}
+				}
+			}
+
+			// for already translated functions, if they were semantically mapped, don't materialize
+			if(core::analysis::isRefType(call->getType())) {
+				if(auto referencedType = core::analysis::getReferencedType(call->getType())) {
+					if(lang::isTreeture(referencedType) || lang::isRecFun(referencedType)) {
+						return builder.callExpr(referencedType, funExpr, call->getArgumentDeclarations());
+					}
+				}
+			}
+
+			// unwrap type instantiation
+			if(auto calleeCall = funExpr.isa<core::CallExprPtr>()) {
+				auto innerFunExpr = calleeCall->getFunctionExpr();
+				if(basic.isTypeInstantiation(innerFunExpr)) {
+					funExpr = core::analysis::getArgument(calleeCall, 1);
 				}
 			}
 
@@ -308,6 +336,9 @@ namespace frontend {
 				auto name = lit->getStringValue();
 				if(name == "treeture::IMP_get") {
 					return lang::buildTreetureGet(builder.deref(core::analysis::getArgument(call, 0)));
+				}
+				if(name == insieme::utils::mangle("allscale::api::core::run")) {
+					return lang::buildTreetureRun(removeUndesiredRefCasts(core::analysis::getArgument(call, 0)));
 				}
 			}
 		}
@@ -340,7 +371,9 @@ namespace frontend {
 		}
 
 		// handle conversion
-		if(typeName == "allscale::api::core::detail::completed_task" || typeName == "allscale::api::core::impl::reference::treeture") {
+		if(typeName == "allscale::api::core::detail::completed_task" || typeName == "allscale::api::core::impl::reference::treeture"
+				|| typeName == "allscale::api::core::impl::reference::unreleased_treeture"
+				|| typeName == "allscale::api::core::impl::sequential::lazy_unreleased_treeture") {
 			auto innerType = irType.as<core::GenericTypePtr>()->getTypeParameter(0);
 			if(core::analysis::isRefType(innerType)) { innerType = core::analysis::getReferencedType(innerType); }
 			return (core::GenericTypePtr) lang::TreetureType(innerType, false);
@@ -357,7 +390,6 @@ namespace frontend {
 		                                                                           const core::ExpressionPtr& varInit,
 		                                                                           insieme::frontend::conversion::Converter& converter) {
 		core::IRBuilder builder(var->getNodeManager());
-		auto& refExt = var->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
 
 		// not all VarDecls also have an initialization
 		if(varInit) {
@@ -382,12 +414,7 @@ namespace frontend {
 
 			// handle treetures
 			if(lang::isTreeture(initT)) {
-				auto irInit = varInit;
-				// remove unnecessary refCasts
-				if(refExt.isCallOfRefCast(irInit)) {
-					irInit = core::analysis::getArgument(irInit, 0);
-				}
-				return {var, irInit};
+				return {var, removeUndesiredRefCasts(varInit)};
 			}
 		}
 		return {var, varInit};
@@ -400,7 +427,7 @@ namespace frontend {
 		dumpReadable(prog);
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
-//		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
+		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
 
 		return prog;
 	}

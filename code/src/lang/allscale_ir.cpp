@@ -24,7 +24,7 @@ namespace lang {
 		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 
 		// check given node type
-		assert_true(isRecFun(type)) << "Given node " << *node << " is not a RecFun type!";
+		assert_true(isRecFun(type)) << "Given node " << *node << " is not a RecFun type!\nType: " << *type;
 
 		*this = RecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
@@ -66,7 +66,7 @@ namespace lang {
 		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 
 		// check given node type
-		assert_true(isTreeture(type)) << "Given node " << *node << " is not a Treeture type!";
+		assert_true(isTreeture(type)) << "Given node " << *node << " is not a Treeture type!\nType: " << *type << std::endl;
 
 		*this = TreetureType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
