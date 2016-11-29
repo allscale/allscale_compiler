@@ -34,6 +34,11 @@ namespace frontend {
 
 	namespace {
 
+		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
+
+		/**
+		 * Removes all duplicate call operators in the passed type
+		 */
 		core::TagTypePtr removeDuplicateCallOperators(const core::TagTypePtr& tagType) {
 			return core::transform::transformBottomUpGen(tagType, [](const core::MemberFunctionsPtr& memFuns) {
 				core::MemberFunctionList newMemFuns;
@@ -51,6 +56,10 @@ namespace frontend {
 			});
 		}
 
+		/**
+		 * Generates a new call operator as a replacement for the given old one.
+		 * The new operator will have the correct function type and a matching body which uses the passed recFun argument(s) correctly
+		 */
 		core::LambdaExprPtr fixCallOperator(const core::LambdaExprPtr& oldOperator, const core::TupleTypePtr& recFunTupleType) {
 			core::IRBuilder builder(oldOperator->getNodeManager());
 			const auto& oldFunType = oldOperator->getFunctionType();
@@ -71,6 +80,9 @@ namespace frontend {
 			return builder.lambdaExpr(functionType, params, oldOperator->getBody(), oldOperator->getReference()->getNameAsString());
 		}
 
+		/**
+		 * Replaces the call operator operatorLit inside the given tagType with newOperator
+		 */
 		core::TagTypePtr replaceCallOperator(const core::TagTypePtr& tagType, const core::LiteralPtr& operatorLit, const core::LambdaExprPtr& newOperator) {
 			return core::transform::transformBottomUpGen(tagType, [&](const core::MemberFunctionsPtr& memFuns) {
 				core::IRBuilder builder(memFuns->getNodeManager());
@@ -90,6 +102,7 @@ namespace frontend {
 			                               TranslationStateManager& translationState) {
 			assert_eq(call->getNumArgs(), 1) << "handlePrecCall expects 1 argument only";
 			auto ret = lang::buildPrec(toVector(converter.convertCxxArgExpr(call->getArg(0))));
+			// register the resulting type in our type mappings for later lookpu
 			translationState.getTypeMappings()[call->getCallReturnType()->getUnqualifiedDesugaredType()] = ret->getType();
 			return ret;
 		}
@@ -106,7 +119,7 @@ namespace frontend {
 
 			core::TypePtr paramType = nullptr;
 			core::ExpressionPtr cutoffBind = nullptr;
-
+			// simply convert the lambda
 			{
 				auto cutoffFunClang = call->getArg(0);
 				auto cutoffIr = converter.convertExpr(cutoffFunClang);
@@ -124,7 +137,7 @@ namespace frontend {
 
 			core::TypePtr returnType = nullptr;
 			core::ExpressionPtr baseBind = nullptr;
-
+			// simply convert the lambda
 			{
 				auto baseFunClang = call->getArg(1);
 				auto baseIr = converter.convertExpr(baseFunClang);
@@ -143,7 +156,7 @@ namespace frontend {
 			// Handle step case
 
 			core::ExpressionPtr stepBind = nullptr;
-
+			// Here we have to do a bit more work. We convert the lambda and afterwards have to modify it a bit
 			{
 				auto stepFunClang = call->getArg(2);
 				auto stepIr = converter.convertExpr(stepFunClang);
@@ -156,14 +169,18 @@ namespace frontend {
 
 				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
 
+				// first we extract the generated struct
 				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto tagType = tMap.at(genType);
+				// and remove the duplicate call operators
 				auto newTagType = removeDuplicateCallOperators(tagType);
 
+				// now we fix the call operator and replace it with a correctly translated one
 				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
 				auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
 				newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
 
+				// finally we communicate the changes to the IR-TU
 				converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
 				converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
 				converter.getIRTranslationUnit().replaceType(genType, newTagType);
@@ -191,7 +208,7 @@ namespace frontend {
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
-
+		// we handle certain calls specially, which we differentiate by their callee's name
 		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
 			auto decl = call->getCalleeDecl();
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
@@ -231,6 +248,14 @@ namespace frontend {
 
 	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& typeIn, insieme::frontend::conversion::Converter& converter) {
 		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
+
+		// if the passed type is an AutoType and is dependent, we can't really translate it correctly.
+		// we create a dummy replacement type to move forward in the translation and assert this replacement doesn'T survive in the final IR
+		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
+			if(autoType->isDependentType()) { return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER); }
+		}
+
+		// Certain type-mappings may have already been determined. Here we do the lookup
 		auto& typeMappings = getTranslationStateManager().getTypeMappings();
 		if(typeMappings.find(type) != typeMappings.end()) {
 			return typeMappings.at(type);
@@ -254,6 +279,7 @@ namespace frontend {
 				}
 			}
 
+			// certain other calls identified by the callee's name get treated differently
 			if(auto lit = funExpr.isa<core::LiteralPtr>()) {
 				auto name = lit->getStringValue();
 				if(name == "treeture::IMP_get") {
@@ -269,6 +295,7 @@ namespace frontend {
 		// extract relevant type
 		const clang::Type* type = typeIn.getTypePtr();
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
+			if(autoType->isDependentType()) { return irType; }
 			if(autoType->isSugared()) { type = autoType->desugar().getTypePtr(); }
 			if(autoType->isDeduced()) { type = autoType->getDeducedType().getTypePtr(); }
 		}
@@ -308,6 +335,7 @@ namespace frontend {
 		core::IRBuilder builder(var->getNodeManager());
 		auto& refExt = var->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
 
+		// not all VarDecls also have an initialization
 		if(varInit) {
 			// Change variable type for calls to AllScale API functions
 			auto initT = varInit->getType();
@@ -342,7 +370,14 @@ namespace frontend {
 	}
 
 	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& prog) {
+		core::IRBuilder builder(prog->getNodeManager());
+
+		// temporarily dump the generated IR in a readable format
 		dumpReadable(prog);
+
+		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
+//		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
+
 		return prog;
 	}
 }
