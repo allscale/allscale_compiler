@@ -33,7 +33,7 @@ namespace lang {
 		LANG_EXT_LITERAL(TreetureDone, "treeture_done", "('a) -> treeture<'a,f>")
 		LANG_EXT_LITERAL(TreetureRun, "treeture_run", "(treeture<'a, f>) -> treeture<'a, t>")
 
-		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a,f>,treeture<'b,f>,('a,'b)=>'c)->treeture<'c,f>")
+		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a,f>,treeture<'b,f>,('a,'b)->'c)->treeture<'c,f>")
 
 		LANG_EXT_LITERAL(TreetureGet, "treeture_get", "(treeture<'a,'r>) -> 'a")
 		LANG_EXT_LITERAL(TreetureLeft, "treeture_left", "(treeture<'a,'r>) -> treeref")
