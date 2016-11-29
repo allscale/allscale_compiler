@@ -2,6 +2,7 @@
 
 #include "insieme/backend/c_ast/c_ast_utils.h"
 #include "insieme/backend/type_manager.h"
+#include "insieme/backend/function_manager.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -139,6 +140,50 @@ namespace backend {
 
 				// convert to member call
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
+			};
+
+			table[ext.getTreetureCombine()] = OP_CONVERTER {
+				core::IRBuilder builder(call->getNodeManager());
+
+				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
+				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
+				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
+
+				// add dependency to result type
+				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
+
+				// create a wrapper for the operator part
+				auto paramType0 = lang::TreetureType(ARG(0)).getValueType();
+				auto paramType1 = lang::TreetureType(ARG(1)).getValueType();
+				auto resType = lang::TreetureType(call->getType()).getValueType();
+
+				auto funType = builder.functionType({ paramType0, paramType1 }, resType );
+				auto param0 = builder.variable(builder.refType(paramType0));
+				auto param1 = builder.variable(builder.refType(paramType1));
+
+				auto body = builder.compoundStmt(
+						builder.returnStmt(
+								builder.callExpr(
+										ARG(2),
+										builder.deref(param0),
+										builder.deref(param1)
+								)
+						)
+				);
+
+				auto lambda = builder.lambdaExpr(funType, { param0, param1 }, body);
+				auto info = context.getConverter().getFunctionManager().getInfo(context, lambda);
+				context.addDependency(info.prototype);
+				context.addRequirement(info.definition);
+
+				// create a call to treeture_combine
+				return c_ast::call(
+						C_NODE_MANAGER->create("allscale::runtime::treeture_combine"),
+						CONVERT_ARG(0),
+						CONVERT_ARG(1),
+						c_ast::ref(info.function->name)
+				);
 			};
 		}
 

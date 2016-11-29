@@ -195,6 +195,20 @@ namespace backend {
 			// if serialization should be applied, do so
 			if (serialize) {
 
+				// a utility to remove treeture types
+				auto removeTreetures = [&](const core::NodePtr& node) {
+					return core::transform::transformBottomUp(node, [&](const core::NodePtr& node)->core::NodePtr {
+
+						// check whether it is a treeture type
+						if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
+							return lang::TreetureType(node).getValueType();
+						}
+
+						// not of interest either
+						return node;
+					});
+				};
+
 				// get body, replace treeture operations and recFun calls
 				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
 
@@ -214,22 +228,19 @@ namespace backend {
 						return call->getArgument(0);
 					}
 
+					if (core::analysis::isCallOf(call,ext.getTreetureCombine())) {
+						auto arg0 = removeTreetures(call->getArgument(0)).as<core::ExpressionPtr>();
+						auto arg1 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
+						return builder.callExpr(call->getArgument(2),arg0,arg1);
+					}
+
 					// not of interest either
 					return node;
 				}).as<core::CompoundStmtPtr>();
 
 
 				// replace all treeture types by their value types
-				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
-
-					// check whether it is a treeture type
-					if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
-						return lang::TreetureType(node).getValueType();
-					}
-
-					// not of interest either
-					return node;
-				}).as<core::CompoundStmtPtr>();
+				body = removeTreetures(body).as<core::CompoundStmtPtr>();
 
 				// also remove the treeture wrapper from the result type
 				resType = lang::TreetureType(resType).getValueType();

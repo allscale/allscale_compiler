@@ -101,7 +101,7 @@ namespace backend {
 
 	}
 
-	TEST(CodeSnippet, Fib) {
+	TEST(CodeSnippet, FibEager) {
 
 		NodeManager mgr;
 
@@ -129,7 +129,35 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
 	}
 
-	TEST(DISABLED_CodeSnippet, FibFull) {
+	TEST(CodeSnippet, FibLazy) {
+
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+					prec((build_recfun(
+						  (i : int<4>) -> bool { return i < 2; },
+						[ (i : int<4>) -> int<4> { return i; } ],
+						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+							let step = recfun_to_fun(steps.0);
+							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
+							return treeture_combine(step(i-1),step(i-2),add);
+						} ]
+					)))
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
+	}
+
+
+	TEST(DISABLED_CodeSnippet, FibEagerFull) {
 
 		NodeManager mgr;
 
@@ -160,9 +188,44 @@ namespace backend {
 		ASSERT_TRUE(code);
 
 		// compile to an actual binary
-		EXPECT_TRUE(backend::compileTo(fib, "fib_art",3));
+		EXPECT_TRUE(backend::compileTo(fib, "fib_eager_art",3));
 
-		// NOTE: run result with "echo N | ./fib_art"
+		// NOTE: run result with "echo N | ./fib_eager_art"
+	}
+
+	TEST(DISABLED_CodeSnippet, FibLazyFull) {
+
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+					int<4> main() {
+						var ref<int<4>> p;
+						scan("%d",p);
+						auto r = treeture_get(prec((build_recfun(
+							  (i : int<4>) -> bool { return i < 2; },
+							[ (i : int<4>) -> int<4> { return i; } ],
+							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+								let step = recfun_to_fun(steps.0);
+								let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
+								return treeture_combine(step(i-1),step(i-2),add);
+							} ]
+						)))(*p));
+						print("fib(%d)=%d\n",*p,r);
+						return 0;
+					}
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// compile to an actual binary
+		EXPECT_TRUE(backend::compileTo(fib, "fib_lazy_art",3));
+
+		// NOTE: run result with "echo N | ./fib_lazy_art"
 	}
 
 
