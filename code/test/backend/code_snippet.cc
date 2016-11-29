@@ -8,6 +8,9 @@
 
 #include "allscale/compiler/lang/allscale_ir.h"
 
+
+#include "../frontend/test_utils.inc"
+
 namespace allscale {
 namespace compiler {
 namespace backend {
@@ -160,6 +163,71 @@ namespace backend {
 		EXPECT_TRUE(backend::compileTo(fib, "fib_art",3));
 
 		// NOTE: run result with "echo N | ./fib_art"
+	}
+
+
+	TEST(CodeSnippet, CppInputEmptyMain) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+
+				int main() {
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
+
+	TEST(DISABLED_CodeSnippet, CppFib) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include <iostream>
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+
+				int fib(int x) {
+					auto f = prec(fun(
+						[](int x) { return x < 2; },
+						[](int x) { return x; },
+						[](int x, auto& rec) {
+							return done(3);
+						}
+					));
+					return f(x).get();
+				}
+
+				int main() {
+					std::cout << fib(12) << "\n";
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
 	}
 
 
