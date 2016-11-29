@@ -13,7 +13,7 @@ namespace utils {
 	MemberFunctionPtr extractCallOperator(const StructPtr& sourceLambda) {
 		auto mems = sourceLambda->getMemberFunctions();
 		for(const auto& mem : mems) {
-			if(mem->getNameAsString() == insieme::utils::mangle("operator()")) { return mem; }
+			if(mem->getNameAsString() == insieme::utils::getMangledOperatorCallName()) { return mem; }
 		}
 
 		assert_fail() << "Could not extract call operator from lambda:\n" << dumpPretty(sourceLambda);

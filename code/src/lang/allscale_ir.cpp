@@ -430,6 +430,16 @@ namespace lang {
 		return builder.callExpr(returnType, allS.getTreetureGet(), param);
 	}
 
+	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		RecFunType recFun(param);
+		auto returnType = builder.functionType(recFun.getParamType(), (core::GenericTypePtr) TreetureType(recFun.getReturnType(), false));
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getRecfunToFun(), param);
+	}
+
 	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
