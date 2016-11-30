@@ -64,6 +64,18 @@ auto testFunReturnPrec() {
 	);
 }
 
+auto testFunReturnPrecCallResult(int i) {
+	return prec(fun(
+			[](int x)->bool { return x < 2; },
+			[](int x)->int { return x; },
+			[](int x, const auto& f) {
+				f(x - 1);
+				return done(1);
+			}
+		)
+	)(i);
+}
+
 int main() {
 	; // this is required because of the clang compound source location bug
 
@@ -165,6 +177,20 @@ int main() {
 	)")
 	{
 		auto a = testFunReturnPrec();
+	}
+
+	//// call to function returning the result of prec
+	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
+		def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>>) -> treeture<int<4>,f> {
+			return
+	)", SIMPLE_PREC_CALL, R"((ref_kind_cast(i, type_lit(cpp_ref)));
+		};
+		{
+			var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrecCallResult(5);
+		}
+	)")
+	{
+		auto a = testFunReturnPrecCallResult(5);
 	}
 
 
