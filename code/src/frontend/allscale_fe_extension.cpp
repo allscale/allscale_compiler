@@ -180,7 +180,7 @@ namespace frontend {
 
 				auto cutoffClosureType = builder.functionType(paramType, builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
 
-				cutoffBind = lang::buildLambdaToClosure(cutoffIr, cutoffClosureType);
+				cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
 			}
 
 			// Handle Base Case
@@ -198,7 +198,7 @@ namespace frontend {
 
 				auto baseClosureType = builder.functionType(paramType, returnType, insieme::core::FK_CLOSURE);
 
-				baseBind = lang::buildLambdaToClosure(baseIr, baseClosureType);
+				baseBind = lang::buildCppLambdaToClosure(baseIr, baseClosureType);
 			}
 
 			translationStateManager.pushState({paramType, returnType});
@@ -217,7 +217,7 @@ namespace frontend {
 
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
-				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
+				stepBind = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
 
 				// first we extract the generated struct
 				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();

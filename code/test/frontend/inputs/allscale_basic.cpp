@@ -37,15 +37,15 @@ using namespace allscale::api::core;
 #define SIMPLE_PREC_CALL R"(
 	prec(
 			(build_recfun(
-					lambda_to_closure(
+					cpp_lambda_to_closure(
 							<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 							type_lit((int<4>) => bool)
 					),
-					[lambda_to_closure(
+					[cpp_lambda_to_closure(
 							<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
 							type_lit((int<4>) => int<4>)
 					)],
-					[lambda_to_closure(
+					[cpp_lambda_to_closure(
 							<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 							type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 					)]
@@ -232,15 +232,15 @@ int main() {
 		{
 			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
 					(build_recfun(
-							lambda_to_closure(
+							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 									type_lit((int<4>) => bool)
 							),
-							[lambda_to_closure(
+							[cpp_lambda_to_closure(
 									<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
 									type_lit((int<4>) => int<4>)
 							)],
-							[lambda_to_closure(
+							[cpp_lambda_to_closure(
 									<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 									type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 							)]

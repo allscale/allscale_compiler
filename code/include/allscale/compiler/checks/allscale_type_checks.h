@@ -8,7 +8,7 @@ namespace checks {
 
 #include "insieme/core/checks/check_macros.inc"
 
-	SIMPLE_CHECK(LambdaToClosure, CallExpr , false);
+	SIMPLE_CHECK(CppLambdaToClosure, CallExpr , false);
 
 #undef SIMPLE_CHECK
 

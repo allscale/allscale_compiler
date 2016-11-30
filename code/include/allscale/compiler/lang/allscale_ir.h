@@ -43,7 +43,7 @@ namespace lang {
 
 		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 
-		LANG_EXT_LITERAL(LambdaToClosure, "lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
+		LANG_EXT_LITERAL(CppLambdaToClosure, "cpp_lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
 	};
 
 	class RecFunType {
@@ -235,7 +235,7 @@ namespace lang {
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
+	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
 }
 }
