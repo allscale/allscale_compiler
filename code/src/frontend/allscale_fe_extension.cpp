@@ -5,6 +5,7 @@
 
 #include "insieme/frontend/clang.h"
 #include "insieme/frontend/converter.h"
+#include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/materialize.h"
@@ -247,6 +248,14 @@ namespace frontend {
 			return lang::buildTreetureDone(converter.convertCxxArgExpr(call->getArg(0)));
 		}
 
+	}
+
+	boost::optional<std::string> AllscaleExtension::isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const {
+		if(!setup.hasExtension<insieme::frontend::extensions::InterceptorExtension>()) {
+			return std::string("AllscaleExtension requires the InterceptorExtension to be loaded");
+		}
+		//TODO: ensure that we are running before the interceptor extension
+		return {};
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {

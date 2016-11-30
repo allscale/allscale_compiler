@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 
+#include <boost/optional.hpp>
+
 namespace allscale {
 namespace compiler {
 namespace frontend {
@@ -36,6 +38,8 @@ namespace frontend {
 		TranslationStateManager translationStateManager;
 
 		TranslationStateManager& getTranslationStateManager() { return translationStateManager; }
+
+		virtual boost::optional<std::string> isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const override;
 
 		virtual insieme::core::ExpressionPtr Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) override;
 
