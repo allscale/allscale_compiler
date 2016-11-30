@@ -271,27 +271,41 @@ namespace frontend {
 	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& typeIn, insieme::frontend::conversion::Converter& converter) {
 		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
 
+		// Certain type-mappings may have already been determined. Here we do the lookup
+		auto& typeMappings = getTranslationStateManager().getTypeMappings();
+		if(typeMappings.find(type) != typeMappings.end()) {
+			return typeMappings.at(type);
+		}
+
 		// if the passed type is an AutoType and is dependent, we can't really translate it correctly.
 		// we create a dummy replacement type to move forward in the translation and assert this replacement doesn'T survive in the final IR
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
 			if(autoType->isDependentType()) { return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER); }
 		}
 
-		// Certain type-mappings may have already been determined. Here we do the lookup
-		auto& typeMappings = getTranslationStateManager().getTypeMappings();
-		if(typeMappings.find(type) != typeMappings.end()) {
-			return typeMappings.at(type);
-		}
 		return {};
 	}
 
 	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
 		                                                      insieme::frontend::conversion::Converter& converter) {
-		core::IRBuilder builder(irExpr->getNodeManager());
-		auto& basic = irExpr->getNodeManager().getLangBasic();
+		auto& mgr = irExpr->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& basic = mgr.getLangBasic();
+		auto& allscaleExt = mgr.getLangExtension<lang::AllscaleModule>();
 
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
 			auto funExpr = call->getFunctionExpr();
+
+			// find prec type instantiation and fix it
+			if(auto calleeCall = funExpr.isa<core::CallExprPtr>()) {
+				auto innerFunExpr = calleeCall->getFunctionExpr();
+				if(basic.isTypeInstantiation(innerFunExpr) && call->getNumArguments() >= 2) {
+					auto thisArg = call->getArgument(0);
+					if(allscaleExt.isCallOfPrec(thisArg)) {
+						return builder.callExpr(thisArg, call->getArgument(1));
+					}
+				}
+			}
 
 			// replace calls to operator() on intercepted types
 			{
@@ -424,7 +438,7 @@ namespace frontend {
 		core::IRBuilder builder(prog->getNodeManager());
 
 		// temporarily dump the generated IR in a readable format
-		dumpReadable(prog);
+		//dumpReadable(prog);
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
 		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
