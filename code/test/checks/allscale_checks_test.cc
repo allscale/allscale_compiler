@@ -9,7 +9,7 @@ using namespace insieme::core;
 using namespace allscale::compiler::checks;
 using namespace allscale::compiler::lang;
 
-TEST(AllscaleChecks, LambdaToClosureCheck) {
+TEST(AllscaleChecks, CppLambdaToClosureCheck) {
 	NodeManager nm;
 	IRBuilder builder(nm);
 
@@ -25,14 +25,14 @@ TEST(AllscaleChecks, LambdaToClosureCheck) {
 	EXPECT_TRUE(check(init).empty()) << check(init);
 
 	auto correctFunType = builder.parseType("(int<4>) => int<8>").as<FunctionTypePtr>();
-	auto correctCall = buildLambdaToClosure(init, correctFunType);
+	auto correctCall = buildCppLambdaToClosure(init, correctFunType);
 	EXPECT_TRUE(check(correctCall).empty()) << check(correctCall);
 
 	auto wrongFunType1 = builder.parseType("(int<4>) => bool").as<FunctionTypePtr>();
-	auto wrongCall1 = buildLambdaToClosure(init, wrongFunType1);
+	auto wrongCall1 = buildCppLambdaToClosure(init, wrongFunType1);
 	EXPECT_FALSE(check(wrongCall1).empty());
 
 	auto wrongFunType2 = builder.parseType("(bool) => int<8>").as<FunctionTypePtr>();
-	auto wrongCall2 = buildLambdaToClosure(init, wrongFunType2);
+	auto wrongCall2 = buildCppLambdaToClosure(init, wrongFunType2);
 	EXPECT_FALSE(check(wrongCall2).empty());
 }
