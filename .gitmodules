@@ -3,13 +3,10 @@
 	url = https://github.com/insieme/insieme.git
 [submodule "api"]
 	path = api
-	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale_api.git
-[submodule "runtime"]
-	path = runtime
-	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale-runtime.git
+	url = git@10.10.5.114:allscale/allscale-api.git
 [submodule "runtime/allscale-runtime"]
 	path = runtime/allscale-runtime
-	url = git@goedis.dps.uibk.ac.at:herbert.jordan/allscale-runtime.git
+	url = git@10.10.5.114:allscale/allscale-runtime.git
 [submodule "runtime/hpx"]
 	path = runtime/hpx
 	url = https://github.com/STEllAR-GROUP/hpx.git
