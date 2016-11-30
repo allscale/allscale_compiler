@@ -52,6 +52,18 @@ using namespace allscale::api::core;
 			))
 	))"
 
+auto testFunReturnPrec() {
+	return prec(fun(
+			[](int x)->bool { return x < 2; },
+			[](int x)->int { return x; },
+			[](int x, const auto& f) {
+				f(x - 1);
+				return done(1);
+			}
+		)
+	);
+}
+
 int main() {
 	; // this is required because of the clang compound source location bug
 
@@ -139,6 +151,20 @@ int main() {
 				}
 			)
 		)(14);
+	}
+
+	//// call to function returning prec
+	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
+		def IMP_testFunReturnPrec = function () -> (int<4>) => treeture<int<4>,f> {
+			return
+	)", SIMPLE_PREC_CALL, R"(;
+		};
+		{
+			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> v0 = ref_cast(IMP_testFunReturnPrec() materialize , type_lit(f), type_lit(f), type_lit(cpp_rref));
+		}
+	)")
+	{
+		auto a = testFunReturnPrec();
 	}
 
 
