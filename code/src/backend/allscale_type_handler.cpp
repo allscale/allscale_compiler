@@ -83,7 +83,7 @@ namespace backend {
 			}
 
 			// intercept the treeture type
-			if (lang::TreetureType::isTreetureType(type)) {
+			if (lang::isTreeture(type)) {
 				return handleTreetureType(context,lang::TreetureType(type));
 			}
 

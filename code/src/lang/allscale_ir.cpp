@@ -34,10 +34,6 @@ namespace lang {
 		return builder.genericType("recfun", toVector(param, ret));
 	}
 
-	bool RecFunType::isRecFunType(const core::NodePtr& node) {
-		return isRecFun(node);
-	}
-
 	bool isRecFun(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
@@ -84,10 +80,6 @@ namespace lang {
 
 	TreetureType::operator core::GenericTypePtr() const {
 		return toIRType();
-	}
-
-	bool TreetureType::isTreetureType(const core::NodePtr& node) {
-		return isTreeture(node);
 	}
 
 	bool isTreeture(const core::NodePtr& node) {

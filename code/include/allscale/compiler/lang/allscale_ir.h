@@ -63,9 +63,6 @@ namespace lang {
 
 		operator core::GenericTypePtr() const;
 
-		//TODO: remove in favor of function isRecFun below
-		static bool isRecFunType(const core::NodePtr& node);
-
 		RecFunType(const RecFunType&) = default;
 		RecFunType(RecFunType&&) = default;
 		RecFunType& operator=(const RecFunType&) = default;
@@ -91,9 +88,6 @@ namespace lang {
 		core::GenericTypePtr toIRType() const;
 
 		operator core::GenericTypePtr() const;
-
-		//TODO: remove in favor of function isTreeture below
-		static bool isTreetureType(const core::NodePtr& node);
 
 		TreetureType(const TreetureType&) = default;
 		TreetureType(TreetureType&&) = default;
