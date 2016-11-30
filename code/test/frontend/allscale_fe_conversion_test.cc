@@ -1,5 +1,5 @@
 
-#include "insieme/frontend/utils/independent_test_utils.h"
+#include "insieme/frontend/utils/conversion_test_utils.h"
 
 #include "insieme/core/ir_node.h"
 #include "insieme/core/lang/extension.h"
@@ -20,7 +20,7 @@ namespace frontend {
 
 	namespace {
 		void runAllscaleTestOn(const string& filename) {
-			insieme::frontend::utils::runIndependentTestOn(filename, [](insieme::frontend::ConversionJob& job) {
+			insieme::frontend::utils::runConversionTestOn(filename, [](insieme::frontend::ConversionJob& job) {
 				auto apiIncludeDir = std::string(ALLSCALE_ROOT_DIR) + "api/code/include";
 				job.addIncludeDirectory(apiIncludeDir);
 				job.addInterceptedHeaderDir(apiIncludeDir);
@@ -34,7 +34,7 @@ namespace frontend {
 		}
 	}
 
-	TEST(AllScaleIndependentTest, Basic) {
+	TEST(AllScaleConversionTest, Basic) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
 	}
 
