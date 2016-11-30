@@ -29,9 +29,13 @@ namespace lang {
 		*this = RecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
 
-	RecFunType::operator core::GenericTypePtr() const {
+	core::GenericTypePtr RecFunType::toIRType() const {
 		core::IRBuilder builder(param->getNodeManager());
 		return builder.genericType("recfun", toVector(param, ret));
+	}
+
+	RecFunType::operator core::GenericTypePtr() const {
+		return toIRType();
 	}
 
 	bool RecFunType::isRecFunType(const core::NodePtr& node) {

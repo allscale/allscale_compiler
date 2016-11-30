@@ -190,6 +190,35 @@ namespace backend {
 
 		// intersect tuple component access code
 		{
+			auto& basic = manager.getLangBasic();
+
+			table[basic.getTupleMemberAccess()] = OP_CONVERTER {
+
+				// signature of operation:
+				//		('a, uint<8>, type<'b>) -> 'b
+
+				// add a dependency to the accessed type definition before accessing the type
+				const core::TypePtr tupleType = ARG(0)->getType();
+				const TypeInfo& info = context.getConverter().getTypeManager().getTypeInfo(context, tupleType);
+				context.getDependencies().insert(info.definition);
+
+				// create member access
+				core::ExpressionPtr index = ARG(1);
+				while(index->getNodeType() == core::NT_CastExpr) {
+					index = static_pointer_cast<const core::CastExpr>(index)->getSubExpression();
+				}
+				assert_eq(index->getNodeType(), core::NT_Literal);
+				auto field = C_NODE_MANAGER->create<c_ast::NamedType>(
+						C_NODE_MANAGER->create(index.as<core::LiteralPtr>()->getStringValue())
+				);
+
+				// access the component of the tuple
+				return c_ast::call(
+						c_ast::instantiate(C_NODE_MANAGER->create("hpx::util::get"),field),
+						CONVERT_ARG(0)
+				);
+			};
+
 			auto& refExt = manager.getLangExtension<core::lang::ReferenceExtension>();
 
 			table[refExt.getRefComponentAccess()] = OP_CONVERTER {
@@ -211,11 +240,11 @@ namespace backend {
 						C_NODE_MANAGER->create(index.as<core::LiteralPtr>()->getStringValue())
 				);
 
-				// access the type
-				return c_ast::call(
+				// access the component of the tuple
+				return c_ast::ref(c_ast::call(
 						c_ast::instantiate(C_NODE_MANAGER->create("hpx::util::get"),field),
 						c_ast::derefIfNotImplicit(CONVERT_ARG(0), ARG(0))
-				);
+				));
 			};
 
 		}

@@ -53,13 +53,23 @@ namespace lang {
 		RecFunType(const core::TypePtr& param, const core::TypePtr& ret);
 		RecFunType(const core::NodePtr& node);
 
-		core::TypePtr getParamType() {
+		core::TypePtr getParamType() const {
 			return param;
 		}
 
-		core::TypePtr getReturnType() {
+		void setParamType(const core::TypePtr& type) {
+			param = type;
+		}
+
+		core::TypePtr getReturnType() const {
 			return ret;
 		}
+
+		void setReturnType(const core::TypePtr& type) {
+			ret = type;
+		}
+
+		core::GenericTypePtr toIRType() const;
 
 		operator core::GenericTypePtr() const;
 

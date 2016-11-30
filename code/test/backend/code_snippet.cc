@@ -28,8 +28,24 @@ namespace backend {
 		// get the AllScale language extension
 		auto& as = mgr.getLangExtension<lang::AllscaleModule>();
 
-		// parse the given code fragment
-		return builder.parse(code,as.getDefinedSymbols());
+		// try parsing the given code fragment as an expression
+		try {
+			auto res = builder.parseExpr(code,as.getDefinedSymbols());
+			if (res) return res;
+		} catch (...) {
+			// ignore, try something else
+		}
+
+		// try parsing the given code fragment as a statement
+		try {
+			auto res = builder.parseStmt(code,as.getDefinedSymbols());
+			if (res) return res;
+		} catch (...) {
+			// ignore, try something else
+		}
+
+		// parse the given code fragment as a program
+		return builder.parseProgram(code,as.getDefinedSymbols());
 	}
 
 
@@ -154,6 +170,72 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
+	}
+
+	TEST(CodeSnippet, LambdaToClosure) {
+
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+
+					def struct __wi__cutoff {
+						const function IMP__operator_call_ = (v35 : ref<int<4>,f,f,plain>) -> bool {
+							return *v35<2;
+						}
+					};
+					def struct __wi__base {
+						const function IMP__operator_call_ = (v81 : ref<int<4>,f,f,plain>) -> int<4> {
+							return *v81;
+						}
+					};
+					def struct __wi__step {
+						const function IMP__operator_call_ = (v171 : ref<int<4>,f,f,plain>, v195 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
+							var ref<treeture<int<4>,t>,f,f,plain> v173 = treeture_run(
+								recfun_to_fun(
+									tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
+								)(*v171-1)
+							);
+							var ref<treeture<int<4>,t>,f,f,plain> v178 = treeture_run(
+								recfun_to_fun(
+									tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
+								)(*v171-2)
+							);
+							return treeture_done(treeture_get(*v173)+treeture_get(*v178));
+						}
+					};
+
+					{
+						var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
+								(build_recfun(
+										lambda_to_closure(
+												<ref<__wi__cutoff,f,f,plain>>(ref_temp(type_lit(__wi__cutoff))) {},
+												type_lit((int<4>) => bool)
+										),
+										[lambda_to_closure(
+												<ref<__wi__base,f,f,plain>>(ref_temp(type_lit(__wi__base))) {},
+												type_lit((int<4>) => int<4>)
+										)],
+										[lambda_to_closure(
+												<ref<__wi__step,f,f,plain>>(ref_temp(type_lit(__wi__step))) {},
+												type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
+										)]
+								))
+						);
+						var ref<int<4>,f,f,plain> i = treeture_get(*(*fibEager)(12) materialize );
+					}
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
+
+
 	}
 
 
