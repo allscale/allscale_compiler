@@ -10,7 +10,12 @@ namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	using TranslationState = std::pair<insieme::core::TypePtr, insieme::core::TypePtr>;
+	struct TranslationState {
+		const void* clangPointer;
+		insieme::core::TypePtr paramType;
+		insieme::core::TypePtr returnType;
+	};
+
 	using ClangIrTypeMap = std::map<const clang::Type*, insieme::core::TypePtr>;
 
 	class TranslationStateManager {
@@ -23,7 +28,9 @@ namespace frontend {
 		void pushState(const TranslationState translationState);
 		void popState();
 
-		TranslationState getState();
+		bool hasState();
+
+		const TranslationState& getState();
 
 		insieme::core::TypePtr getClangTypeMapping(const clang::QualType& clangType) const;
 
