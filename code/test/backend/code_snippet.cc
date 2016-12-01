@@ -28,24 +28,8 @@ namespace backend {
 		// get the AllScale language extension
 		auto& as = mgr.getLangExtension<lang::AllscaleModule>();
 
-		// try parsing the given code fragment as an expression
-		try {
-			auto res = builder.parseExpr(code,as.getDefinedSymbols());
-			if (res) return res;
-		} catch (...) {
-			// ignore, try something else
-		}
-
-		// try parsing the given code fragment as a statement
-		try {
-			auto res = builder.parseStmt(code,as.getDefinedSymbols());
-			if (res) return res;
-		} catch (...) {
-			// ignore, try something else
-		}
-
-		// parse the given code fragment as a program
-		return builder.parseProgram(code,as.getDefinedSymbols());
+		// parse the given code fragment
+		return builder.parse(code,as.getDefinedSymbols());
 	}
 
 
@@ -239,6 +223,35 @@ namespace backend {
 	}
 
 
+	TEST(CodeSnippet, CapturedState) {
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+					{
+						var ref<int<4>> a;
+						var ref<int<4>> b;
+						prec((build_recfun(
+							  ( i : int<4> ) => i < *a,
+							[ ( i : int<4> ) => i + *b ],
+							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+								let step = recfun_to_fun(steps.0);
+								return step(i-1);
+							} ]
+						)))(12);
+					}
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
+	}
+
 	TEST(DISABLED_CodeSnippet, FibEagerFull) {
 
 		NodeManager mgr;
@@ -337,43 +350,43 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, CppFib) {
-		NodeManager mgr;
-
-		auto code = R"(
-				#include <iostream>
-				#include "allscale/api/core/prec.h"
-
-				using namespace allscale::api::core;
-
-				int fib(int x) {
-					auto f = prec(fun(
-						[](int x) { return x < 2; },
-						[](int x) { return x; },
-						[](int x, auto& rec) {
-							return done(3);
-						}
-					));
-					return f(x).get();
-				}
-
-				int main() {
-					std::cout << fib(12) << "\n";
-					return 0;
-				}
-			)";
-
-		auto prog = frontend::parseCode(mgr,code);
-		ASSERT_TRUE(prog);
-
-		// convert with allscale backend
-		auto trg = convert(prog);
-		ASSERT_TRUE(trg);
-
-		// check that the resulting source is compiling
-		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
-	}
+//	TEST(DISABLED_CodeSnippet, CppFib) {
+//		NodeManager mgr;
+//
+//		auto code = R"(
+//				#include <iostream>
+//				#include "allscale/api/core/prec.h"
+//
+//				using namespace allscale::api::core;
+//
+//				int fib(int x) {
+//					auto f = prec(fun(
+//						[](int x) { return x < 2; },
+//						[](int x) { return x; },
+//						[](int x, auto& rec) {
+//							return done(3);
+//						}
+//					));
+//					return f(x).get();
+//				}
+//
+//				int main() {
+//					std::cout << fib(12) << "\n";
+//					return 0;
+//				}
+//			)";
+//
+//		auto prog = frontend::parseCode(mgr,code);
+//		ASSERT_TRUE(prog);
+//
+//		// convert with allscale backend
+//		auto trg = convert(prog);
+//		ASSERT_TRUE(trg);
+//
+//		// check that the resulting source is compiling
+//		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+//
+//	}
 
 
 } // end namespace backend

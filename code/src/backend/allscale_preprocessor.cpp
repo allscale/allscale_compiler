@@ -584,31 +584,38 @@ std::cout << "Converting " << *inputFunType << "\n"
 				// get the call expression
 				auto call = bind->getCall();
 
-				// and the function it is calling
-				auto fun = call->getFunctionExpr().as<core::LambdaExprPtr>();
+				// inline functions
+				if (auto fun = call->getFunctionExpr().isa<core::LambdaExprPtr>()) {
 
-				// we inline its body here
-				inputBody = fun->getBody();
+					// we inline its body here
+					inputBody = fun->getBody();
 
-				// by replacing the parameters by their arguments
-				auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
-				inputBody = core::transform::transformBottomUp(inputBody, [&](const core::NodePtr& node)->core::NodePtr {
+					// by replacing the parameters by their arguments
+					auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
+					inputBody = core::transform::transformBottomUp(inputBody, [&](const core::NodePtr& node)->core::NodePtr {
 
-					// we are interested in code reading parameters
-					if (!core::analysis::isCallOf(node,refExt.getRefDeref())) return node;
+						// we are interested in code reading parameters
+						if (!core::analysis::isCallOf(node,refExt.getRefDeref())) return node;
 
-					auto var = node.as<core::CallExprPtr>()->getArgument(0).isa<core::VariablePtr>();
-					if (!var) return node;
+						auto var = node.as<core::CallExprPtr>()->getArgument(0).isa<core::VariablePtr>();
+						if (!var) return node;
 
-					// check whether the variable is a parameter
-					const auto& params = fun->getParameterList();
-					auto pos = std::find(params.begin(),params.end(), var);
-					if (pos == params.end()) return node;
+						// check whether the variable is a parameter
+						const auto& params = fun->getParameterList();
+						auto pos = std::find(params.begin(),params.end(), var);
+						if (pos == params.end()) return node;
 
-					// replace this parameter read by the corresponding argument
-					return call->getArgument(pos - params.begin());
+						// replace this parameter read by the corresponding argument
+						return call->getArgument(pos - params.begin());
 
-				}).as<core::CompoundStmtPtr>();
+					}).as<core::CompoundStmtPtr>();
+
+				} else {
+
+					// otherwise just wrap the call expression
+					inputBody = builder.compoundStmt(builder.returnStmt(call));
+
+				}
 
 				// replace captured values by access to the parameter tuple
 				inputBody = core::transform::replaceAll(mgr, inputBody, captureReplacements, core::transform::localReplacement).as<core::CompoundStmtPtr>();
