@@ -252,6 +252,47 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
 	}
 
+	TEST(DISABLED_CodeSnippet, CapturedArray) {
+		NodeManager mgr;
+
+		auto fib = parse(mgr,
+				R"(
+					{
+						var ref<array<int<4>>> a;
+						prec((build_recfun(
+							  ( r : (int<4>,int<4>) ) => r.0 >= r.1,
+							[ 
+							  ( r : (int<4>,int<4>) ) => { 
+								for(int<4> i = r.0 .. r.1 ) {
+									a[i] = 12;
+								}
+							  }	 
+							],[ 
+							  ( r : (int<4>,int<4>), steps : (recfun<(int<4>,int<4>),unit>) ) => {
+								let step = recfun_to_fun(steps.0);
+								auto m = (r.0 + r.1) / 2 ;
+								auto a = step(( r.0, m ));
+								auto b = step(( m, r.1 ));
+								treeture_get(a);
+								treeture_get(b);
+								return treeture_done(unit);
+							  } 
+							]
+						)))((0,12));
+					}
+				)"
+		);
+		ASSERT_TRUE(fib);
+
+		// convert with allscale backend
+		auto code = convert(fib);
+		ASSERT_TRUE(code);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
+	}
+
+
 	TEST(DISABLED_CodeSnippet, FibEagerFull) {
 
 		NodeManager mgr;

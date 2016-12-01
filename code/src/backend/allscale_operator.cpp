@@ -241,10 +241,18 @@ namespace backend {
 				);
 
 				// access the component of the tuple
-				return c_ast::ref(c_ast::call(
+				auto access = c_ast::call(
 						c_ast::instantiate(C_NODE_MANAGER->create("hpx::util::get"),field),
 						c_ast::derefIfNotImplicit(CONVERT_ARG(0), ARG(0))
-				));
+				);
+
+				// check whether a ref operation is required
+				if (core::lang::isPlainReference(call)) {
+					return c_ast::ref(access);
+				}
+
+				// return result
+				return access;
 			};
 
 		}
