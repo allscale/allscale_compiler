@@ -38,7 +38,8 @@ namespace backend {
 		// get a temporary file path
 		auto tmp = fs::unique_path(fs::temp_directory_path() / "allscale-trg-%%%%%%%%");
 
-		bool res = compileTo(code, tmp, 0, true);
+//		bool res = compileTo(code, tmp, 0, true);
+		bool res = compileTo(code, tmp, 0);
 
 		// delete the temporary
 		if (res) fs::remove(tmp);
@@ -223,7 +224,7 @@ namespace backend {
 	}
 
 
-	TEST(CodeSnippet, CapturedState) {
+	TEST(DISABLED_CodeSnippet, CapturedState) {
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -258,7 +259,7 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					{
-						var ref<array<int<4>>> a;
+						var ref<array<int<4>,12>> a = <ref<array<int<4>,12>>>(ref_decl(type_lit(ref<array<int<4>,12>>))){};
 						prec((build_recfun(
 							  ( r : (int<4>,int<4>) ) => r.0 >= r.1,
 							[ 
@@ -266,16 +267,17 @@ namespace backend {
 								for(int<4> i = r.0 .. r.1 ) {
 									a[i] = 12;
 								}
+								return true;
 							  }	 
 							],[ 
-							  ( r : (int<4>,int<4>), steps : (recfun<(int<4>,int<4>),unit>) ) => {
+							  ( r : (int<4>,int<4>), steps : (recfun<(int<4>,int<4>),bool>) ) => {
 								let step = recfun_to_fun(steps.0);
 								auto m = (r.0 + r.1) / 2 ;
 								auto a = step(( r.0, m ));
 								auto b = step(( m, r.1 ));
 								treeture_get(a);
 								treeture_get(b);
-								return treeture_done(unit);
+								return treeture_done(true);
 							  } 
 							]
 						)))((0,12));
@@ -293,7 +295,7 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, FibEagerFull) {
+	TEST(CodeSnippet, FibEagerFull) {
 
 		NodeManager mgr;
 
@@ -324,12 +326,13 @@ namespace backend {
 		ASSERT_TRUE(code);
 
 		// compile to an actual binary
-		EXPECT_TRUE(backend::compileTo(fib, "fib_eager_art",3));
+		EXPECT_TRUE(backend::compileTo(fib, "fib_eager_art",3))
+		 	 << "Failed to compile: " << *code;
 
 		// NOTE: run result with "echo N | ./fib_eager_art"
 	}
 
-	TEST(DISABLED_CodeSnippet, FibLazyFull) {
+	TEST(CodeSnippet, FibLazyFull) {
 
 		NodeManager mgr;
 
@@ -359,7 +362,8 @@ namespace backend {
 		ASSERT_TRUE(code);
 
 		// compile to an actual binary
-		EXPECT_TRUE(backend::compileTo(fib, "fib_lazy_art",3));
+		EXPECT_TRUE(backend::compileTo(fib, "fib_lazy_art",3))
+			<< "Failed to compile: " << *code;
 
 		// NOTE: run result with "echo N | ./fib_lazy_art"
 	}
@@ -391,43 +395,43 @@ namespace backend {
 	}
 
 
-//	TEST(DISABLED_CodeSnippet, CppFib) {
-//		NodeManager mgr;
-//
-//		auto code = R"(
-//				#include <iostream>
-//				#include "allscale/api/core/prec.h"
-//
-//				using namespace allscale::api::core;
-//
-//				int fib(int x) {
-//					auto f = prec(fun(
-//						[](int x) { return x < 2; },
-//						[](int x) { return x; },
-//						[](int x, auto& rec) {
-//							return done(3);
-//						}
-//					));
-//					return f(x).get();
-//				}
-//
-//				int main() {
-//					std::cout << fib(12) << "\n";
-//					return 0;
-//				}
-//			)";
-//
-//		auto prog = frontend::parseCode(mgr,code);
-//		ASSERT_TRUE(prog);
-//
-//		// convert with allscale backend
-//		auto trg = convert(prog);
-//		ASSERT_TRUE(trg);
-//
-//		// check that the resulting source is compiling
-//		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-//
-//	}
+	TEST(DISABLED_CodeSnippet, CppFib) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include <iostream>
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+
+				int fib(int x) {
+					auto f = prec(fun(
+						[](int x) { return x < 2; },
+						[](int x) { return x; },
+						[](int x, auto& rec) {
+							return done(3);
+						}
+					));
+					return f(x).get();
+				}
+
+				int main() {
+					std::cout << fib(12) << "\n";
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
 
 
 } // end namespace backend

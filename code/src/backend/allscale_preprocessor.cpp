@@ -9,6 +9,7 @@
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
+#include "insieme/core/types/return_type_deduction.h"
 
 #include "insieme/backend/preprocessor.h"
 #include "insieme/backend/name_manager.h"
@@ -82,10 +83,12 @@ namespace backend {
 		core::ProgramPtr replaceMain(const core::ProgramPtr& prog, const be::Converter& converter) {
 			core::NodeManager& mgr = prog.getNodeManager();
 			core::IRBuilder builder(mgr);
-
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 
-			// TODO: wrap startup / shutdown + task wrapper
+			// check that what has been build is properly composed
+			assert_true(core::checks::check(prog).empty())
+				<< "Invalid input program for EntryPointWrapper\n"
+				<< core::checks::check(prog);
 
 			// get the main entry point
 			assert_eq(1, prog->getEntryPoints().size());
@@ -121,6 +124,7 @@ namespace backend {
 
 			// check that what has been build is properly composed
 			assert_true(core::checks::check(main).empty())
+				<< dumpPretty(main) << "\n"
 				<< core::checks::check(main);
 
 			// convert this main into a work item
@@ -148,6 +152,7 @@ namespace backend {
 
 			// check that what has been build is properly composed
 			assert_true(core::checks::check(main).empty())
+				<< dumpColor(main) << "\n"
 				<< core::checks::check(main);
 
 			// wrap up into a program, and be done
@@ -188,6 +193,34 @@ namespace backend {
 				// replace recursive calls
 				if (core::analysis::isCallOf(node,ext.getRecfunToFun())) {
 					return recFun;
+				}
+
+				// replace arguments of call to recFun by unpacking the tuple, if necessary
+				if (core::analysis::isCallOf(node,recFun)) {
+					// NOTE: this is necessary since the runtime interface requests those parameters unpacked
+
+					// check some expected properties
+					auto call = node.as<core::CallExprPtr>();
+					assert_eq(1,call->getNumArguments());
+					assert_true(call->getArgument(0).isa<core::TupleExprPtr>());
+
+					// extract the type argument list
+					core::TypeList types;
+					for(const auto& cur : call->getArgumentList()) {
+						types.push_back(cur->getType());
+					}
+
+					// check whether this call is properly typed
+					if (core::types::deduceReturnType(recFun->getType().as<core::FunctionTypePtr>(), types, false)) return node;
+
+					// otherwise unpack the argument type
+					core::ExpressionList args;
+					for(const auto& cur : call->getArgument(0).as<core::TupleExprPtr>()->getExpressions()) {
+						args.push_back(cur);
+					}
+
+					// create new call
+					return builder.callExpr(call->getFunctionExpr(),args);
 				}
 
 				// everything else remains untouched
@@ -337,7 +370,7 @@ namespace backend {
 						builder.callExpr(
 							ext2.getCreateWorkItemDescriptionReference(),
 							builder.getIdentifierLiteral(wi_name),
-							builder.getTypeLiteral(builder.tupleType({ op.getParameterType() })),
+							builder.getTypeLiteral(op.getParameterType()),
 							builder.getTypeLiteral(op.getResultType())
 						)
 					);
@@ -360,9 +393,6 @@ namespace backend {
 			// build the resulting lambda
 			return builder.lambdaExpr(funType,{in},body);
 		}
-
-
-
 
 
 		WorkItemVariant getProcessVariant(const lang::PrecOperation& op) {
@@ -630,7 +660,8 @@ namespace backend {
 
 			// check that everything is composed correctly
 			assert_true(core::checks::check(res).empty())
-				<< core::checks::check(res);
+				<< core::checks::check(res)
+				<< "Code:\n" << dumpColor(res);
 
 			// done
 			return res;
@@ -679,11 +710,7 @@ namespace backend {
 			core::TypeList closureElements;
 			closureElements.push_back(op.getParameterType());
 			for(const auto& cur : captured) {
-				if (core::lang::isReference(cur.getType())) {
-					closureElements.push_back(core::lang::ReferenceType(cur.getType()).getElementType());
-				} else {
-					closureElements.push_back(cur.getType());
-				}
+				closureElements.push_back(cur.getType());
 			}
 
 
@@ -696,7 +723,7 @@ namespace backend {
 			// create expressions accessing captured values in the form of a substitution map
 			core::NodeMap capturedValueReplacements;
 			for(unsigned i = 0; i < captured.size(); i++) {
-				capturedValueReplacements[captured[i]] = builder.refComponent(param,i+1);
+				capturedValueReplacements[captured[i]] = builder.deref(builder.refComponent(param,i+1));
 			}
 
 			// replace implementations with implementations processing the closure
@@ -741,7 +768,6 @@ namespace backend {
 			auto closedOp = preprocessed.first;
 			auto captured = preprocessed.second;
 
-
 			// get build utilities
 			core::NodeManager& mgr = code.getNodeManager();
 			core::IRBuilder builder(mgr);
@@ -767,14 +793,15 @@ namespace backend {
 
 			// add captured closure parameters
 			for(const auto& cur : captured) {
-				params.push_back(builder.variable(cur->getType()));
+				params.push_back(builder.variable(builder.refType(cur->getType())));
 			}
 
 			// assemble arguments for inner call
 			core::ExpressionList args;
 			args.push_back(desc.toIR(mgr));
-			for(const auto& cur : params) {
-				args.push_back(builder.deref(cur));
+			args.push_back(builder.deref(params[0]));
+			for(unsigned i=1; i<params.size(); ++i) {
+				args.push_back(builder.deref(params[i]));
 			}
 
 			// build the nested lambda
@@ -795,9 +822,17 @@ namespace backend {
 			core::ExpressionList bindArgs;
 			bindArgs.push_back(param);
 			for(const auto& cur : captured) {
-				bindArgs.push_back(builder.deref(cur));
+				bindArgs.push_back(cur);
 			}
-			return builder.bindExpr({ param }, builder.callExpr(nestedLambda, bindArgs));
+			auto res = builder.bindExpr({ param }, builder.callExpr(nestedLambda, bindArgs));
+
+			// check result
+			assert_true(core::checks::check(res).empty())
+				<< dumpPretty(res) << "\n"
+				<< core::checks::check(res);
+
+			// done
+			return res;
 		}
 
 	}
