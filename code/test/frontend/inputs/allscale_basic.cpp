@@ -37,15 +37,15 @@ using namespace allscale::api::core;
 #define SIMPLE_PREC_CALL R"(
 	prec(
 			(build_recfun(
-					lambda_to_closure(
+					cpp_lambda_to_closure(
 							<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 							type_lit((int<4>) => bool)
 					),
-					[lambda_to_closure(
+					[cpp_lambda_to_closure(
 							<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
 							type_lit((int<4>) => int<4>)
 					)],
-					[lambda_to_closure(
+					[cpp_lambda_to_closure(
 							<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 							type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 					)]
@@ -85,6 +85,43 @@ int main() {
 		auto a = done(1);
 	}
 
+
+	//// direct call of prec result
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_PREC_CALL, R"(
+			(14);
+		}
+	)")
+	{
+		prec(fun(
+				[](int x)->bool { return x < 2; },
+				[](int x)->int { return x; },
+				[](int x, const auto& f) {
+					f(x - 1);
+					return done(1);
+				}
+			)
+		)(14);
+	}
+
+	// result of call to prec
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
+			;
+			(*simpleFun)(12);
+		}
+	)")
+	{
+		auto simpleFun = prec(fun(
+				[](int x)->bool { return x < 2; },
+				[](int x)->int { return x; },
+				[](int x, const auto& f) {
+					f(x - 1);
+					return done(1);
+				}
+			)
+		);
+
+		simpleFun(12);
+	}
 
 	//// result type of call to prec assigned to a variable
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
@@ -148,35 +185,18 @@ int main() {
 		auto i = simpleFun(13).get();
 	}
 
-	//// direct call of prec result
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_PREC_CALL, R"(
-			(14);
-		}
-	)")
-	{
-		prec(fun(
-				[](int x)->bool { return x < 2; },
-				[](int x)->int { return x; },
-				[](int x, const auto& f) {
-					f(x - 1);
-					return done(1);
-				}
-			)
-		)(14);
-	}
-
-	//// call to function returning prec
+	//// call to result of function returning prec
 	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
 		def IMP_testFunReturnPrec = function () -> (int<4>) => treeture<int<4>,f> {
 			return
 	)", SIMPLE_PREC_CALL, R"(;
 		};
 		{
-			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> v0 = ref_cast(IMP_testFunReturnPrec() materialize , type_lit(f), type_lit(f), type_lit(cpp_rref));
+			var ref<treeture<int<4>,f>,f,f,plain> v0 = (*IMP_testFunReturnPrec() materialize )(4);
 		}
 	)")
 	{
-		auto a = testFunReturnPrec();
+		auto a = testFunReturnPrec()(4);
 	}
 
 	//// call to function returning the result of prec
@@ -232,15 +252,15 @@ int main() {
 		{
 			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
 					(build_recfun(
-							lambda_to_closure(
+							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 									type_lit((int<4>) => bool)
 							),
-							[lambda_to_closure(
+							[cpp_lambda_to_closure(
 									<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
 									type_lit((int<4>) => int<4>)
 							)],
-							[lambda_to_closure(
+							[cpp_lambda_to_closure(
 									<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 									type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 							)]

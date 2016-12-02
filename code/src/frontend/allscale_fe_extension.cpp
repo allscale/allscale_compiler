@@ -11,6 +11,7 @@
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/tu/ir_translation_unit_io.h"
 #include "insieme/utils/name_mangling.h"
+#include "insieme/utils/functional_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/utils.h"
@@ -26,8 +27,11 @@ namespace frontend {
 		assert_false(translationStates.empty()) << "No TranslationState to pop";
 		translationStates.pop_back();
 	}
-	TranslationState TranslationStateManager::getState() {
-		assert_false(translationStates.empty()) << "No TranslationState to pop";
+	bool TranslationStateManager::hasState() {
+		return !translationStates.empty();
+	}
+	const TranslationState& TranslationStateManager::getState() {
+		assert_false(translationStates.empty()) << "No TranslationState to get";
 		return translationStates.back();
 	}
 	insieme::core::TypePtr TranslationStateManager::getClangTypeMapping(const clang::QualType& clangType) const {
@@ -180,7 +184,7 @@ namespace frontend {
 
 				auto cutoffClosureType = builder.functionType(paramType, builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
 
-				cutoffBind = lang::buildLambdaToClosure(cutoffIr, cutoffClosureType);
+				cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
 			}
 
 			// Handle Base Case
@@ -198,10 +202,8 @@ namespace frontend {
 
 				auto baseClosureType = builder.functionType(paramType, returnType, insieme::core::FK_CLOSURE);
 
-				baseBind = lang::buildLambdaToClosure(baseIr, baseClosureType);
+				baseBind = lang::buildCppLambdaToClosure(baseIr, baseClosureType);
 			}
-
-			translationStateManager.pushState({paramType, returnType});
 
 			// Handle step case
 
@@ -217,16 +219,18 @@ namespace frontend {
 
 				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(paramType, callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
 
-				stepBind = lang::buildLambdaToClosure(stepIr, stepClosureType);
+				stepBind = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
 
 				// first we extract the generated struct
 				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto tagType = tMap.at(genType);
+
 				// and remove the duplicate call operators
 				auto newTagType = removeDuplicateCallOperators(tagType);
 
 				// now we fix the call operator and replace it with a correctly translated one
 				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
+
 				// only fix the operator if it doesn't have the correct tuple type already
 				if(!oldOperatorLit->getType().as<core::FunctionTypePtr>()->getParameterType(2).isa<core::TupleTypePtr>()) {
 					auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
@@ -238,8 +242,6 @@ namespace frontend {
 				}
 				converter.getIRTranslationUnit().replaceType(genType, newTagType);
 			}
-
-			translationStateManager.popState();
 
 			return lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
 		}
@@ -264,6 +266,7 @@ namespace frontend {
 			auto decl = call->getCalleeDecl();
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 				auto name = funDecl->getQualifiedNameAsString();
+
 				if(name == "allscale::api::core::prec") {
 					return handlePrecCall(call, converter, getTranslationStateManager());
 				}
@@ -301,6 +304,24 @@ namespace frontend {
 
 		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
 
+		if(auto recordType = llvm::dyn_cast<clang::RecordType>(type)) {
+			auto recordDecl = recordType->getDecl();
+			auto name = recordDecl->getQualifiedNameAsString();
+			if(name == "allscale::api::core::fun_def") {
+				if(auto specializedDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl)) {
+					core::TypeList templateArgs;
+					for(auto a : specializedDecl->getTemplateArgs().asArray()) {
+						if(a.getKind() == clang::TemplateArgument::Type) {
+							templateArgs.push_back(converter.convertType(a.getAsType()));
+							if(templateArgs.size() == 2) { break; }
+						}
+					}
+					assert_eq(templateArgs.size(), 2);
+					getTranslationStateManager().pushState(TranslationState{ type, templateArgs[0], templateArgs[1] });
+				}
+			}
+		}
+
 		// if the passed type is an AutoType and is dependent, we can't really translate it correctly.
 		// we create a dummy replacement type to move forward in the translation and assert this replacement doesn'T survive in the final IR
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
@@ -336,17 +357,22 @@ namespace frontend {
 				auto funTy = funExpr->getType().as<core::FunctionTypePtr>();
 				auto funParms = funTy->getParameterTypeList();
 				if(funTy->isMemberFunction()) {
-					// on prec return value (closure) with simple call
-					auto thisType = core::analysis::getReferencedType(funParms[0]);
-					if(auto calleeFunType = thisType.isa<core::FunctionTypePtr>()) {
-						core::IRBuilder builder(irExpr->getNodeManager());
-						return builder.callExpr(builder.deref(core::analysis::getArgument(call, 0)), core::analysis::getArgument(call, 1));
-					}
-					// on call operator of recfun
 					if(auto lit = funExpr.isa<core::LiteralPtr>()) {
-						if(lit->getStringValue() == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
-							const auto& originalThis = core::analysis::getArgument(call, 0);
-							return builder.callExpr(lang::buildRecfunToFun(builder.deref(originalThis)), core::analysis::getArgument(call, 1));
+						auto name = lit->getStringValue();
+						if(call.getNumArguments() == 2) {
+							auto thisArg = core::analysis::getArgument(call, 0);
+							const auto& arg = core::analysis::getArgument(call, 1);
+							// on prec return value (closure) with simple call
+							if(name == insieme::utils::mangle("allscale::api::core::detail::prec_operation") + "::" + insieme::utils::getMangledOperatorCallName()) {
+								// we try to deref the this argument here. This is a rare case where we need to do so, because the semantics for the prec IR type are different
+								if(core::analysis::isRefType(thisArg)) { thisArg = builder.deref(thisArg); }
+								return builder.callExpr(thisArg, arg);
+							}
+							// on call operator of recfun
+							if(name == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
+								const auto& originalThis = core::analysis::getArgument(call, 0);
+								return builder.callExpr(lang::buildRecfunToFun(builder.deref(thisArg)), arg);
+							}
 						}
 					}
 				}
@@ -385,6 +411,16 @@ namespace frontend {
 
 	insieme::core::TypePtr AllscaleExtension::PostVisit(const clang::QualType& typeIn, const insieme::core::TypePtr& irType,
 	                                                    insieme::frontend::conversion::Converter& converter) {
+		// pop the current TranslationState here in case it was pushed for this clang type. Do this at every exit point
+		FinalActions popTranslationState([&]() {
+			if(getTranslationStateManager().hasState()) {
+				auto state = getTranslationStateManager().getState();
+				if(state.clangPointer == typeIn->getUnqualifiedDesugaredType()) {
+					getTranslationStateManager().popState();
+				}
+			}
+		});
+
 		// extract relevant type
 		const clang::Type* type = typeIn.getTypePtr();
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
@@ -418,7 +454,7 @@ namespace frontend {
 		}
 		if(boost::starts_with(typeName, "allscale::api::core::detail::callable")) {
 			auto translationState = getTranslationStateManager().getState();
-			return (core::GenericTypePtr) lang::RecFunType(translationState.first, translationState.second);
+			return (core::GenericTypePtr) lang::RecFunType(translationState.paramType, translationState.returnType);
 		}
 
 		return irType;
@@ -474,6 +510,9 @@ namespace frontend {
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
 		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
+
+		// also make sure we don't have any leftover state on our stack
+		assert_false(getTranslationStateManager().hasState());
 
 		return prog;
 	}

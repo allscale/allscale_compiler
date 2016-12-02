@@ -869,7 +869,7 @@ namespace backend {
 
 			// only interested in lambda_to_closure calls
 			auto call = node.isa<core::CallExprPtr>();
-			if (!call || !core::analysis::isCallOf(call, ext.getLambdaToClosure())) {
+			if (!call || !core::analysis::isCallOf(call, ext.getCppLambdaToClosure())) {
 				return node;
 			}
 

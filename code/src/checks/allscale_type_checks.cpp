@@ -17,12 +17,12 @@ namespace allscale {
 namespace compiler {
 namespace checks {
 
-	OptionalMessageList LambdaToClosureCheck::visitCallExpr(const CallExprAddress& address) {
+	OptionalMessageList CppLambdaToClosureCheck::visitCallExpr(const CallExprAddress& address) {
 		OptionalMessageList res;
 
 		auto& allscaleExt = address.getNodeManager().getLangExtension<lang::AllscaleModule>();
 
-		if(!allscaleExt.isCallOfLambdaToClosure(address)) return res;
+		if(!allscaleExt.isCallOfCppLambdaToClosure(address)) return res;
 
 		// strip ref
 		auto initType = analysis::getArgument(address, 0)->getType();

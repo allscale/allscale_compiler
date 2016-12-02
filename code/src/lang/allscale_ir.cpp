@@ -38,10 +38,6 @@ namespace lang {
 		return toIRType();
 	}
 
-	bool RecFunType::isRecFunType(const core::NodePtr& node) {
-		return isRecFun(node);
-	}
-
 	bool isRecFun(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
@@ -88,10 +84,6 @@ namespace lang {
 
 	TreetureType::operator core::GenericTypePtr() const {
 		return toIRType();
-	}
-
-	bool TreetureType::isTreetureType(const core::NodePtr& node) {
-		return isTreeture(node);
 	}
 
 	bool isTreeture(const core::NodePtr& node) {
@@ -444,11 +436,11 @@ namespace lang {
 		return builder.callExpr(returnType, allS.getRecfunToFun(), param);
 	}
 
-	core::ExpressionPtr buildLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
+	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
-		return builder.callExpr(closureType, allS.getLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
+		return builder.callExpr(closureType, allS.getCppLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
 
 } // end namespace lang

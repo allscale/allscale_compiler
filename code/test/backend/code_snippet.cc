@@ -193,15 +193,15 @@ namespace backend {
 					{
 						var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
 								(build_recfun(
-										lambda_to_closure(
+										cpp_lambda_to_closure(
 												<ref<__wi__cutoff,f,f,plain>>(ref_temp(type_lit(__wi__cutoff))) {},
 												type_lit((int<4>) => bool)
 										),
-										[lambda_to_closure(
+										[cpp_lambda_to_closure(
 												<ref<__wi__base,f,f,plain>>(ref_temp(type_lit(__wi__base))) {},
 												type_lit((int<4>) => int<4>)
 										)],
-										[lambda_to_closure(
+										[cpp_lambda_to_closure(
 												<ref<__wi__step,f,f,plain>>(ref_temp(type_lit(__wi__step))) {},
 												type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 										)]

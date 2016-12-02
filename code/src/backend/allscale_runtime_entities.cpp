@@ -52,7 +52,7 @@ namespace backend {
 				<< "Actual type: " << *implementation->getFunctionType()->getParameterType(0);
 
 		// make sure the result type is a treeture
-		assert_pred1(lang::TreetureType::isTreetureType,implementation->getFunctionType()->getReturnType());
+		assert_pred1(lang::isTreeture,implementation->getFunctionType()->getReturnType());
 
 	}
 
