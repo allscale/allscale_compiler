@@ -5,8 +5,11 @@
 #include <boost/filesystem.hpp>
 
 #include "insieme/core/ir_builder.h"
+#include "insieme/core/checks/full_check.h"
+#include "insieme/core/printer/error_printer.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/checks/allscale_checks.h"
 
 
 #include "../frontend/test_utils.inc"
@@ -395,11 +398,10 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, CppFib) {
+	TEST(CodeSnippet, CppFib) {
 		NodeManager mgr;
 
 		auto code = R"(
-				#include <iostream>
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
@@ -408,16 +410,17 @@ namespace backend {
 					auto f = prec(fun(
 						[](int x) { return x < 2; },
 						[](int x) { return x; },
-						[](int x, auto& rec) {
-							return done(3);
+						[](int x, const auto& rec) {
+							auto a = run(rec(x-1));
+							auto b = run(rec(x-2));
+							return done(a.get() + b.get());
 						}
 					));
 					return f(x).get();
 				}
 
 				int main() {
-					std::cout << fib(12) << "\n";
-					return 0;
+					return fib(12);
 				}
 			)";
 

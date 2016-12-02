@@ -16,7 +16,7 @@ namespace checks {
 			std::vector<CheckPtr> context_free_checks;
 			context_free_checks.push_back(make_check<CppLambdaToClosureCheck>());
 
-			return makeVisitOnce(combine(context_free_checks, true));
+			return makeVisitOnce(combine(context_free_checks));
 		}
 
 	}
