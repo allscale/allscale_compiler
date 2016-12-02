@@ -34,6 +34,8 @@ foreach(exec_file ${allscale_executables})
 	get_filename_component(exec_name ${exec_file} NAME_WE)
 	add_executable(${exec_name} ${exec_file})
 	target_link_libraries(${exec_name} allscale)
+	
+	add_dependencies(${exec_name} allscale_runtime)
 endforeach(exec_file)
 
 # ================================================== AllScale Tests ====================================================
