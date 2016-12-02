@@ -1,0 +1,3 @@
+excludeSteps="*_c_*", "*_ocl_*","*_run_*"
+includes=../../../api/code/include
+intercepted_header_file_dirs=../../../api/code/include/allscale/api/core
