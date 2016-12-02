@@ -336,6 +336,7 @@ namespace frontend {
 		auto& mgr = irExpr->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto& basic = mgr.getLangBasic();
+		auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
 		auto& allscaleExt = mgr.getLangExtension<lang::AllscaleModule>();
 
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
@@ -361,11 +362,12 @@ namespace frontend {
 						auto name = lit->getStringValue();
 						if(call.getNumArguments() == 2) {
 							auto thisArg = core::analysis::getArgument(call, 0);
-							const auto& arg = core::analysis::getArgument(call, 1);
+							auto arg = core::analysis::getArgument(call, 1);
 							// on prec return value (closure) with simple call
 							if(name == insieme::utils::mangle("allscale::api::core::detail::prec_operation") + "::" + insieme::utils::getMangledOperatorCallName()) {
 								// we try to deref the this argument here. This is a rare case where we need to do so, because the semantics for the prec IR type are different
 								if(core::analysis::isRefType(thisArg)) { thisArg = builder.deref(thisArg); }
+								if(refExt.isCallOfRefCast(arg) || refExt.isCallOfRefKindCast(arg)) { arg = builder.deref(removeUndesiredRefCasts(arg)); }
 								return builder.callExpr(thisArg, arg);
 							}
 							// on call operator of recfun
@@ -471,24 +473,26 @@ namespace frontend {
 			auto initT = varInit->getType();
 			if(core::analysis::isRefType(initT)) initT = core::analysis::getReferencedType(initT);
 
+			auto replacementBuilder = [&builder](const core::TypePtr& varT, const core::TypePtr& initT, const core::ExpressionPtr& varInit) {
+				assert_true(core::analysis::isRefType(varT));
+				auto varRefT = core::lang::ReferenceType(varT);
+				varRefT.setElementType(initT);
+				return std::make_pair(builder.variable((core::GenericTypePtr)varRefT), varInit);
+			};
+
 			// handle prec call result
 			if(auto funT = initT.isa<core::FunctionTypePtr>()) {
 				if(funT->getKind() == core::FK_CLOSURE) {
 					auto retT = funT->getReturnType();
 					if(lang::isTreeture(retT)) {
-						auto varT = var->getType();
-						assert_true(core::analysis::isRefType(varT));
-						auto varRefT = core::lang::ReferenceType(varT);
-						varRefT.setElementType(initT);
-						auto ret = std::make_pair(builder.variable((core::GenericTypePtr)varRefT), varInit);
-						return ret;
+						return replacementBuilder(var->getType(), initT, varInit);
 					}
 				}
 			}
 
 			// handle treetures
 			if(lang::isTreeture(initT)) {
-				return {var, removeUndesiredRefCasts(varInit)};
+				return replacementBuilder(var->getType(), initT, removeUndesiredRefCasts(varInit));
 			}
 		}
 		return {var, varInit};

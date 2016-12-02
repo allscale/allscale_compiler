@@ -203,7 +203,7 @@ int main() {
 	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
 		def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>>) -> treeture<int<4>,f> {
 			return
-	)", SIMPLE_PREC_CALL, R"((ref_kind_cast(i, type_lit(cpp_ref)));
+	)", SIMPLE_PREC_CALL, R"( (*i);
 		};
 		{
 			var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrecCallResult(5);
@@ -236,12 +236,12 @@ int main() {
 		};
 		def struct __any_string__step {
 			const function IMP__operator_call_ = (v171 : ref<int<4>,f,f,plain>, v195 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
-				var ref<treeture<int<4>,f>,f,f,plain> v173 = treeture_run(
+				var ref<treeture<int<4>,t>,f,f,plain> v173 = treeture_run(
 					recfun_to_fun(
 						tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
 					)(*v171-1)
 				);
-				var ref<treeture<int<4>,f>,f,f,plain> v178 = treeture_run(
+				var ref<treeture<int<4>,t>,f,f,plain> v178 = treeture_run(
 					recfun_to_fun(
 						tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
 					)(*v171-2)
