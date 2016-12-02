@@ -5,6 +5,7 @@
 
 #include "insieme/frontend/clang.h"
 #include "insieme/frontend/converter.h"
+#include "insieme/frontend/utils/name_manager.h"
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/transform/node_replacer.h"
@@ -169,6 +170,15 @@ namespace frontend {
 			auto& builder = converter.getIRBuilder();
 			auto& tMap = converter.getIRTranslationUnit().getTypes();
 
+			// asserts if the passed structType (i.e. the lambda we are translating) doens't have a call operator - i.e. the prec is never called
+			auto checkForCallOperator = [&](const core::StructPtr& structType) {
+				if(!utils::hasCallOperator(structType)) {
+					assert_fail() << "Conversion of prec construct around lambda at \""
+							<< insieme::frontend::utils::getLocationAsString(call->getLocStart(), converter.getSourceManager(), false)
+							<< "\" failed, because the result is never actually called.";
+				}
+			};
+
 			// Handle Cutoff
 
 			core::TypePtr paramType = nullptr;
@@ -180,6 +190,7 @@ namespace frontend {
 
 				auto genType = insieme::core::analysis::getReferencedType(cutoffIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto structType = tMap.at(genType)->getStruct();
+				checkForCallOperator(structType);
 				paramType = utils::extractCallOperatorType(structType)->getParameterType(1);
 
 				auto cutoffClosureType = builder.functionType(paramType, builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
@@ -198,6 +209,7 @@ namespace frontend {
 
 				auto genType = insieme::core::analysis::getReferencedType(baseIr->getType()).as<insieme::core::GenericTypePtr>();
 				auto structType = tMap.at(genType)->getStruct();
+				checkForCallOperator(structType);
 				returnType = utils::extractCallOperatorType(structType)->getReturnType();
 
 				auto baseClosureType = builder.functionType(paramType, returnType, insieme::core::FK_CLOSURE);
@@ -229,6 +241,7 @@ namespace frontend {
 				auto newTagType = removeDuplicateCallOperators(tagType);
 
 				// now we fix the call operator and replace it with a correctly translated one
+				checkForCallOperator(newTagType->getStruct());
 				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
 
 				// only fix the operator if it doesn't have the correct tuple type already

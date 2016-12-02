@@ -10,6 +10,12 @@ namespace allscale {
 namespace compiler {
 namespace utils {
 
+	bool hasCallOperator(const StructPtr& sourceLambda) {
+		return ::any(sourceLambda->getMemberFunctions()->getMembers(), [](const auto& memFun) {
+			return memFun->getNameAsString() == insieme::utils::getMangledOperatorCallName();
+		});
+	}
+
 	MemberFunctionPtr extractCallOperator(const StructPtr& sourceLambda) {
 		auto mems = sourceLambda->getMemberFunctions();
 		for(const auto& mem : mems) {

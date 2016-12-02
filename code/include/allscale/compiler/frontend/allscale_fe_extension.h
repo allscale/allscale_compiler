@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "insieme/frontend/extensions/frontend_extension.h"
 
 #include <vector>
