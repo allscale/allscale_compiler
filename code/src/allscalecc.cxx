@@ -38,17 +38,20 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	// Step 3: load input code
-	std::cout << "Extracting executable ...\n";
 	options.job.registerFrontendExtension<allscale::compiler::frontend::AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
 
+	bool createSharedObject = boost::filesystem::extension(target) == ".so";
+
 	// if it is compile only or if it should become an object file => save it
-	if(compileOnly) {
+	if(compileOnly || createSharedObject) {
 		auto res = options.job.toIRTranslationUnit(mgr);
 		std::cout << "Saving object file ...\n";
 		driver::utils::saveLib(res, target);
 		return driver::utils::isInsiemeLib(target) ? 0 : 1;
 	}
+
+	// Step 3: load input code
+	std::cout << "Extracting executable ...\n";
 
 	// convert src file to target code
 	auto program = options.job.execute(mgr);
