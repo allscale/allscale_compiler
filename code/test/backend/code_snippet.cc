@@ -227,7 +227,7 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, CapturedState) {
+	TEST(CodeSnippet, CapturedState) {
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -256,7 +256,7 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
 	}
 
-	TEST(DISABLED_CodeSnippet, CapturedArray) {
+	TEST(CodeSnippet, CapturedArray) {
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
