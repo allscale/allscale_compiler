@@ -162,8 +162,7 @@ namespace frontend {
 			return ret;
 		}
 
-		core::ExpressionPtr handleCoreFunCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter,
-		                                      TranslationStateManager& translationStateManager) {
+		core::ExpressionPtr handleCoreFunCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 
 			assert_eq(call->getNumArgs(), 3) << "handleCoreFunCall expects 3 arguments";
 
@@ -284,7 +283,7 @@ namespace frontend {
 					return handlePrecCall(call, converter, getTranslationStateManager());
 				}
 				if(name == "allscale::api::core::fun") {
-					return handleCoreFunCall(call, converter, getTranslationStateManager());
+					return handleCoreFunCall(call, converter);
 				}
 				if(name == "allscale::api::core::done") {
 					return handleCoreDoneCall(call, converter);
