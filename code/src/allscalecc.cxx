@@ -18,8 +18,11 @@ int main(int argc, char** argv) {
 	std::string target;
 	unsigned opt_level;
 
+	bool compileOnly = false;
+
 	// Step 1: parse input parameters
 	auto parser = driver::cmd::Options::getParser();
+	parser.addFlag("compile,c", compileOnly, "compilation only");
 	parser.addParameter<std::string>("o",target,"a.out","the target file");
 	parser.addParameter<unsigned>("O",opt_level,0,"optimization level");
 	auto options = parser.parse(argc, argv);
@@ -38,6 +41,14 @@ int main(int argc, char** argv) {
 	// Step 3: load input code
 	std::cout << "Extracting executable ...\n";
 	options.job.registerFrontendExtension<allscale::compiler::frontend::AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
+
+	// if it is compile only or if it should become an object file => save it
+	if(compileOnly) {
+		auto res = options.job.toIRTranslationUnit(mgr);
+		std::cout << "Saving object file ...\n";
+		driver::utils::saveLib(res, target);
+		return driver::utils::isInsiemeLib(target) ? 0 : 1;
+	}
 
 	// convert src file to target code
 	auto program = options.job.execute(mgr);
