@@ -21,9 +21,9 @@ namespace frontend {
 	namespace {
 		void runAllscaleTestOn(const string& filename) {
 			insieme::frontend::utils::runConversionTestOn(filename, [](insieme::frontend::ConversionJob& job) {
-				auto apiIncludeDir = std::string(ALLSCALE_ROOT_DIR) + "api/code/include";
+				auto apiIncludeDir = std::string(ALLSCALE_ROOT_DIR) + "api/code/include/";
 				job.addIncludeDirectory(apiIncludeDir);
-				job.addInterceptedHeaderDir(apiIncludeDir);
+				job.addInterceptedHeaderDir(apiIncludeDir + "allscale/api/core/"); // we are intercepting the core library only
 				job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
 				job.registerFrontendExtension<insieme::frontend::extensions::InterceptorExtension, insieme::frontend::extensions::TestPragmaExtension>();
 				job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
