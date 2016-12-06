@@ -3,11 +3,9 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 
-#include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/frontend/frontend.h"
-#include "insieme/utils/config.h"
 
-#include "allscale/compiler/frontend/allscale_fe_extension.h"
+#include "allscale/compiler/frontend/allscale_frontend.h"
 
 
 namespace allscale {
@@ -79,12 +77,8 @@ namespace frontend {
 		// set up the frontend conversion job
 		insieme::frontend::ConversionJob job(file);
 
-		auto apiIncludeDir = insieme::utils::getInsiemeSourceRootDir() + "../../api/code/include";
-		job.addIncludeDirectory(apiIncludeDir);
-		job.addInterceptedHeaderDir(apiIncludeDir);
-		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
-		job.registerFrontendExtension<insieme::frontend::extensions::InterceptorExtension>();
-		job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
+		// configure the frontend with allscale specific settings
+		configureConversionJob(job);
 
 		// run the conversion job
 		return job.execute(mgr);
