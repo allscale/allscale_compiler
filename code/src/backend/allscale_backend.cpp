@@ -43,7 +43,7 @@ namespace backend {
 
 			// set up pre-processing
 			converter.setPreProcessor(be::makePreProcessorSequence(
-				be::makePreProcessor<CppLambdaToBindConverter>(),
+				be::makePreProcessor<CppLambdaToIRConverter>(),
 				be::makePreProcessor<PrecConverter>(),
 				be::makePreProcessor<EntryPointWrapper>(),
 				be::getBasicPreProcessorSequence()
