@@ -41,6 +41,7 @@ namespace lang {
 	bool isRecFun(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
@@ -89,6 +90,7 @@ namespace lang {
 	bool isTreeture(const core::NodePtr& node) {
 		// a quick check
 		auto type = node.isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
