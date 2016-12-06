@@ -436,7 +436,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppFibLazy) {
+	TEST(CodeSnippet, CppFibLazy) {
 		NodeManager mgr;
 
 		auto code = R"(

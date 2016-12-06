@@ -10,6 +10,7 @@
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
 #include "insieme/core/types/return_type_deduction.h"
+#include "insieme/core/printer/error_printer.h"
 
 #include "insieme/backend/preprocessor.h"
 #include "insieme/backend/name_manager.h"
@@ -243,7 +244,7 @@ namespace backend {
 
 						// not of interest either
 						return node;
-					});
+					}, core::transform::globalReplacement);
 				};
 
 				// get body, replace treeture operations and recFun calls
@@ -273,7 +274,7 @@ namespace backend {
 
 					// not of interest either
 					return node;
-				}).as<core::CompoundStmtPtr>();
+				}, core::transform::globalReplacement).as<core::CompoundStmtPtr>();
 
 
 				// replace all treeture types by their value types
@@ -829,7 +830,8 @@ namespace backend {
 			// check result
 			assert_true(core::checks::check(res).empty())
 				<< dumpPretty(res) << "\n"
-				<< core::checks::check(res);
+				<< core::printer::dumpErrors(core::checks::check(res));
+//				<< core::checks::check(res);
 
 			// done
 			return res;
@@ -920,7 +922,7 @@ namespace backend {
 			core::NodeManager& mgr = call->getNodeManager();
 			core::IRBuilder builder(mgr);
 
-			assert_pred2(core::analysis::isCallOf, call, mgr.getLangExtension<lang::AllscaleModule>().getCppLambdaToClosure());
+			assert_pred2(core::analysis::isCallOf, call, mgr.getLangExtension<lang::AllscaleModule>().getCppLambdaToLambda());
 
 			// get the call operator of the passed lambda
 			auto callOperator = getCallOperatorImpl(call->getArgument(0));
@@ -931,7 +933,7 @@ namespace backend {
 			auto opParams = callOperator->getParameterList();
 			core::VariableList params(opParams.begin()+1,opParams.end());
 
-			return builder.lambdaExpr(call->getType(), params, callOperator->getBody());
+			return builder.lambdaExpr(call->getType().as<core::FunctionTypePtr>(), params, callOperator->getBody());
 		}
 
 	}
