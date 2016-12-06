@@ -858,25 +858,11 @@ namespace backend {
 
 
 
-	insieme::core::NodePtr CppLambdaToBindConverter::process(const insieme::backend::Converter&, const insieme::core::NodePtr& code) {
+	namespace {
 
-		core::NodeManager& mgr = code.getNodeManager();
-		core::IRBuilder builder(mgr);
-		const auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+		insieme::core::LambdaExprPtr getCallOperatorImpl(const insieme::core::ExpressionPtr& lambda) {
 
-		// transform all lambda_to_closure calls
-		auto res = core::transform::transformBottomUp(code,[&](const insieme::core::NodePtr& node)->insieme::core::NodePtr {
-
-			// only interested in lambda_to_closure calls
-			auto call = node.isa<core::CallExprPtr>();
-			if (!call || !core::analysis::isCallOf(call, ext.getCppLambdaToClosure())) {
-				return node;
-			}
-
-			// TODO: combine constructor call and call operator call into a single function to form the body of the bind
-
-			// get the nested struct
-			auto cppLambdaType = core::lang::ReferenceType(call->getArgument(0)->getType()).getElementType();
+			auto cppLambdaType = core::lang::ReferenceType(lambda->getType()).getElementType();
 			assert_true(cppLambdaType.isa<core::TagTypePtr>()) << cppLambdaType;
 
 			// get call operator member
@@ -889,6 +875,25 @@ namespace backend {
 				}
 			}
 			assert_true(callOperator) << "No call operator found in lambda!";
+
+			// extract a lambda
+			auto impl = callOperator->getImplementation().isa<core::LambdaExprPtr>();
+
+			assert_true(impl) << "Lambda implementation must not be abstract!";
+
+			return impl;
+		}
+
+		insieme::core::BindExprPtr convertToBind(const insieme::core::CallExprPtr& call) {
+			core::NodeManager& mgr = call->getNodeManager();
+			core::IRBuilder builder(mgr);
+
+			assert_pred2(core::analysis::isCallOf, call, mgr.getLangExtension<lang::AllscaleModule>().getCppLambdaToClosure());
+
+			// TODO: combine constructor call and call operator call into a single function to form the body of the bind
+
+			// get the call operator of the passed lambda
+			auto callOperator = getCallOperatorImpl(call->getArgument(0));
 
 			// get resulting function type
 			auto funType = call->getType().as<core::FunctionTypePtr>();
@@ -904,10 +909,60 @@ namespace backend {
 			}
 
 			// build call to member function
-			auto body = builder.callExpr(callOperator->getImplementation(),args);
+			auto body = builder.callExpr(callOperator,args);
 
 			// replace by a bind
 			return builder.bindExpr(funType, params, body);
+
+		}
+
+		insieme::core::LambdaExprPtr convertToLambda(const insieme::core::CallExprPtr& call) {
+			core::NodeManager& mgr = call->getNodeManager();
+			core::IRBuilder builder(mgr);
+
+			assert_pred2(core::analysis::isCallOf, call, mgr.getLangExtension<lang::AllscaleModule>().getCppLambdaToClosure());
+
+			// get the call operator of the passed lambda
+			auto callOperator = getCallOperatorImpl(call->getArgument(0));
+
+			assert_false(callOperator->isRecursive())
+				<< "Recursive functions are not supported here!";
+
+			auto opParams = callOperator->getParameterList();
+			core::VariableList params(opParams.begin()+1,opParams.end());
+
+			return builder.lambdaExpr(call->getType(), params, callOperator->getBody());
+		}
+
+	}
+
+
+
+	insieme::core::NodePtr CppLambdaToIRConverter::process(const insieme::backend::Converter&, const insieme::core::NodePtr& code) {
+
+		core::NodeManager& mgr = code.getNodeManager();
+		core::IRBuilder builder(mgr);
+		const auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+
+		// transform all lambda_to_closure calls
+		auto res = core::transform::transformBottomUp(code,[&](const insieme::core::NodePtr& node)->insieme::core::NodePtr {
+
+			// only interested in calls ..
+			auto call = node.isa<core::CallExprPtr>();
+			if (!call) return node;
+
+			// .. to the lambda_to_closure
+			if (core::analysis::isCallOf(call,ext.getCppLambdaToClosure())) {
+				return convertToBind(call);
+			}
+
+			// .. or the lambda_to_lambda
+			if (core::analysis::isCallOf(call,ext.getCppLambdaToLambda())) {
+				return convertToLambda(call);
+			}
+
+			// not interested in the rest
+			return node;
 
 		}, core::transform::globalReplacement);
 
