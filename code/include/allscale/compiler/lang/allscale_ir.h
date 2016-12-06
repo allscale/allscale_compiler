@@ -248,6 +248,8 @@ namespace lang {
 
 	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
 
+	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
+
 }
 }
 }

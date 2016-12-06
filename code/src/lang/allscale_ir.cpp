@@ -443,6 +443,13 @@ namespace lang {
 		return builder.callExpr(closureType, allS.getCppLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
 
+	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
+		assert_eq(closureType.getKind(), core::FK_PLAIN) << "Trying to build a lambda of non-plain type.";
+		core::IRBuilder builder(lambdaExpr->getNodeManager());
+		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
+		return builder.callExpr(closureType, allS.getCppLambdaToLambda(), lambdaExpr, builder.getTypeLiteral(closureType));
+	}
+
 } // end namespace lang
 } // end namespace compiler
 } // end namespace allscale
