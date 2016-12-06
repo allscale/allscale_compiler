@@ -8,11 +8,13 @@
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/core/analysis/ir_utils.h"
+#include "insieme/core/lang/reference.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/tu/ir_translation_unit_io.h"
 #include "insieme/utils/name_mangling.h"
 #include "insieme/utils/functional_utils.h"
+#include "insieme/utils/iterator_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/utils.h"
@@ -69,6 +71,32 @@ namespace frontend {
 				return core::analysis::getArgument(input, 0);
 			}
 			return input;
+		}
+
+		core::ExpressionPtr derefOrDematerialize(const core::ExpressionPtr& argExprIn) {
+			core::IRBuilder builder(argExprIn->getNodeManager());
+
+			auto argExpr = removeUndesiredRefCasts(argExprIn);
+
+			if(auto call = argExpr.isa<core::CallExprPtr>()) {
+				if(core::lang::isPlainReference(call->getType())) {
+					auto rawCallType = core::analysis::getReferencedType(call->getType());
+					return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+				}
+			}
+			auto exprType = argExpr->getType();
+			if(core::analysis::isRefType(exprType)) {
+				return builder.deref(argExpr);
+			}
+			return argExpr;
+		}
+
+		core::ExpressionPtr prepareTreetureArgument(const core::ExpressionPtr& argExpr) {
+			auto exprType = argExpr->getType();
+			if(core::analysis::isRefType(exprType) && lang::isTreeture(core::analysis::getReferencedType(exprType))) {
+				return derefOrDematerialize(argExpr);
+			}
+			return argExpr;
 		}
 
 		/**
@@ -262,6 +290,34 @@ namespace frontend {
 			return lang::buildTreetureDone(converter.convertCxxArgExpr(call->getArg(0)));
 		}
 
+		core::ExpressionPtr handleCoreCombineCall(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+			assert_eq(call->getNumArgs(), 4) << "handleCoreFunCall expects 3 arguments";
+
+			auto& builder = converter.getIRBuilder();
+			auto& tMap = converter.getIRTranslationUnit().getTypes();
+
+			auto argA = prepareTreetureArgument(converter.convertCxxArgExpr(call->getArg(0)));
+			auto argATreeture = lang::TreetureType(argA);
+			auto argB = prepareTreetureArgument(converter.convertCxxArgExpr(call->getArg(1)));
+			auto argBTreeture = lang::TreetureType(argB);
+
+			auto combineIr = converter.convertCxxArgExpr(call->getArg(2));
+			auto genType = insieme::core::analysis::getReferencedType(combineIr->getType()).as<insieme::core::GenericTypePtr>();
+
+			auto tagType = tMap.at(genType);
+			auto callOperatorType = utils::extractCallOperatorType(tagType->getStruct());
+			auto combineLambdaType = builder.functionType(toVector(argATreeture.getValueType(), argBTreeture.getValueType()),
+			                                              callOperatorType->getReturnType(), insieme::core::FK_PLAIN);
+
+			auto combineLambda = lang::buildCppLambdaToLambda(combineIr, combineLambdaType);
+
+			return lang::buildTreetureCombine(argA, argB,
+			                                  combineLambda,
+			                                  converter.convertCxxArgExpr(call->getArg(3)));
+
+			return {};
+		}
+
 	}
 
 	boost::optional<std::string> AllscaleExtension::isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const {
@@ -287,6 +343,9 @@ namespace frontend {
 				}
 				if(name == "allscale::api::core::done") {
 					return handleCoreDoneCall(call, converter);
+				}
+				if(name == "allscale::api::core::combine") {
+					return handleCoreCombineCall(call, converter);
 				}
 			}
 		}
@@ -378,7 +437,7 @@ namespace frontend {
 							// on prec return value (closure) with simple call
 							if(name == insieme::utils::mangle("allscale::api::core::detail::prec_operation") + "::" + insieme::utils::getMangledOperatorCallName()) {
 								// we try to deref the this argument here. This is a rare case where we need to do so, because the semantics for the prec IR type are different
-								if(core::analysis::isRefType(thisArg)) { thisArg = builder.deref(thisArg); }
+								thisArg = derefOrDematerialize(thisArg);
 								if(refExt.isCallOfRefCast(arg) || refExt.isCallOfRefKindCast(arg)) { arg = builder.deref(removeUndesiredRefCasts(arg)); }
 								return builder.callExpr(thisArg, arg);
 							}
@@ -395,7 +454,8 @@ namespace frontend {
 			// for already translated functions, if they were semantically mapped, don't materialize
 			if(core::analysis::isRefType(call->getType())) {
 				if(auto referencedType = core::analysis::getReferencedType(call->getType())) {
-					if(lang::isTreeture(referencedType) || lang::isRecFun(referencedType)) {
+					if(!core::analysis::isCallOf(funExpr, builder.getLangBasic().getTypeInstantiation())
+							&& (lang::isTreeture(referencedType) || lang::isRecFun(referencedType))) {
 						return builder.callExpr(referencedType, funExpr, call->getArgumentDeclarations());
 					}
 				}
@@ -413,10 +473,10 @@ namespace frontend {
 			if(auto lit = funExpr.isa<core::LiteralPtr>()) {
 				auto name = lit->getStringValue();
 				if(name == "treeture::IMP_get") {
-					return lang::buildTreetureGet(builder.deref(core::analysis::getArgument(call, 0)));
+					return lang::buildTreetureGet(prepareTreetureArgument(call->getArgument(0)));
 				}
 				if(name == insieme::utils::mangle("allscale::api::core::run")) {
-					return lang::buildTreetureRun(removeUndesiredRefCasts(core::analysis::getArgument(call, 0)));
+					return lang::buildTreetureRun(prepareTreetureArgument(call->getArgument(0)));
 				}
 			}
 		}
@@ -513,8 +573,35 @@ namespace frontend {
 	insieme::core::tu::IRTranslationUnit AllscaleExtension::IRVisit(insieme::core::tu::IRTranslationUnit& tu) {
 		// we need to replace certain types which have been translated by the interceptor or the insieme frontend with the result types we translated here
 		auto& mgr = tu.getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
+
 		auto ir = core::tu::toIR(mgr, tu);
 		auto resultIr = core::transform::replaceAllGen(mgr, ir, getTranslationStateManager().getIrTypeMappings(), core::transform::globalReplacement);
+
+		// insert treeture_to_ref calls where necessary
+		resultIr = core::transform::transformBottomUpGen(resultIr, [&builder, &refExt](const core::CallExprPtr& call) {
+			auto callee = call->getFunctionExpr();
+			if(!core::lang::isBuiltIn(callee)) { return call; }
+
+			core::TypeList params = callee->getType().as<core::FunctionTypePtr>()->getParameterTypeList();
+			core::ExpressionList args = call->getArgumentList();
+			core::ExpressionList newArgs;
+
+			for(auto pair : make_paired_range(params, args)) {
+				auto paramType = pair.first;
+				auto arg = pair.second;
+				if(core::analysis::isRefType(paramType) && !core::analysis::isRefType(arg) && lang::isTreeture(arg)) {
+					newArgs.push_back(lang::buildTreetureToRef(arg, paramType));
+
+				} else {
+					newArgs.push_back(arg);
+				}
+			}
+
+			return builder.callExpr(call->getType(), callee, newArgs);
+		}, core::transform::globalReplacement);
+
 		return core::tu::fromIR(resultIr);
 	}
 

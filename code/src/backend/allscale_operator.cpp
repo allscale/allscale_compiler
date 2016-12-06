@@ -185,6 +185,10 @@ namespace backend {
 						c_ast::ref(info.function->name)
 				);
 			};
+
+			table[ext.getTreetureFromRef()] = OP_CONVERTER {
+				return CONVERT_ARG(0);
+			};
 		}
 
 

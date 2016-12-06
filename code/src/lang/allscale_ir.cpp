@@ -418,6 +418,31 @@ namespace lang {
 		return builder.callExpr(returnType, allS.getTreetureRun(), param);
 	}
 
+	core::ExpressionPtr buildTreetureCombine(const core::ExpressionPtr& a, const core::ExpressionPtr& b,
+	                                         const core::ExpressionPtr& combinerLambda, const core::ExpressionPtr& parallel) {
+		assert_true(a) << "Given parameter a is null!";
+		assert_true(b) << "Given parameter a is null!";
+		assert_true(combinerLambda) << "Given parameter combinerLambda is null!";
+		assert_true(parallel) << "Given parameter parallel is null!";
+		auto combinerLambdaType = combinerLambda->getType();
+		assert_true(combinerLambdaType.isa<core::FunctionTypePtr>()) << "Type of combinerLambda is not a FunctionType, but of type: " << combinerLambdaType;
+		auto& mgr = a->getNodeManager();
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		core::IRBuilder builder(mgr);
+		auto treetureTypeA = TreetureType(a);
+		auto treetureTypeB = TreetureType(b);
+		auto combinerType = combinerLambdaType.as<core::FunctionTypePtr>();
+		auto combinerParamTypes = combinerType->getParameterTypeList();
+		assert_eq(combinerParamTypes.size(), 2) << "Given combinerLambda doesn't have two parameters";
+		assert_eq(treetureTypeA.getValueType(), combinerParamTypes[0]) << "Type of first parameter of combinerLambda: " << combinerParamTypes[0]
+				<< " doesn't match value type of parameter a: " << treetureTypeA.getValueType();
+		assert_eq(treetureTypeB.getValueType(), combinerParamTypes[1]) << "Type of second parameter of combinerLambda: " << combinerParamTypes[1]
+				<< " doesn't match value type of parameter b: " << treetureTypeB.getValueType();
+		core::GenericTypePtr returnType = TreetureType(combinerType->getReturnType(), false);
+		assert_true(parallel->getType() == builder.getLangBasic().getBool()) << "Given parallel parameter is not of boolean type, but: " << parallel->getType();
+		return builder.callExpr(returnType, allS.getTreetureCombine(), a, b, combinerLambda, parallel);
+	}
+
 	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
@@ -426,6 +451,23 @@ namespace lang {
 		auto returnType = treeture.getValueType();
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureGet(), param);
+	}
+
+	core::ExpressionPtr buildTreetureToRef(const core::ExpressionPtr& treetureExpr, const core::TypePtr& targetType) {
+		assert_true(treetureExpr) << "Given treetureExpr is null!";
+		assert_true(targetType) << "Given targetType is null!";
+		auto& mgr = treetureExpr->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getTreetureToRef(), treetureExpr, builder.getTypeLiteral(targetType));
+	}
+
+	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr) {
+		assert_true(refTreetureExpr) << "Given refTreetureExpr is null!";
+		auto& mgr = refTreetureExpr->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getTreetureFromRef(), refTreetureExpr);
 	}
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param) {

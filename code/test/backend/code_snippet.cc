@@ -145,7 +145,7 @@ namespace backend {
 						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-							return treeture_combine(step(i-1),step(i-2),add);
+							return treeture_combine(step(i-1),step(i-2),add,true);
 						} ]
 					)))
 				)"
@@ -350,7 +350,7 @@ namespace backend {
 							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 								let step = recfun_to_fun(steps.0);
 								let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-								return treeture_combine(step(i-1),step(i-2),add);
+								return treeture_combine(step(i-1),step(i-2),add,true);
 							} ]
 						)))(*p));
 						print("fib(%d)=%d\n",*p,r);
@@ -421,6 +421,43 @@ namespace backend {
 
 				int main() {
 					return fib(12);
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
+	TEST(DISABLED_CodeSnippet, CppFibLazy) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+				#include "allscale/api/user/arithmetic.h"
+
+				using namespace allscale::api::core;
+
+				int main() {
+					auto fib = prec(fun(
+							[](int x)->bool { return x < 2; },
+							[](int x)->int { return x; },
+							[](int x, const auto& f) {
+								return allscale::api::user::add(f(x - 1), f(x - 2));
+							}
+						)
+					);
+
+					auto res = fib(4);
+
+					return 0;
 				}
 			)";
 

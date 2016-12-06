@@ -33,13 +33,16 @@ namespace lang {
 		LANG_EXT_LITERAL(TreetureDone, "treeture_done", "('a) -> treeture<'a,f>")
 		LANG_EXT_LITERAL(TreetureRun, "treeture_run", "(treeture<'a, f>) -> treeture<'a, t>")
 
-		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a,f>,treeture<'b,f>,('a,'b)->'c)->treeture<'c,f>")
+		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a, f>, treeture<'b, f>, ('a,'b) -> 'c, bool) -> treeture<'c, f>")
 
 		LANG_EXT_LITERAL(TreetureGet, "treeture_get", "(treeture<'a,'r>) -> 'a")
 		LANG_EXT_LITERAL(TreetureLeft, "treeture_left", "(treeture<'a,'r>) -> treeref")
 		LANG_EXT_LITERAL(TreetureRight, "treeture_right", "(treeture<'a,'r>) -> treeref")
 
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
+
+		LANG_EXT_LITERAL(TreetureToRef,   "treeture_to_ref",   "(treeture<'a,'r>, type<ref<treeture<'a, 'r>, 'c, 'v, 'k>>) -> ref<treeture<'a,'r>, 'c, 'v, 'k>")
+		LANG_EXT_LITERAL(TreetureFromRef, "treeture_from_ref", "(ref<treeture<'a,'r>, 'c, 'v, 'k>) -> treeture<'a,'r>")
 
 		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 
@@ -242,7 +245,14 @@ namespace lang {
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
 
+	core::ExpressionPtr buildTreetureCombine(const core::ExpressionPtr& a, const core::ExpressionPtr& b,
+	                                         const core::ExpressionPtr& combinerLambda, const core::ExpressionPtr& parallel);
+
 	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param);
+
+	core::ExpressionPtr buildTreetureToRef(const core::ExpressionPtr& treetureExpr, const core::TypePtr& targetType);
+
+	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr);
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
 

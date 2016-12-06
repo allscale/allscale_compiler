@@ -30,6 +30,10 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
 	}
 
+	TEST(AllScaleConversionTest, Fib) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
+	}
+
 } // end namespace frontend
 } // end namespace compiler
 } // end namespace allscale
