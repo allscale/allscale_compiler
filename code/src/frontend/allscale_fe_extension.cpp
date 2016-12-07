@@ -19,6 +19,8 @@
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/utils.h"
 
+namespace iu = insieme::utils;
+
 namespace allscale {
 namespace compiler {
 namespace frontend {
@@ -407,7 +409,6 @@ namespace frontend {
 		auto& mgr = irExpr->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto& basic = mgr.getLangBasic();
-		auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
 		auto& allscaleExt = mgr.getLangExtension<lang::AllscaleModule>();
 
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
@@ -435,16 +436,14 @@ namespace frontend {
 							auto thisArg = core::analysis::getArgument(call, 0);
 							auto arg = core::analysis::getArgument(call, 1);
 							// on prec return value (closure) with simple call
-							if(name == insieme::utils::mangle("allscale::api::core::detail::prec_operation") + "::" + insieme::utils::getMangledOperatorCallName()) {
-								// we try to deref the this argument here. This is a rare case where we need to do so, because the semantics for the prec IR type are different
-								thisArg = derefOrDematerialize(thisArg);
-								if(refExt.isCallOfRefCast(arg) || refExt.isCallOfRefKindCast(arg)) { arg = builder.deref(removeUndesiredRefCasts(arg)); }
-								return builder.callExpr(thisArg, arg);
+							if(name == iu::mangle("allscale::api::core::detail::prec_operation") + "::" + iu::getMangledOperatorCallName()) {
+								// we try to deref the this argument here.
+								// This is a rare case where we need to do so, because the semantics for the prec IR type are different
+								return builder.callExpr(derefOrDematerialize(thisArg), derefOrDematerialize(arg));
 							}
 							// on call operator of recfun
 							if(name == std::string("recfun::") + insieme::utils::getMangledOperatorCallName()) {
-								const auto& originalThis = core::analysis::getArgument(call, 0);
-								return builder.callExpr(lang::buildRecfunToFun(builder.deref(thisArg)), arg);
+								return builder.callExpr(lang::buildRecfunToFun(derefOrDematerialize(thisArg)), arg);
 							}
 						}
 					}
