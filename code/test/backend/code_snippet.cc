@@ -265,14 +265,14 @@ namespace backend {
 						var ref<array<int<4>,12>> a = <ref<array<int<4>,12>>>(ref_decl(type_lit(ref<array<int<4>,12>>))){};
 						prec((build_recfun(
 							  ( r : (int<4>,int<4>) ) => r.0 >= r.1,
-							[ 
-							  ( r : (int<4>,int<4>) ) => { 
+							[
+							  ( r : (int<4>,int<4>) ) => {
 								for(int<4> i = r.0 .. r.1 ) {
 									a[i] = 12;
 								}
 								return true;
-							  }	 
-							],[ 
+							  }
+							],[
 							  ( r : (int<4>,int<4>), steps : (recfun<(int<4>,int<4>),bool>) ) => {
 								let step = recfun_to_fun(steps.0);
 								auto m = (r.0 + r.1) / 2 ;
@@ -281,7 +281,7 @@ namespace backend {
 								treeture_get(a);
 								treeture_get(b);
 								return treeture_done(true);
-							  } 
+							  }
 							]
 						)))((0,12));
 					}
@@ -395,6 +395,26 @@ namespace backend {
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 
+	}
+
+	// make sure allscale BE does not break standard interception
+	TEST(CodeSnippet, CppInputCout) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include <iostream>
+
+				int main() {
+					std::cout << 1 << std::endl;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
 	}
 
 

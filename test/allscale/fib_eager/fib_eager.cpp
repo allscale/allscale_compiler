@@ -1,11 +1,12 @@
 
+#include <iostream>
+
 #include "allscale/api/core/prec.h"
 
 using namespace allscale::api::core;
 
-
 int fib_static(int x) {
-    return (x < 2) ? x : fib_static(x-1) + fib_static(x-2);
+	return (x < 2) ? x : fib_static(x - 1) + fib_static(x - 2);
 }
 
 int fibEager(int x) {
@@ -18,16 +19,19 @@ int fibEager(int x) {
 			return done(a.get() + b.get());
 		}
 	));
-    return f(x).get();
+	return f(x).get();
 }
 
 int main() {
-    const int N = 42;
-    const int fibN = fib_static(N);
+	const int N = 42;
+	const int fibN = fib_static(N);
+	const int fibE = fibEager(N);
 
-    // run the evaluation
-    bool success = fibN == fibEager(N);
+	std::cout << fibE << std::endl;
 
-    // return success state
+	// run the evaluation
+	bool success = fibN == fibE;
+
+	// return success state
 	return (success) ? 0 : 1;
 }
