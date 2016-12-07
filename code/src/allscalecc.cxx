@@ -1,11 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <boost/filesystem.hpp>
+
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/utils/object_file_utils.h"
-#include "insieme/frontend/extensions/interceptor_extension.h"
 
-#include "allscale/compiler/frontend/allscale_fe_extension.h"
+#include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/backend/allscale_backend.h"
 
 namespace driver = insieme::driver;
@@ -38,7 +39,8 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	options.job.registerFrontendExtension<allscale::compiler::frontend::AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
+	// configure for AllScale
+	allscale::compiler::frontend::configureConversionJob(options.job);
 
 	bool createSharedObject = boost::filesystem::extension(target) == ".so";
 
