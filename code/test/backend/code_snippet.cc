@@ -473,6 +473,42 @@ namespace backend {
 
 	}
 
+	TEST(DISABLED_CodeSnippet, CppFac) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+				#include "allscale/api/user/arithmetic.h"
+
+				using namespace allscale::api::core;
+
+				int main() {
+					auto fac = prec(fun(
+							[](int x)->bool { return x < 2; },
+							[](int x)->int { return 1; },
+							[](int x, const auto& f) {
+								return allscale::api::user::mul(done(x), f(x - 1));
+							}
+						)
+					);
+
+					auto res = fac(4);
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
 
 } // end namespace backend
 } // end namespace compiler

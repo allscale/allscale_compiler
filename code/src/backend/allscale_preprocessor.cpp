@@ -167,6 +167,7 @@ namespace backend {
 		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun, bool serialize) {
 			auto& mgr = stepCase->getNodeManager();
 			core::IRBuilder builder(stepCase->getNodeManager());
+			auto& basic = mgr.getLangBasic();
 
 			assert_true(stepCase.isa<core::LambdaExprPtr>())
 				<< "Only supported for lambdas so far!\n"
@@ -255,7 +256,7 @@ namespace backend {
 					if (!call) return node;
 
 					if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
-						return call->getArgument(0);
+						return builder.callExpr(basic.getId(), call->getArgument(0));
 					}
 
 					if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
