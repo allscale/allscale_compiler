@@ -16,7 +16,7 @@ namespace frontend {
 		job.addIncludeDirectory(apiIncludeDir);
 		job.addInterceptedHeaderDir(apiIncludeDir + "allscale/api/core/");
 		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
-		job.registerFrontendExtension<insieme::frontend::extensions::InterceptorExtension>();
+		job.registerDefaultExtensions();
 		job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
 	}
 
