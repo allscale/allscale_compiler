@@ -38,7 +38,8 @@ ExternalProject_Add(
 		-DCMAKE_C_COMPILER_ARG1=${CMAKE_C_COMPILER_ARG1}
 		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_CXX_COMPILER_ARG1=${CMAKE_CXX_COMPILER_ARG1}
-        -DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX 
+        -DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX
+	-DHPX_WITH_MALLOC=jemalloc 
         -DALLSCALE_WITH_TESTS=off
     INSTALL_COMMAND ""
 )
