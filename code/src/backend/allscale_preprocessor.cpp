@@ -660,7 +660,8 @@ namespace backend {
 
 			// check that everything is composed correctly
 			assert_true(core::checks::check(res).empty())
-				<< core::printer::dumpErrors(core::checks::check(res));
+				<< "Errors:\n" << core::checks::check(res)
+				<< "Code:\n" << core::printer::dumpErrors(core::checks::check(res));
 
 			// done
 			return res;
