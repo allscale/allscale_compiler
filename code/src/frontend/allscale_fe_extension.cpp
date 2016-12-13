@@ -17,7 +17,7 @@
 #include "insieme/utils/iterator_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
-#include "allscale/compiler/utils.h"
+#include "allscale/compiler/allscale_utils.h"
 
 namespace iu = insieme::utils;
 
@@ -608,7 +608,7 @@ namespace frontend {
 		core::IRBuilder builder(prog->getNodeManager());
 
 		// temporarily dump the generated IR in a readable format
-		//dumpReadable(prog);
+		dumpReadable(prog);
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
 		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
