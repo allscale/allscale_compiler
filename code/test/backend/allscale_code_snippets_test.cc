@@ -493,7 +493,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppFac) {
+	TEST(CodeSnippet, DISABLED_CppFac) {
 		NodeManager mgr;
 
 		auto code = R"(
