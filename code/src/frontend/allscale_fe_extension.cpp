@@ -390,7 +390,7 @@ namespace frontend {
 						}
 					}
 					assert_eq(templateArgs.size(), 2);
-					getTranslationStateManager().pushState(TranslationState{ type, templateArgs[0], templateArgs[1] });
+					getTranslationStateManager().pushState(TranslationState{ type, templateArgs[1], templateArgs[0] });
 				}
 			}
 		}
