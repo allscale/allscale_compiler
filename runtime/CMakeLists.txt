@@ -18,7 +18,7 @@ ExternalProject_Add(
 		-DHPX_WITH_THREAD_IDLE_RATES=On
         -DBOOST_ROOT=${Boost_INCLUDE_DIRS}/..
         -DHWLOC_ROOT=${Hwloc_INCLUDE_DIRS}/.. 
-        -DHPX_WITH_MALLOC=jemalloc
+        -DHPX_WITH_MALLOC=system
     INSTALL_COMMAND ""
 )
 
