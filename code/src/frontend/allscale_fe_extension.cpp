@@ -222,6 +222,8 @@ namespace frontend {
 				checkForCallOperator(structType);
 				paramType = utils::extractCallOperatorType(structType)->getParameterType(1);
 
+				paramType = core::lang::ReferenceType::create(paramType,true,false,core::lang::ReferenceType::Kind::CppReference);
+
 				auto cutoffClosureType = builder.functionType(paramType, builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
 
 				cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
@@ -390,7 +392,8 @@ namespace frontend {
 						}
 					}
 					assert_eq(templateArgs.size(), 2);
-					getTranslationStateManager().pushState(TranslationState{ type, templateArgs[1], templateArgs[0] });
+
+					getTranslationStateManager().pushState(TranslationState{ type, core::lang::ReferenceType::create(templateArgs[1],true,false,core::lang::ReferenceType::Kind::CppReference), templateArgs[0] });
 				}
 			}
 		}

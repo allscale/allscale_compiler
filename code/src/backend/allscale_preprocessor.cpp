@@ -126,7 +126,7 @@ namespace backend {
 			// check that what has been build is properly composed
 			assert_true(core::checks::check(main).empty())
 				<< dumpPretty(main) << "\n"
-				<< core::checks::check(main);
+				<< insieme::core::printer::dumpErrors(core::checks::check(main));
 
 			// convert this main into a work item
 			WorkItemVariant impl(main);
@@ -564,7 +564,7 @@ namespace backend {
 
 					// create a new argument
 					core::ExpressionList args;
-					args.push_back(call->getArgument(0));
+					args.push_back(builder.deref(call->getArgument(0)));
 					for(unsigned i = 1; i < closureSize; ++i) {
 						args.push_back(builder.deref(builder.refComponent(parameter,i)));
 					}
@@ -708,7 +708,16 @@ namespace backend {
 
 			// create the closure type
 			core::TypeList closureElements;
-			closureElements.push_back(op.getParameterType());
+
+			// the parameter must always be captured by value
+			auto paramType = op.getParameterType();
+			if (core::lang::isReference(paramType)) {
+				closureElements.push_back(core::lang::ReferenceType(paramType).getElementType());
+			} else {
+				closureElements.push_back(paramType);
+			}
+
+			// add captured values
 			for(const auto& cur : captured) {
 				closureElements.push_back(cur.getType());
 			}

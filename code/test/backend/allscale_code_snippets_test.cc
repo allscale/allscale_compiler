@@ -417,6 +417,28 @@ namespace backend {
 		ASSERT_TRUE(trg);
 	}
 
+	TEST(CodeSnippet, CppEmptyMainWithArgs) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				int main(int argc, char** argv) {
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
 
 	TEST(CodeSnippet, CppFib) {
 		NodeManager mgr;
@@ -493,7 +515,7 @@ namespace backend {
 
 	}
 
-	TEST(CodeSnippet, DISABLED_CppFac) {
+	TEST(CodeSnippet, CppFac) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -529,6 +551,106 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 
 	}
+
+	TEST(CodeSnippet, CppRange) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+				
+				int main() {
+					
+					struct range {
+						int start;
+						int end;
+					};
+			
+					prec(fun(
+						[](range r) { return r.start+ 1 >= r.end; },
+						[](range r) {
+							for(int i=r.start; i<r.end; i++) {
+								// nothing
+							}
+							return true;
+						},
+						[](range r, const auto& f) {
+							int m = r.start + (r.start + r.end) / 2;
+							auto a = run(f(range{r.start,m}));
+							auto b = run(f(range{m,r.end}));
+							a.get();
+							b.get();
+							return done(true);
+						} 
+					))(range{0,1000}).get();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
+
+	TEST(CodeSnippet, CppRangeReference) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+				
+				int main(int argc, char** argv) {
+					
+					struct range {
+						int begin;
+						int end;
+					};
+			
+					prec(fun(
+						[](const range& r) { return r.begin + 1 >= r.end; },
+						[](const range& r) {
+							for(int i=r.begin; i<r.end; i++) {
+								// nothing
+							}
+							return true;
+						},
+						[](const range& r, const auto& f) {
+							int m = r.begin + (r.begin + r.end) / 2;
+							auto a = run(f(range{r.begin,m}));
+							auto b = run(f(range{m,r.end}));
+							a.get();
+							b.get();
+							return done(true);
+						} 
+					))(range{0,1000}).get();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
 
 } // end namespace backend
 } // end namespace compiler
