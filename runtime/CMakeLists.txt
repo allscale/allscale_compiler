@@ -15,10 +15,11 @@ ExternalProject_Add(
 		-DCMAKE_C_COMPILER_ARG1=${CMAKE_C_COMPILER_ARG1}
 		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_CXX_COMPILER_ARG1=${CMAKE_CXX_COMPILER_ARG1}
-        -DBOOST_ROOT=${Boost_INCLUDE_DIRS}/..
-        -DHWLOC_ROOT=${Hwloc_INCLUDE_DIRS}/.. 
-        -DHPX_WITH_MALLOC=system
-    INSTALL_COMMAND ""
+		-DHPX_WITH_THREAD_IDLE_RATES=On
+		-DBOOST_ROOT=${Boost_INCLUDE_DIRS}/..
+		-DHWLOC_ROOT=${Hwloc_INCLUDE_DIRS}/..
+		-DHPX_WITH_MALLOC=system
+		INSTALL_COMMAND ""
 )
 
 ExternalProject_Get_Property(hpx source_dir binary_dir)
@@ -37,9 +38,10 @@ ExternalProject_Add(
 		-DCMAKE_C_COMPILER_ARG1=${CMAKE_C_COMPILER_ARG1}
 		-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 		-DCMAKE_CXX_COMPILER_ARG1=${CMAKE_CXX_COMPILER_ARG1}
-        -DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX 
-        -DALLSCALE_WITH_TESTS=off
-    INSTALL_COMMAND ""
+		-DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX
+		-DHPX_WITH_MALLOC=system
+		-DALLSCALE_WITH_TESTS=off
+		INSTALL_COMMAND ""
 )
 
 ExternalProject_Get_Property(allscale_runtime source_dir binary_dir)

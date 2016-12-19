@@ -1,4 +1,4 @@
-#include "allscale/compiler/utils.h"
+#include "allscale/compiler/allscale_utils.h"
 
 #include "insieme/core/ir_types.h"
 

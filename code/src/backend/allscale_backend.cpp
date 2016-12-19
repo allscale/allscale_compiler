@@ -82,6 +82,8 @@ namespace backend {
 		compiler.addFlag(format("-O%d", optimization_level));
 		if (optimization_level == 0) {
 			compiler.addFlag("-g3");
+		} else {
+			compiler.addFlag("-DNDEBUG");
 		}
 
 		// add syntax only flag

@@ -9,7 +9,7 @@
 #include "insieme/core/types/match.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
-#include "allscale/compiler/utils.h"
+#include "allscale/compiler/allscale_utils.h"
 
 using namespace insieme::core;
 using namespace insieme::core::checks;

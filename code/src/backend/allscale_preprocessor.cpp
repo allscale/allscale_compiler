@@ -167,6 +167,7 @@ namespace backend {
 		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun, bool serialize) {
 			auto& mgr = stepCase->getNodeManager();
 			core::IRBuilder builder(stepCase->getNodeManager());
+			auto& basic = mgr.getLangBasic();
 
 			assert_true(stepCase.isa<core::LambdaExprPtr>())
 				<< "Only supported for lambdas so far!\n"
@@ -255,7 +256,7 @@ namespace backend {
 					if (!call) return node;
 
 					if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
-						return call->getArgument(0);
+						return builder.callExpr(basic.getId(), call->getArgument(0));
 					}
 
 					if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
@@ -542,10 +543,49 @@ namespace backend {
 				params.push_back(recFunParam);
 			}
 
+			// get the number of elements in the closure
+			auto closureSize = paramTypes[0].as<core::TupleTypePtr>().size();
+
+			// create the operator to update recursive calls
+			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+			auto fixRecursiveCalls = [&](const core::CompoundStmtPtr& body) {
+				return core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
+
+					// only interested in calls
+					auto call = node.isa<core::CallExprPtr>();
+					if (!call) return node;
+
+					// check that the target function is a call itself
+					auto trgFunCall = call->getFunctionExpr().isa<core::CallExprPtr>();
+					if (!trgFunCall) return node;
+
+					// check that this target function is a call to recfun_2_fun
+					if (!core::analysis::isCallOf(trgFunCall,ext.getRecfunToFun())) return node;
+
+					// create a new argument
+					core::ExpressionList args;
+					args.push_back(call->getArgument(0));
+					for(unsigned i = 1; i < closureSize; ++i) {
+						args.push_back(builder.deref(builder.refComponent(parameter,i)));
+					}
+					auto newArg = builder.tupleExpr(args);
+
+					// create a new call
+					return builder.callExpr(
+							builder.callExpr(
+									ext.getRecfunToFun(),
+									builder.deref(builder.refComponent(recFunParam,0))
+							),
+							newArg
+					);
+
+				}).as<core::CompoundStmtPtr>();
+			};
+
 
 			core::CompoundStmtPtr inputBody;
 			if (auto lambda = expr.isa<core::LambdaExprPtr>()) {
-				inputBody = lambda->getBody();
+				inputBody = fixRecursiveCalls(lambda->getBody());
 			} else if (auto bind = expr.isa<core::BindExprPtr>()) {
 
 				// get the call expression
@@ -555,32 +595,29 @@ namespace backend {
 				if (auto fun = call->getFunctionExpr().isa<core::LambdaExprPtr>()) {
 
 					// we inline its body here
-					inputBody = fun->getBody();
+					inputBody = fixRecursiveCalls(fun->getBody());
 
-					// by replacing the parameters by their arguments
-					auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
-					inputBody = core::transform::transformBottomUp(inputBody, [&](const core::NodePtr& node)->core::NodePtr {
+					// get the list of free parameters of the body
+					auto freeParams = core::analysis::getFreeVariables(inputBody);
 
-						// we are interested in code reading parameters
-						if (!core::analysis::isCallOf(node,refExt.getRefDeref())) return node;
+					// start by declaring all free parameters of the body as local variables
+					core::StatementList newBodyStmts;
+					auto paramList = fun->getParameterList();
+					auto argList = call->getArgumentList();
+					for(unsigned i=0; i<paramList.size(); ++i) {
+						if (contains(freeParams, paramList[i])) {
+							newBodyStmts.push_back(builder.declarationStmt(paramList[i], argList[i]));
+						}
+					}
 
-						auto var = node.as<core::CallExprPtr>()->getArgument(0).isa<core::VariablePtr>();
-						if (!var) return node;
-
-						// check whether the variable is a parameter
-						const auto& params = fun->getParameterList();
-						auto pos = std::find(params.begin(),params.end(), var);
-						if (pos == params.end()) return node;
-
-						// replace this parameter read by the corresponding argument
-						return call->getArgument(pos - params.begin());
-
-					}).as<core::CompoundStmtPtr>();
+					// build the new body
+					newBodyStmts.push_back(inputBody);
+					inputBody = builder.compoundStmt(newBodyStmts);
 
 				} else {
 
 					// otherwise just wrap the call expression
-					inputBody = builder.compoundStmt(builder.returnStmt(call));
+					inputBody = fixRecursiveCalls(builder.compoundStmt(builder.returnStmt(call)));
 
 				}
 
@@ -612,44 +649,6 @@ namespace backend {
 				std::cout << "New Body:\n" << dumpPretty(body) << "\n";
 			}
 
-			// get the number of elements in the closure
-			auto closureSize = paramTypes[0].as<core::TupleTypePtr>().size();
-
-			// update recursive calls
-			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
-			body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
-
-				// only interested in calls
-				auto call = node.isa<core::CallExprPtr>();
-				if (!call) return node;
-
-				// check that the target function is a call itself
-				auto trgFunCall = call->getFunctionExpr().isa<core::CallExprPtr>();
-				if (!trgFunCall) return node;
-
-				// check that this target function is a call to recfun_2_fun
-				if (!core::analysis::isCallOf(trgFunCall,ext.getRecfunToFun())) return node;
-
-				// create a new argument
-				core::ExpressionList args;
-				args.push_back(call->getArgument(0));
-				for(unsigned i = 1; i < closureSize; ++i) {
-					args.push_back(builder.deref(builder.refComponent(parameter,i)));
-				}
-				auto newArg = builder.tupleExpr(args);
-
-				// create a new call
-				return builder.callExpr(
-						builder.callExpr(
-								ext.getRecfunToFun(),
-								builder.deref(builder.refComponent(recFunParam,0))
-						),
-						newArg
-				);
-
-			}).as<core::CompoundStmtPtr>();
-
-
 			// build new lambda
 			auto res = builder.normalize(builder.lambdaExpr(funType, params, body));
 
@@ -661,8 +660,8 @@ namespace backend {
 
 			// check that everything is composed correctly
 			assert_true(core::checks::check(res).empty())
-				<< core::checks::check(res)
-				<< "Code:\n" << dumpColor(res);
+				<< "Errors:\n" << core::checks::check(res)
+				<< "Code:\n" << core::printer::dumpErrors(core::checks::check(res));
 
 			// done
 			return res;

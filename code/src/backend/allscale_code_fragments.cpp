@@ -93,8 +93,8 @@ namespace backend {
 				// 5) convert variants
 				std::vector<TypeInfo> variants;
 				int i = 0;
-				variants.push_back(createVariantImplementation(context,desc.getProcessVariant(),name,i++));
 				variants.push_back(createVariantImplementation(context,desc.getSplitVariant(),name,i++));
+				variants.push_back(createVariantImplementation(context,desc.getProcessVariant(),name,i++));
 				for(const auto& cur : desc.getOptionalVariants()) {
 					variants.push_back(createVariantImplementation(context,cur,name,i++));
 				}
