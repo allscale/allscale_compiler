@@ -87,9 +87,8 @@ namespace backend {
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 
 			// check that what has been build is properly composed
-			assert_true(core::checks::check(prog).empty())
-				<< "Invalid input program for EntryPointWrapper\n"
-				<< core::checks::check(prog);
+			assert_correct_ir(prog)
+				<< "Invalid input program for EntryPointWrapper\n";
 
 			// get the main entry point
 			assert_eq(1, prog->getEntryPoints().size());
@@ -542,8 +541,8 @@ namespace backend {
 
 			// print type debug message
 			if (debug) {
-				std::cout << "Converting expression of type " << *inputFunType << "\n"
-							 "       to lambda expr of type " << *funType << "\n\n";
+				std::cout << "Converting expression of type\n" << dumpReadable(inputFunType) << "\n"
+							 "       to lambda expr of type\n" << dumpReadable(funType) << "\n\n";
 			}
 
 			// assemble new parameter list
@@ -577,7 +576,15 @@ namespace backend {
 
 					// create a new argument
 					core::ExpressionList args;
-					args.push_back(call->getArgument(0));
+
+					// add recursive parameter
+					if (core::lang::isReference(call->getArgument(0))) {
+						args.push_back(builder.deref(call->getArgument(0)));
+					} else {
+						args.push_back(call->getArgument(0));
+					}
+
+					// forward captured values
 					for(unsigned i = 1; i < closureSize; ++i) {
 						args.push_back(builder.deref(builder.refComponent(parameter,i)));
 					}
@@ -999,23 +1006,46 @@ namespace backend {
 			auto callOperator = getCallOperatorImpl(call->getArgument(0));
 
 			// get resulting function type
-			auto funType = call->getType().as<core::FunctionTypePtr>();
+			auto resFunType = call->getType().as<core::FunctionTypePtr>();
 
 			// create parameters
 			core::VariableList params;
 			core::ExpressionList args;
 			args.push_back(call->getArgument(0));
-			for(const auto& cur : funType->getParameterTypeList()) {
-				auto param = builder.variable(cur);
+
+			// need to align in and out parameter types
+			auto resFunParamTypes = resFunType->getParameterTypeList();
+			auto opFunParamTypes = callOperator->getFunctionType()->getParameterTypeList();
+			assert_eq(resFunParamTypes.size() + 1, opFunParamTypes.size());
+
+			// map incoming parameters to outgoing parameters
+			for(unsigned i = 0; i < resFunParamTypes.size(); ++i) {
+
+				auto inParamType = resFunParamTypes[i];
+				auto outParamType = opFunParamTypes[i+1];
+
+				auto param = builder.variable(inParamType);
 				params.push_back(param);
-				args.push_back(param);
+
+				// add a deref if necessary
+				if (inParamType == outParamType) {
+					args.push_back(param);
+				} else {
+					args.push_back(builder.deref(param));
+				}
 			}
 
 			// build call to member function
 			auto body = builder.callExpr(callOperator,args);
 
 			// replace by a bind
-			return builder.bindExpr(funType, params, body);
+			auto res = builder.bindExpr(resFunType, params, body);
+
+			// a final correctness check
+			assert_correct_ir(res);
+
+			// replace by a bind
+			return res;
 
 		}
 
@@ -1070,8 +1100,7 @@ namespace backend {
 		}, core::transform::globalReplacement);
 
 		// check the result
-		assert_true(core::checks::check(res).empty())
-			<< core::checks::check(res);
+		assert_correct_ir(res);
 
 		// return result
 		return res;

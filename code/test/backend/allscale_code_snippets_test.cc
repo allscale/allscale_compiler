@@ -443,6 +443,10 @@ namespace backend {
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
 
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
 		// convert with allscale backend
 		auto trg = convert(prog);
 		ASSERT_TRUE(trg);
@@ -467,6 +471,10 @@ namespace backend {
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
 
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
 		// convert with allscale backend
 		auto trg = convert(prog);
 		ASSERT_TRUE(trg);
@@ -486,6 +494,10 @@ namespace backend {
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
 
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
 		// convert with allscale backend
 		auto trg = convert(prog);
 		ASSERT_TRUE(trg);
@@ -495,7 +507,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppFib) {
+	TEST(CodeSnippet, CppFib) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -524,6 +536,10 @@ namespace backend {
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
 
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
 		// convert with allscale backend
 		auto trg = convert(prog);
 		ASSERT_TRUE(trg);
@@ -533,7 +549,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppFibLazy) {
+	TEST(CodeSnippet, CppFibLazy) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -560,6 +576,10 @@ namespace backend {
 
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -598,6 +618,10 @@ namespace backend {
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
 
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
 		// convert with allscale backend
 		auto trg = convert(prog);
 		ASSERT_TRUE(trg);
@@ -607,7 +631,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppRange) {
+	TEST(CodeSnippet, CppRange) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -646,6 +670,10 @@ namespace backend {
 
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -696,6 +724,10 @@ namespace backend {
 
 		auto prog = frontend::parseCode(mgr,code);
 		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
