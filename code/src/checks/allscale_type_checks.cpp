@@ -50,7 +50,7 @@ namespace checks {
 		// check first parameter type
 		auto expectedParamType = funType.getParameterType(0);
 		auto actualParamType = operatorType.getParameterType(1);
-		if(expectedParamType != actualParamType) {
+		if(!core::types::typeMatchesWithOptionalMaterialization(address->getNodeManager(), expectedParamType, actualParamType)) {
 			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
 			                 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
 		}
@@ -59,7 +59,7 @@ namespace checks {
 		if(operatorType->getParameterTypeList().size() == 3) {
 			expectedParamType = funType.getParameterType(1);
 			actualParamType = operatorType.getParameterType(2);
-			if(expectedParamType != actualParamType) {
+			if(!core::types::typeMatchesWithOptionalMaterialization(address->getNodeManager(), expectedParamType, actualParamType)) {
 				add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
 												 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
 			}

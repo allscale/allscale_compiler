@@ -14,7 +14,7 @@ int main() {
 		decl struct __any_string__step;
 		decl IMP__operator_call_:const __any_string__cutoff::(int<4>) -> bool;
 		decl IMP__operator_call_:const __any_string__base::(int<4>) -> int<4>;
-		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
+		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) -> treeture<int<4>,f>;
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
 		def struct __any_string__cutoff {
@@ -28,34 +28,34 @@ int main() {
 			}
 		};
 		def struct __any_string__step {
-			const function IMP__operator_call_ = (v171 : ref<int<4>,f,f,plain>, v195 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
+			const function IMP__operator_call_ = (v171 : ref<int<4>,f,f,plain>, v195 : ref<(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
 				var ref<treeture<int<4>,t>,f,f,plain> v173 = treeture_run(
 					recfun_to_fun(
-						tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
+						tuple_member_access(*v195, 0ul, type_lit(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>))
 					)(*v171-1)
 				);
 				var ref<treeture<int<4>,t>,f,f,plain> v178 = treeture_run(
 					recfun_to_fun(
-						tuple_member_access(*v195, 0ul, type_lit(recfun<int<4>,int<4>>))
+						tuple_member_access(*v195, 0ul, type_lit(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>))
 					)(*v171-2)
 				);
 				return treeture_done(treeture_get(*v173)+treeture_get(*v178));
 			}
 		};
 		{
-			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
+			var ref<(ref<int<4>,t,f,cpp_ref>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
 					(build_recfun(
 							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
-									type_lit((int<4>) => bool)
+									type_lit((ref<int<4>,t,f,cpp_ref>) => bool)
 							),
 							[cpp_lambda_to_closure(
 									<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
-									type_lit((int<4>) => int<4>)
+									type_lit((ref<int<4>,t,f,cpp_ref>) => int<4>)
 							)],
 							[cpp_lambda_to_closure(
 									<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
-									type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
+									type_lit((ref<int<4>,t,f,cpp_ref>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) => treeture<int<4>,f>)
 							)]
 					))
 			);
@@ -85,7 +85,7 @@ int main() {
 		decl main : () -> int<4>;
 		decl __any_string__add_lambda : (ref<treeture<int<4>,f>,f,f,cpp_rref>, ref<treeture<int<4>,f>,f,f,cpp_rref>) -> treeture<int<4>,f>;
 		decl IMP__operator_call_:const __any_string__add_lambda::(ref<int<4>,t,f,cpp_ref>, ref<int<4>,t,f,cpp_ref>) -> int<4>;
-		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
+		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) -> treeture<int<4>,f>;
 		decl IMP__operator_call_:const __any_string__base::(int<4>) -> int<4>;
 		decl IMP__operator_call_:const __any_string__cutoff::(int<4>) -> bool;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__comma__space_const_space_int_space__ampersand__rparen_:const __any_string__add_lambda::() -> ptr<(ref<int<4>,t,f,cpp_ref>, ref<int<4>,t,f,cpp_ref>) -> int<4>,t,f>;
@@ -97,13 +97,13 @@ int main() {
 			}
 		};
 		def struct __any_string__step {
-			const function IMP__operator_call_ = (v871 : ref<int<4>,f,f,plain>, v890 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
+			const function IMP__operator_call_ = (v871 : ref<int<4>,f,f,plain>, v890 : ref<(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
 				return __any_string__add_lambda (
 						recfun_to_fun(
-								tuple_member_access(*v890, 0ul, type_lit(recfun<int<4>,int<4>>))
+								tuple_member_access(*v890, 0ul, type_lit(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>))
 						)(*v871-1),
 						recfun_to_fun(
-								tuple_member_access(*v890, 0ul, type_lit(recfun<int<4>,int<4>>))
+								tuple_member_access(*v890, 0ul, type_lit(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>))
 						)(*v871-2)
 				);
 			}
@@ -138,19 +138,19 @@ int main() {
 			);
 		};
 		{
-			var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> v891 = prec(
+			var ref<(ref<int<4>,t,f,cpp_ref>) => treeture<int<4>,f>,f,f,plain> v891 = prec(
 					(build_recfun(
 							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
-									type_lit((int<4>) => bool)
+									type_lit((ref<int<4>,t,f,cpp_ref>) => bool)
 							),
 							[cpp_lambda_to_closure(
 									<ref<__any_string__base,f,f,plain>>(ref_temp(type_lit(__any_string__base))) {},
-									type_lit((int<4>) => int<4>)
+									type_lit((ref<int<4>,t,f,cpp_ref>) => int<4>)
 							)],
 							[cpp_lambda_to_closure(
 									<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
-									type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
+									type_lit((ref<int<4>,t,f,cpp_ref>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) => treeture<int<4>,f>)
 							)]
 					))
 			);
