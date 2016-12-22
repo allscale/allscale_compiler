@@ -240,6 +240,14 @@ namespace backend {
 				definition->parameters.push_back(resTypeInfo.rValueType);
 				definition->parameters.push_back(nameFactory.type);
 
+				// mark work item as serializable or not
+				bool serializable = false;	// TODO: determine this based on the actual closure type
+				if (serializable) {
+					definition->parameters.push_back(mgr->create<backend::c_ast::NamedType>(mgr->create("allscale::do_serialization")));
+				} else {
+					definition->parameters.push_back(mgr->create<backend::c_ast::NamedType>(mgr->create("allscale::no_serialization")));
+				}
+
 				// create the defining type alias
 				auto alias = backend::c_ast::alias(namedType,definition);
 

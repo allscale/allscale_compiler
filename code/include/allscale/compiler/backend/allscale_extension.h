@@ -1,6 +1,7 @@
 #pragma once
 
 #include "insieme/core/lang/extension.h"
+#include "insieme/core/lang/reference.h"
 
 namespace allscale {
 namespace compiler {
@@ -25,14 +26,14 @@ namespace backend {
 
 	public:
 
+		// import reference extension
+		IMPORT_MODULE(insieme::core::lang::ReferenceExtension);
 
 		// --- work item description ---
 
-		LANG_EXT_TYPE(WorkItemDescriptionGen, "art_wi_desc<'Res,'Args...>");
-
 		LANG_EXT_LITERAL(CreateWorkItemDescription, "art_wi_desc_create", "('a,type<('Args...)>,type<'Res>)->art_wi_desc<('Args...),'Res>");
 
-		LANG_EXT_LITERAL(CreateWorkItemDescriptionReference, "art_wi_desc_ref", "(identifier,type<('Args...)>,type<'Res>)->art_wi_desc<('Args...),'Res>");
+		LANG_EXT_LITERAL(CreateWorkItemDescriptionReference, "art_wi_desc_ref", "(identifier,type<cpp_ref<('Args...),t,f>>,type<'Res>)->art_wi_desc<('Args...),'Res>");
 
 
 		// --- a primitive to start a work item ---

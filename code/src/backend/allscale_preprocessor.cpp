@@ -106,7 +106,7 @@ namespace backend {
 
 			core::ExpressionList args;
 			for(unsigned i=0; i<main->getFunctionType()->getParameterTypes().size(); ++i) {
-				args.push_back(builder.refComponent(param,i));
+				args.push_back(builder.deref(builder.refComponent(param,i)));
 			}
 
 			// create body wrapping up computation and treeture conversion
@@ -136,7 +136,9 @@ namespace backend {
 			// create a new main entry point
 			core::ExpressionList entryPointArgs;
 			entryPointArgs.push_back(desc.toIR(mgr));
-			for(const auto& cur : oldMain->getParameterList()->getParameters()) entryPointArgs.push_back(cur);
+			for(const auto& cur : oldMain->getParameterList()->getParameters()) {
+				entryPointArgs.push_back(builder.deref(cur));
+			}
 
 			auto& asbm = mgr.getLangExtension<AllScaleBackendModule>();
 			auto newMainBody = builder.compoundStmt(
@@ -308,7 +310,7 @@ namespace backend {
 			const auto& fun = op.getFunction();
 
 			// get the in-parameter
-			auto in = builder.variable(builder.refType(fun.getParameterType(),true,false,core::lang::ReferenceType::Kind::CppReference));
+			auto in = builder.variable(fun.getParameterType());
 			auto inVal = builder.deref(in);
 
 			// get the type of the resulting function (same as the base case type)
@@ -359,8 +361,7 @@ namespace backend {
 			const auto& fun = op.getFunction();
 
 			// get the in-parameter
-			auto in = builder.variable(builder.refType(fun.getParameterType(),true,false,core::lang::ReferenceType::Kind::CppReference));
-			auto inVal = builder.deref(in);
+			auto in = builder.variable(fun.getParameterType());
 
 			// get the type of the resulting function
 			auto funType = builder.functionType(in->getType(), op.getTreetureType().toIRType());
@@ -384,11 +385,11 @@ namespace backend {
 			auto body = builder.compoundStmt(
 				builder.ifStmt(
 					// check the base case test
-					builder.callExpr(fun.getBaseCaseTest(), inVal),
+					builder.callExpr(fun.getBaseCaseTest(), in),
 					// if in the base case => run base case
-					builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(fun.getBaseCases()[0],inVal))),
+					builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(fun.getBaseCases()[0],in))),
 					// else run step case
-					builder.returnStmt(builder.callExpr(stepFun,inVal))
+					builder.returnStmt(builder.callExpr(stepFun,in))
 				)
 			);
 
@@ -498,8 +499,7 @@ namespace backend {
 		/**
 		 * Convert the given lambda or bind into a lambda extracting all the captured values and the first parameters value from a single closure parameter.
 		 */
-		core::LambdaExprPtr convertToLambdaWithClosureParameter(const core::ExpressionPtr& expr, const core::VariablePtr& parameter, const core::NodeMap& captureReplacements) {
-			static bool debug = false;
+		core::LambdaExprPtr convertToLambdaWithClosureParameter(const core::ExpressionPtr& expr, const core::VariablePtr& parameter, const core::NodeMap& captureReplacements, bool debug) {
 
 			core::NodeManager& mgr = expr.getNodeManager();
 			core::IRBuilder builder(mgr);
@@ -512,6 +512,14 @@ namespace backend {
 			assert_true(!expr.isa<core::LambdaExprPtr>() || !expr.as<core::LambdaExprPtr>()->isRecursive())
 				<< "Unable to support recursive functions here!";
 
+			// print initial function to be converted
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << "Started converting expression to lambda:\n";
+				std::cout << dumpReadable(expr) << "\n";
+				std::cout << "Provided parameter: " << *parameter << " : " << *parameter->getType() << "\n\n";
+			}
+
 			// get the input function type
 			auto inputFunType = expr->getType().as<core::FunctionTypePtr>();
 
@@ -520,17 +528,22 @@ namespace backend {
 			assert_le(1,numParameters);
 			assert_le(numParameters,2);
 
+			// make sure the new parameter type is a cpp reference containing a tuple
+			assert_pred1(core::lang::isCppReference, parameter->getType());
+			assert_true(core::analysis::getReferencedType(parameter).isa<core::TupleTypePtr>());
+
 			// construct the new function type
-			auto closureType = core::lang::ReferenceType(parameter).getElementType();
-			auto funType = convertToFunctionTypeWithClosureParameter(inputFunType, closureType);
+			auto paramType = parameter->getType();
+			auto closureType = core::analysis::getReferencedType(paramType).as<core::TupleTypePtr>();
+			auto funType = convertToFunctionTypeWithClosureParameter(inputFunType, paramType);
 
 			// extract the list of parameter types
 			auto paramTypes = funType->getParameterTypes();
 
 			// print type debug message
 			if (debug) {
-				std::cout << "Converting " << *inputFunType << "\n"
-							 "        to " << *funType << "\n\n";
+				std::cout << "Converting expression of type " << *inputFunType << "\n"
+							 "       to lambda expr of type " << *funType << "\n\n";
 			}
 
 			// assemble new parameter list
@@ -544,7 +557,7 @@ namespace backend {
 			}
 
 			// get the number of elements in the closure
-			auto closureSize = paramTypes[0].as<core::TupleTypePtr>().size();
+			auto closureSize = closureType->size();
 
 			// create the operator to update recursive calls
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
@@ -564,7 +577,7 @@ namespace backend {
 
 					// create a new argument
 					core::ExpressionList args;
-					args.push_back(builder.deref(call->getArgument(0)));
+					args.push_back(call->getArgument(0));
 					for(unsigned i = 1; i < closureSize; ++i) {
 						args.push_back(builder.deref(builder.refComponent(parameter,i)));
 					}
@@ -645,8 +658,8 @@ namespace backend {
 
 			// print updated bodies
 			if (debug) {
-				std::cout << "Old Body:\n" << dumpPretty(inputBody) << "\n";
-				std::cout << "New Body:\n" << dumpPretty(body) << "\n";
+				std::cout << "Old Body:\n" << dumpReadable(inputBody) << "\n";
+				std::cout << "New Body:\n" << dumpReadable(body) << "\n";
 			}
 
 			// build new lambda
@@ -654,8 +667,8 @@ namespace backend {
 
 			// print conversion result
 			if (debug) {
-				std::cout << "Old Expr:\n" << dumpPretty(expr) << "\n";
-				std::cout << "New Expr:\n" << dumpPretty(res) << "\n";
+				std::cout << "Old Expr:\n" << dumpReadable(expr) << "\n";
+				std::cout << "New Expr:\n" << dumpReadable(res) << "\n";
 			}
 
 			// check that everything is composed correctly
@@ -672,7 +685,7 @@ namespace backend {
 		 * and the list of expressions to be captured in its initialization.
 		 */
 		std::pair<lang::PrecOperation,core::ExpressionList>
-		convertToPureFunctionOp(const lang::PrecOperation& op) {
+		convertToPureFunctionOp(const lang::PrecOperation& op, bool debug) {
 
 			core::NodeManager& mgr = op.getFunction().getBaseCaseTest().getNodeManager();
 			core::IRBuilder builder(mgr);
@@ -706,6 +719,20 @@ namespace backend {
 				}
 			}
 
+			// log the list of captured values
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << "captured values:";
+				if (captured.empty()) {
+					std::cout << " - none - \n";
+				} else {
+					std::cout << "\n\t" << join("\n\t", captured, [](std::ostream& out, const core::ExpressionPtr& expr) {
+						out << *expr << " : " << *expr->getType();
+					}) << "\n";
+				}
+			}
+
+
 			// create the closure type
 			core::TypeList closureElements;
 
@@ -722,9 +749,15 @@ namespace backend {
 				closureElements.push_back(cur.getType());
 			}
 
-
 			// create the closure type to be passed along all functions
 			auto closureType = builder.tupleType(closureElements);
+
+			// log the closure type
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << "closure type: " << *closureType << "\n";
+			}
+
 
 			// create a parameter for the closure type
 			auto param = builder.variable(builder.refType(closureType, true, false, core::lang::ReferenceType::Kind::CppReference));
@@ -737,15 +770,15 @@ namespace backend {
 
 			// replace implementations with implementations processing the closure
 			auto baseCaseTest = convertToLambdaWithClosureParameter(
-					function.getBaseCaseTest(), param, capturedValueReplacements
+					function.getBaseCaseTest(), param, capturedValueReplacements, debug
 			);
 
 			core::ExpressionList baseCases = ::transform(function.getBaseCases(), [&](const core::ExpressionPtr& cur)->core::ExpressionPtr {
-				return convertToLambdaWithClosureParameter(cur,param,capturedValueReplacements);
+				return convertToLambdaWithClosureParameter(cur,param,capturedValueReplacements,debug);
 			});
 
 			core::ExpressionList stepCases = ::transform(function.getStepCases(), [&](const core::ExpressionPtr& cur)->core::ExpressionPtr {
-				return convertToLambdaWithClosureParameter(cur,param,capturedValueReplacements);
+				return convertToLambdaWithClosureParameter(cur,param,capturedValueReplacements,debug);
 			});
 
 			// build up PreOperation with pure functions
@@ -762,25 +795,50 @@ namespace backend {
 
 
 		core::NodePtr convertPrecOperator(const be::Converter& converter, const core::NodePtr& code) {
+			const bool debug = false;
 
-			// only interested in prec operators
-			if (!lang::PrecOperation::isPrecOperation(code)) return code;
+			// -- Step 1: Preparation --
 
+			// make sure the given code is a prec operator invocation
+			assert_true(lang::PrecOperation::isPrecOperation(code));
+
+			// print initial state of conversion
+			if (debug) {
+				std::cout << "\n================ prec conversion :: begin =========================\n";
+				std::cout << " - Input -\n" << dumpReadable(code) << "\n";
+			}
+
+			// get build utilities
+			core::NodeManager& mgr = code.getNodeManager();
+			core::IRBuilder builder(mgr);
+			auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
 
 			// parse the pre operator
 			lang::PrecOperation op = lang::PrecOperation::fromIR(code.as<core::ExpressionPtr>());
 			assert_eq(1,op.getFunctions().size())
 				<< "Mutual recursive definitions not yet supported!";
 
+
+
+			// -- Step 1: Convert bindings into lambdas, collect captured values --
+
 			// convert the prec operator into something that passed captured state in closures
-			auto preprocessed = convertToPureFunctionOp(op);
+			auto preprocessed = convertToPureFunctionOp(op,debug);
 			auto closedOp = preprocessed.first;
 			auto captured = preprocessed.second;
 
-			// get build utilities
-			core::NodeManager& mgr = code.getNodeManager();
-			core::IRBuilder builder(mgr);
-			auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
+			// print result of conversion step
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << " - lambdas only version -\n" << dumpReadable(closedOp.toIR(mgr)) << "\n";
+			}
+
+			// check for errors in the lambda conversion
+			assert_true(core::checks::check(closedOp.toIR(mgr)).empty())
+				<< core::printer::dumpErrors(core::checks::check(closedOp.toIR(mgr)));
+
+
+			// -- Step 2: create process and split version --
 
 			// get a name for the work item
 			const auto& name = converter.getNameManager().getName(code,"wi");
@@ -790,6 +848,26 @@ namespace backend {
 
 			// extract a parallel implementation of the prec operation
 			auto split = getSplitVariant(name,closedOp);
+
+
+			// log the process and split variants
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << " - process variant -\n" << dumpReadable(process.getImplementation()) << "\n";
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << " - split variant -\n" << dumpReadable(split.getImplementation()) << "\n";
+			}
+
+			// check consistency of process variant
+			assert_true(core::checks::check(process.getImplementation()).empty())
+				<< core::printer::dumpErrors(core::checks::check(process.getImplementation()));
+
+			// check consistency of split variant
+			assert_true(core::checks::check(split.getImplementation()).empty())
+				<< core::printer::dumpErrors(core::checks::check(split.getImplementation()));
+
+
+			// -- Step 3: work item conversion --
 
 			// wrap it up in a work item
 			WorkItemDescription desc(name,process,split);
@@ -835,11 +913,20 @@ namespace backend {
 			}
 			auto res = builder.bindExpr({ param }, builder.callExpr(nestedLambda, bindArgs));
 
+			// report final call
+			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << " - work item creation call -\n" << dumpReadable(res) << "\n";
+			}
+
 			// check result
 			assert_true(core::checks::check(res).empty())
-				<< dumpPretty(res) << "\n"
 				<< core::printer::dumpErrors(core::checks::check(res));
-//				<< core::checks::check(res);
+
+			// report end of conversion
+			if (debug) {
+				std::cout << "================ prec conversion :: done ==========================\n\n";
+			}
 
 			// done
 			return res;
@@ -853,7 +940,13 @@ namespace backend {
 
 		// replace all prec calls with actual lambdas
 		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur){
+
+			// only interested in prec operators
+			if (!lang::PrecOperation::isPrecOperation(cur)) return cur;
+
+			// trigger conversion
 			return convertPrecOperator(converter,cur);
+
 		}, core::transform::globalReplacement);
 
 		// check that the result is properly typed
