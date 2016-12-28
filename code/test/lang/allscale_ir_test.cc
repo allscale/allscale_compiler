@@ -159,11 +159,11 @@ namespace lang {
 		EXPECT_FALSE(isTreeture(it4));
 
 		// check type of expression
-		auto et1 = builder.parseExpr("def foo = () -> treeture<int<4>,f> { return <ref<treeture<int<4>,f>>>(ref_temp(type_lit(ref<treeture<int<4>,f>>))){}; }; foo()");
+		auto et1 = builder.parseExpr("decl foo  : () -> treeture<int<4>,f>; foo()");
 		ASSERT_TRUE(et1);
 		EXPECT_TRUE(isTreeture(et1));
 
-		auto et2 = builder.parseExpr("def bar = () -> treeture<int<4>,x> { return <ref<treeture<int<4>,x>>>(ref_temp(type_lit(ref<treeture<int<4>,x>>))){}; }; bar()");
+		auto et2 = builder.parseExpr("decl bar : () -> treeture<int<4>,x>; bar()");
 		ASSERT_TRUE(et2);
 		EXPECT_FALSE(isTreeture(et2));
 	}
@@ -195,12 +195,12 @@ namespace lang {
 		EXPECT_FALSE(isRecFun(irf3));
 
 		// check type of expression
-		auto erf1 = builder.parseExpr("def foo = () -> recfun<bool,bool> { return <ref<recfun<bool,bool>>>(ref_temp(type_lit(ref<recfun<bool,bool>>))){}; }; foo()");
+		auto erf1 = builder.parseExpr("decl foo : () -> recfun<bool,bool>; foo()");
 		ASSERT_TRUE(erf1);
 		EXPECT_TRUE(isRecFun(erf1));
 
 		// check type of expression
-		auto erf2 = builder.parseExpr("def bar = () -> recfun<bool> { return <ref<recfun<bool>>>(ref_temp(type_lit(ref<recfun<bool>>))){}; }; bar()");
+		auto erf2 = builder.parseExpr("decl bar : () -> recfun<bool>; bar()");
 		ASSERT_TRUE(erf2);
 		EXPECT_FALSE(isRecFun(erf2));
 	}
