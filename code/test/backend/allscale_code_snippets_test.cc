@@ -480,7 +480,7 @@ namespace backend {
 		ASSERT_TRUE(trg);
 	}
 
-	TEST(DISABLED_CodeSnippet, CppEmptyMainWithArgs) {
+	TEST(CodeSnippet, CppEmptyMainWithArgs) {
 		NodeManager mgr;
 
 		auto code = R"(
