@@ -1,5 +1,3 @@
-project(allscale CXX)
-
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment_common.cmake)
 include(${CMAKE_SOURCE_DIR}/insieme/code/environment.cmake)
 
