@@ -26,11 +26,15 @@ namespace frontend {
 		}
 	}
 
-	TEST(AllScaleConversionTest, Basic) {
+	TEST(AllScaleConversionTest, Types) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_types.cpp");
+	}
+
+	TEST(AllScaleConversionTest, DISABLED_Basic) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
 	}
 
-	TEST(AllScaleConversionTest, Fib) {
+	TEST(AllScaleConversionTest, DISABLED_Fib) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
 	}
 
