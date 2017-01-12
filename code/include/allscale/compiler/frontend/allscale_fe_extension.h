@@ -12,62 +12,43 @@ namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	struct TranslationState {
-		const void* clangPointer;
-		insieme::core::TypePtr paramType;
-		insieme::core::TypePtr returnType;
-	};
-
-	using ClangIrTypeMap = std::map<const clang::Type*, insieme::core::TypePtr>;
-
-	class TranslationStateManager {
-
-		std::vector<TranslationState> translationStates;
-		ClangIrTypeMap clangTypeMappings;
-		insieme::core::NodeMap irTypeMappings;
-
-		public:
-		void pushState(const TranslationState translationState);
-		void popState();
-
-		bool hasState();
-
-		const TranslationState& getState();
-
-		insieme::core::TypePtr getClangTypeMapping(const clang::QualType& clangType) const;
-
-		const insieme::core::NodeMap& getIrTypeMappings() const;
-
-		void addTypeMappings(const clang::QualType& clangType, const insieme::core::TypePtr& targetIrType,
-		                     insieme::frontend::conversion::Converter& converter);
-	};
+	namespace detail {
+		class TypeMapper;
+		struct TypeMapperDeleter {
+			void operator()(TypeMapper* tm);
+		};
+	}
 
 	class AllscaleExtension : public insieme::frontend::extensions::FrontendExtension {
+		std::unique_ptr<detail::TypeMapper, detail::TypeMapperDeleter> typeMapper;
+		detail::TypeMapper& getTypeMapper(insieme::frontend::conversion::Converter& converter);
 
-		TranslationStateManager translationStateManager;
-
-		TranslationStateManager& getTranslationStateManager() { return translationStateManager; }
-
+	  protected:
 		virtual boost::optional<std::string> isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const override;
 
-		virtual insieme::core::ExpressionPtr Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) override;
-
-		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr,
-		                                           insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
-		                                           insieme::frontend::conversion::Converter& converter) override;
+		// Types
 
 		virtual insieme::core::TypePtr Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) override;
+
+		virtual insieme::core::TypePtr PostVisit(const clang::QualType& type, const insieme::core::TypePtr& irType,
+			                                     insieme::frontend::conversion::Converter& converter) override;
+
+		// Expressions
+
+		virtual insieme::core::ExpressionPtr Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) override;
 
 		virtual insieme::core::ExpressionPtr PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
 			                                           insieme::frontend::conversion::Converter& converter) override;
 
-		virtual insieme::core::TypePtr PostVisit(const clang::QualType& type, const insieme::core::TypePtr& irType,
-			                                     insieme::frontend::conversion::Converter& converter) override;
+		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr, insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
+			                                       insieme::frontend::conversion::Converter& converter) override;
 
 		virtual std::pair<insieme::core::VariablePtr, insieme::core::ExpressionPtr> PostVisit(const clang::VarDecl* varDecl,
 			                                                                                  const insieme::core::VariablePtr& var,
 			                                                                                  const insieme::core::ExpressionPtr& varInit,
 			                                                                                  insieme::frontend::conversion::Converter& converter) override;
+
+		// TU and Program
 
 		virtual insieme::core::tu::IRTranslationUnit IRVisit(insieme::core::tu::IRTranslationUnit& tu) override;
 
