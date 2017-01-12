@@ -393,10 +393,8 @@ namespace lang {
 		auto& mgr = firstRecFun->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto firstRecfunType = RecFunType(firstRecFun);
-		core::GenericTypePtr treetureType = TreetureType(firstRecfunType.getReturnType(), false);
-		auto returnType = builder.functionType(firstRecfunType.getParamType(), treetureType, core::FK_CLOSURE);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(returnType, allS.getPrec(), builder.tupleExpr(recFuns));
+		return builder.callExpr(firstRecfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
 	}
 
 	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param) {
