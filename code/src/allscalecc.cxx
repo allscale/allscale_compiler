@@ -29,6 +29,9 @@ int main(int argc, char** argv) {
 	// the optimization level
 	unsigned opt_level;
 
+	// This option is here only for compatibility reasons, because insiemecc accepts this flag and the integration test driver sets it when executing
+	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
+	std::string backendString;
 
 	// -------------- processing ---------------
 
@@ -39,6 +42,7 @@ int main(int argc, char** argv) {
 
 	// register allscalecc specific flags and parameters
 	parser.addParameter("O",       opt_level,     0u,              "optimization level");
+	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -46,6 +50,10 @@ int main(int argc, char** argv) {
 
 	// if e.g. help was specified, exit with zero
 	if(options.gracefulExit) { return 0; }
+
+	if(!backendString.empty()) {
+		std::cout << "WARNING: The --backend option has been specified. this option is supported only for compatibility reasons and will be ignored." << std::endl;
+	}
 
 
 	// Step 2: filter input files
