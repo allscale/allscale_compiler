@@ -52,3 +52,10 @@ foreach(case_file ${allscale_tests})
 		add_unit_test(${case_name} ${ut_prefix})
 	endif()
 endforeach(case_file)
+
+
+# ================================================== AllScale Misc =====================================================
+
+
+# Export the build directory
+add_definitions("-DALLSCALE_BUILD_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}/..\"")

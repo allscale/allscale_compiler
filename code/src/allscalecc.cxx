@@ -11,6 +11,7 @@
 #include "insieme/driver/utils/object_file_utils.h"
 #include "insieme/driver/utils/driver_utils.h"
 
+#include "allscale/compiler/config.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/backend/allscale_backend.h"
@@ -19,7 +20,7 @@ namespace driver = insieme::driver;
 namespace core = insieme::core;
 
 int main(int argc, char** argv) {
-	std::cout << "Allscale compiler - Version: epsilon\n";
+	std::cout << "Allscale compiler - Version: " << allscale::compiler::getVersion() << std::endl;
 
 	// -------------- options ---------------
 
