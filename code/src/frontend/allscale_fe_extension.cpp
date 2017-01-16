@@ -43,10 +43,19 @@ namespace frontend {
 
 		/// Mapping specification from C++ to IR types used during type translation
 		const static std::map<std::string, std::string> typeMap = {
+			// callables
 			{ "allscale::api::core::fun_def", "recfun<TEMPLATE_T_1,TEMPLATE_T_0>" },
 			{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
 			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
 			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
+			// treetures
+			{ "allscale::api::core::detail::completed_task", "treeture<TEMPLATE_T_0,f>" },
+			{ "allscale::api::core::impl::reference::treeture", "treeture<TEMPLATE_T_0,t>" },
+			{ "allscale::api::core::impl::reference::unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+			{ "allscale::api::core::impl::reference::lazy_unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+			{ "allscale::api::core::impl::sequential::treeture", "treeture<TEMPLATE_T_0,t>" },
+			{ "allscale::api::core::impl::sequential::unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+			{ "allscale::api::core::impl::sequential::lazy_unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
 		};
 
 		/// Extract type argument #id from a C++ template instantiation declared by recordDecl

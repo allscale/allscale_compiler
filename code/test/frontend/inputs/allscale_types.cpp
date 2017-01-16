@@ -7,13 +7,15 @@ using namespace allscale::api::core;
 int main() {
 	; // this is required because of the clang compound source location bug
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CALLABLES //////
+
 	// test type: (input) int -> (output) double
 
 	// fun def
 	using TestFunDefType = fun_def<double, int,
 		std::function<bool(int)>,                   // base test
 		std::tuple<std::function<double(int)>>,     // base case
-		std::tuple<std::function<double(int)>>      // step case
+		std::tuple<std::function<double(int)>>      // step case -- incorrect type, but irrelevant
 	>;
 
 	#pragma test expect_ir(R"({
@@ -51,6 +53,37 @@ int main() {
 	})")
 	{
 		TestCallableType* myCallable;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// TREETURES //////
+
+	#pragma test expect_ir(R"({
+		var ref<ptr<treeture<uint<4>,f>>,f,f,plain> v0;
+	})")
+	{
+		allscale::api::core::detail::completed_task<unsigned>* myCompTask;
+	}
+
+	#pragma test expect_ir(R"({
+		var ref<ptr<treeture<int<4>,t>>,f,f,plain> v0;
+		var ref<ptr<treeture<real<4>,f>>,f,f,plain> v1;
+		var ref<ptr<treeture<real<8>,f>>,f,f,plain> v2;
+	})")
+	{
+		impl::reference::treeture<int>* t0;
+		impl::reference::unreleased_treeture<float>* t1;
+		impl::reference::lazy_unreleased_treeture<double, int /* placeholder */>* t2;
+	}
+
+	#pragma test expect_ir(R"({
+		var ref<ptr<treeture<int<4>,t>>,f,f,plain> v0;
+		var ref<ptr<treeture<real<4>,f>>,f,f,plain> v1;
+		var ref<ptr<treeture<real<8>,f>>,f,f,plain> v2;
+	})")
+	{
+		impl::sequential::treeture<int>* t0;
+		impl::sequential::unreleased_treeture<float>* t1;
+		impl::sequential::lazy_unreleased_treeture<double, int /* placeholder */>* t2;
 	}
 
 	return 0;
