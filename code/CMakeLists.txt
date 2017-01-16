@@ -54,6 +54,21 @@ foreach(case_file ${allscale_tests})
 endforeach(case_file)
 
 
+# ============================================ AllScale Integration Tests ==============================================
+
+set(CONFIG_INTEGRATION_TESTS TRUE)
+
+# configure the integration tests
+if(CONFIG_INTEGRATION_TESTS)
+	# create global integration test configuration file
+
+	#FIXME: cpp/boost integration tests rely on boost to be set?
+	insieme_find_package(NAME Boost)
+
+	configure_file(allscale_integration_test_config.in ${CMAKE_CURRENT_BINARY_DIR}/../allscale_integration_test_config @ONLY)
+endif()
+
+
 # ================================================== AllScale Misc =====================================================
 
 
