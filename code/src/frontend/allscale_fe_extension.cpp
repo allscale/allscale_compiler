@@ -43,8 +43,10 @@ namespace frontend {
 
 		/// Mapping specification from C++ to IR types used during type translation
 		const static std::map<std::string, std::string> typeMap = {
-			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
 			{ "allscale::api::core::fun_def", "recfun<TEMPLATE_T_1,TEMPLATE_T_0>" },
+			{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
+			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
+			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
 		};
 
 		/// Extract type argument #id from a C++ template instantiation declared by recordDecl
@@ -62,6 +64,27 @@ namespace frontend {
 			}
 			return {};
 		}
+		/// Extract type arguments at #id from a C++ template type argument pack in a recordDecl
+		core::TypeList extractTemplateTypeArgumentPack(const clang::RecordDecl* recordDecl, int id, insieme::frontend::conversion::Converter& converter) {
+			core::TypeList ret;
+			if(auto specializedDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl)) {
+				int i = 0;
+				for(auto a : specializedDecl->getTemplateArgs().asArray()) {
+					if(a.getKind() == clang::TemplateArgument::Pack) {
+						if(i == id) {
+							for(auto inner : a.getPackAsArray()) {
+								if(inner.getKind() == clang::TemplateArgument::Type) {
+									ret.push_back(converter.convertType(inner.getAsType()));
+								}
+							}
+							break;
+						}
+						i++;
+					}
+				}
+			}
+			return ret;
+		}
 	}
 
 	namespace detail {
@@ -70,7 +93,7 @@ namespace frontend {
 		class TypeMapper {
 			std::map<std::string, core::TypePtr> typeIrMap;
 
-			using CodeExtractor = std::function<core::TypePtr(const clang::RecordDecl* recordDecl)>;
+			using CodeExtractor = std::function<core::TypePtr(const clang::RecordDecl* recordDecl, const core::TypePtr& irType)>;
 			std::map<core::TypePtr, CodeExtractor> placeholderReplacer;
 
 			const unsigned MAX_MAPPED_TEMPLATE_ARGS = 8;
@@ -90,15 +113,28 @@ namespace frontend {
 				// generate the template placeholder replacers to be applied on mapped IR
 				for(unsigned i = 0; i < MAX_MAPPED_TEMPLATE_ARGS; ++i) {
 					std::string name = ::format(TEMPLATE_ARG_PATTERN, i);
+					// single argument
 					auto type = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
-					placeholderReplacer[type] = [&converter, i](const clang::RecordDecl* recordDecl) {
+					placeholderReplacer[type] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
 						return extractTemplateTypeArgument(recordDecl, i, converter);
+					};
+					// variadic argument
+					name = ::format("('%s...)", name);
+					auto variadicType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
+					placeholderReplacer[variadicType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
+						return converter.getIRBuilder().tupleType(extractTemplateTypeArgumentPack(recordDecl, i, converter));
+					};
+					// type extraction from tuple types
+					name = ::format("TUPLE_TYPE_%d", i);
+					auto tupleTypeExtractorType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
+					placeholderReplacer[tupleTypeExtractorType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
+						return irType.as<core::GenericTypePtr>()->getTypeParameter(0).as<core::TupleTypePtr>()->getElement(i);
 					};
 				}
 			}
 
 			core::TypePtr apply(const clang::Type* type) {
-				core::TypePtr ret{};
+				core::TypePtr ret {};
 				// we are only interested in Record Types for now
 				if(auto recordType = llvm::dyn_cast<clang::RecordType>(type)) {
 					auto recordDecl = recordType->getDecl();
@@ -106,12 +142,17 @@ namespace frontend {
 					// replace if we have a map entry for this name
 					if(::containsKey(typeIrMap, name)) {
 						ret = typeIrMap[name];
+						core::IRBuilder builder(ret->getNodeManager());
 						// replace all placeholders in generted IR type
-						ret = core::transform::transformBottomUpGen(ret, [&](const core::GenericTypePtr& genTypeIn) -> core::TypePtr {
-							if(::containsKey(placeholderReplacer, genTypeIn)) {
-								return placeholderReplacer[genTypeIn](recordDecl);
+						ret = core::transform::transformBottomUpGen(ret, [&](const core::TypePtr& typeIn) -> core::TypePtr {
+							auto typeForMatching = typeIn;
+							if(auto genTy = typeIn.isa<core::GenericTypePtr>()) {
+								typeForMatching = builder.genericType(genTy->getName()->getValue());
 							}
-							return genTypeIn;
+							if(::containsKey(placeholderReplacer, typeForMatching)) {
+								return placeholderReplacer[typeForMatching](recordDecl, typeIn);
+							}
+							return typeIn;
 						});
 					}
 				}
