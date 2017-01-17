@@ -74,3 +74,18 @@ endif()
 
 # Export the build directory
 add_definitions("-DALLSCALE_BUILD_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}/..\"")
+
+
+# ========================================  Integration Test Preprocessing  ============================================
+add_custom_command(
+	TARGET allscale_integration_tests
+	POST_BUILD
+	COMMAND ${CMAKE_CURRENT_BINARY_DIR}/allscale_integration_tests --preprocess
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	COMMENT "Run preprocessing for allscale integration tests"
+)
+
+# ================================================  Dependencies  ======================================================
+
+# allscale_integration_tests uses allscalecc - so there is a dependency
+add_dependencies(allscale_integration_tests allscalecc)
