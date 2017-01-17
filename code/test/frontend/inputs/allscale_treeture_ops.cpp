@@ -15,11 +15,12 @@ int main() {
 
 	#pragma test expect_ir(R"({
 		var ref<treeture<int<4>,t>,f,f,plain> a =  task_to_treeture(task_done(1));
+		treeture_wait(*v0);
 	})")
 	{
 		impl::reference::treeture<int> a = done(1);
 		a.wait();
-		a.get();
+		//a.get();
 	}
 
 	#pragma test expect_ir(R"({
@@ -28,7 +29,6 @@ int main() {
 	{
 		impl::reference::unreleased_treeture<int> a = done(1);
 		a.wait();
-		a.get();
 	}
 
 	return 0;

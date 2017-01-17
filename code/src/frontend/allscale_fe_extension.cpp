@@ -36,6 +36,35 @@ namespace frontend {
 		return {};
 	}
 
+	namespace {
+
+		core::ExpressionPtr removeUndesiredRefCasts(const core::ExpressionPtr& input) {
+			auto& refExt = input->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+			if(refExt.isCallOfRefCast(input) || refExt.isCallOfRefKindCast(input)) {
+				return core::analysis::getArgument(input, 0);
+			}
+			return input;
+		}
+
+		core::ExpressionPtr derefOrDematerialize(const core::ExpressionPtr& argExprIn) {
+			core::IRBuilder builder(argExprIn->getNodeManager());
+
+			auto argExpr = removeUndesiredRefCasts(argExprIn);
+
+			if(auto call = argExpr.isa<core::CallExprPtr>()) {
+				if(core::lang::isPlainReference(call->getType())) {
+					auto rawCallType = core::analysis::getReferencedType(call->getType());
+					return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+				}
+			}
+			auto exprType = argExpr->getType();
+			if(core::analysis::isRefType(exprType)) {
+				return builder.deref(argExpr);
+			}
+			return argExpr;
+		}
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// TYPES
 
 	namespace {
@@ -218,14 +247,16 @@ namespace frontend {
 		class SimpleCallMapper {
 		  private:
 			const string targetIRString;
-			core::ExpressionList bonusArguments;
+			bool derefThisArg;
 
 			core::ExpressionPtr buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const clang::CallExpr* call,
 			                                                        insieme::frontend::conversion::Converter& converter) {
 				core::ExpressionList args;
 				// if it was a member call, add the implicit this argument
 				if(auto memCall = llvm::dyn_cast<clang::CXXMemberCallExpr>(call)) {
-					args.push_back(converter.convertExpr(memCall->getImplicitObjectArgument()));
+					auto thisArg = converter.convertExpr(memCall->getImplicitObjectArgument());
+					if(derefThisArg) thisArg = derefOrDematerialize(thisArg);
+					args.push_back(thisArg);
 				}
 				// add normal arguments
 				for(const auto& arg : call->arguments()) {
@@ -235,7 +266,7 @@ namespace frontend {
 			}
 
 		  public:
-			SimpleCallMapper(const string& targetIRString) : targetIRString(targetIRString) {}
+			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
 
 			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 				auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
@@ -249,13 +280,14 @@ namespace frontend {
 		/// Mapping specification from C++ to IR used during call expression translation
 		const static std::map<std::string, CallMapper> callMap = {
 			{ "allscale::api::core::done", SimpleCallMapper("task_done") },
-			{ "allscale::api::core::detail::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
+			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
+			{ "allscale::api::core::impl::reference::detail::treeture.*::wait", SimpleCallMapper("treeture_wait", true) }
 		};
 
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
-		//expr->dumpColor();
+		expr->dumpColor();
 
 		if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
 			auto retType = converter.convertType(expr->getType());
@@ -269,7 +301,7 @@ namespace frontend {
 			auto decl = call->getCalleeDecl();
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 				auto name = funDecl->getQualifiedNameAsString();
-				//std::cout << name << std::endl;
+				std::cout << "N: " << name << std::endl;
 
 				for(const auto& mapping : callMap) {
 					std::regex pattern(mapping.first);
@@ -298,6 +330,17 @@ namespace frontend {
 	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CastExpr* castExpr,
 	                                                      insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
 	                                                      insieme::frontend::conversion::Converter& converter) {
+
+		std::cout << "!!\n";
+		if(castExpr->getCastKind() == clang::CK_UncheckedDerivedToBase) {
+			std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
+			auto irSourceType = irExpr->getType();
+			if(core::analysis::isRefType(irExpr)) irSourceType = core::analysis::getReferencedType(irSourceType);
+			if(lang::isTreeture(irSourceType)) {
+				std::cout << "!! Casting treeture\n";
+				return irExpr;
+			}
+		}
 
 		return nullptr;
 	}
