@@ -112,7 +112,7 @@ namespace backend {
 			auto body = builder.compoundStmt(
 					builder.returnStmt(
 							builder.callExpr(
-									ext.getTreetureDone(),
+									ext.getTaskDone(),
 									builder.callExpr(main, args)
 							)
 					)
@@ -256,7 +256,7 @@ namespace backend {
 					auto call = node.isa<core::CallExprPtr>();
 					if (!call) return node;
 
-					if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
+					if (core::analysis::isCallOf(call,ext.getTaskDone())) {
 						return builder.callExpr(basic.getId(), call->getArgument(0));
 					}
 
@@ -386,7 +386,7 @@ namespace backend {
 					// check the base case test
 					builder.callExpr(fun.getBaseCaseTest(), in),
 					// if in the base case => run base case
-					builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(fun.getBaseCases()[0],in))),
+					builder.returnStmt(builder.callExpr(ext.getTaskDone(), builder.callExpr(fun.getBaseCases()[0],in))),
 					// else run step case
 					builder.returnStmt(builder.callExpr(stepFun,in))
 				)
@@ -411,7 +411,7 @@ namespace backend {
 				builder.compoundStmt(
 					builder.returnStmt(
 						builder.callExpr(
-							ext.getTreetureDone(),
+							ext.getTaskDone(),
 							builder.callExpr(lambda,lambda->getParameterList()[0])
 						)
 					)

@@ -2,6 +2,7 @@
 #include "allscale/compiler/frontend/allscale_fe_extension.h"
 
 #include <limits>
+#include <regex>
 
 #include <boost/algorithm/string.hpp>
 
@@ -48,8 +49,9 @@ namespace frontend {
 			{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
 			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
 			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
+			// completed tasks
+			{ "allscale::api::core::detail::completed_task", "completed_task<TEMPLATE_T_0>" },
 			// treetures
-			{ "allscale::api::core::detail::completed_task", "treeture<TEMPLATE_T_0,f>" },
 			{ "allscale::api::core::impl::reference::treeture", "treeture<TEMPLATE_T_0,t>" },
 			{ "allscale::api::core::impl::reference::unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
 			{ "allscale::api::core::impl::reference::lazy_unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
@@ -152,7 +154,7 @@ namespace frontend {
 					if(::containsKey(typeIrMap, name)) {
 						ret = typeIrMap[name];
 						core::IRBuilder builder(ret->getNodeManager());
-						// replace all placeholders in generted IR type
+						// replace all placeholders in generated IR type
 						ret = core::transform::transformBottomUpGen(ret, [&](const core::TypePtr& typeIn) -> core::TypePtr {
 							auto typeForMatching = typeIn;
 							if(auto genTy = typeIn.isa<core::GenericTypePtr>()) {
@@ -208,18 +210,82 @@ namespace frontend {
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// EXPRESSIONS
 
+	namespace {
+
+		using CallMapper = std::function<core::ExpressionPtr(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter)>;
+
+		/// Utility for the specification of simple call mappings (C++ to IR)
+		class SimpleCallMapper {
+		  private:
+			const string targetIRString;
+			core::ExpressionList bonusArguments;
+
+			core::ExpressionPtr buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const clang::CallExpr* call,
+			                                                        insieme::frontend::conversion::Converter& converter) {
+				core::ExpressionList args;
+				// if it was a member call, add the implicit this argument
+				if(auto memCall = llvm::dyn_cast<clang::CXXMemberCallExpr>(call)) {
+					args.push_back(converter.convertExpr(memCall->getImplicitObjectArgument()));
+				}
+				// add normal arguments
+				for(const auto& arg : call->arguments()) {
+					args.push_back(converter.convertExpr(arg));
+				}
+				return converter.getIRBuilder().callExpr(callee, args);
+			}
+
+		  public:
+			SimpleCallMapper(const string& targetIRString) : targetIRString(targetIRString) {}
+
+			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+				auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
+				auto targetFun = converter.getIRBuilder().parseExpr(targetIRString, allscaleExt.getSymbols());
+
+				return buildCallWithDefaultParamConversion(targetFun, call, converter);
+			}
+		};
+
+
+		/// Mapping specification from C++ to IR used during call expression translation
+		const static std::map<std::string, CallMapper> callMap = {
+			{ "allscale::api::core::done", SimpleCallMapper("task_done") },
+			{ "allscale::api::core::detail::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
+		};
+
+	}
+
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
+		//expr->dumpColor();
+
+		if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
+			auto retType = converter.convertType(expr->getType());
+			if(lang::isTreeture(retType)) {
+				return converter.convertExpr(construct->getArg(0));
+			}
+		}
+
 		// we handle certain calls specially, which we differentiate by their callee's name
 		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
 			auto decl = call->getCalleeDecl();
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 				auto name = funDecl->getQualifiedNameAsString();
+				//std::cout << name << std::endl;
+
+				for(const auto& mapping : callMap) {
+					std::regex pattern(mapping.first);
+					if(std::regex_match(name, pattern)) {
+						std::cout << "Matched " << mapping.first << std::endl;
+						return mapping.second(call, converter);
+					}
+				}
 
 				if(name == "allscale::api::core::prec") {
 				}
 				if(name == "allscale::api::core::fun") {
 				}
 				if(name == "allscale::api::core::done") {
+					//assert_eq(call->getNumArgs(), 1);
+					//return lang::buildTreetureDone(converter.convertExpr(call->getArg(0)));
 				}
 				if(name == "allscale::api::core::combine") {
 				}

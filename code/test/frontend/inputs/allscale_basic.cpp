@@ -79,13 +79,6 @@ auto testFunReturnPrecCallResult(int i) {
 int main() {
 	; // this is required because of the clang compound source location bug
 
-	// simple type tests
-	#pragma test expect_ir(R"({ var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1); })")
-	{
-		auto a = done(1);
-	}
-
-
 	// direct call of prec result
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_PREC_CALL, R"(
 			(14);
