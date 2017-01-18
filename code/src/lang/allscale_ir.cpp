@@ -1,6 +1,8 @@
 
 #include "allscale/compiler/lang/allscale_ir.h"
 
+#include "allscale/compiler/allscale_utils.h"
+
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/lang/boolean_marker.h"
 #include "insieme/core/encoder/encoder.h"
@@ -103,6 +105,15 @@ namespace lang {
 		return isValidReleased;
 	}
 
+	/////////////////////////////// Completed Task
+
+	bool isCompletedTask(const core::NodePtr& node) {
+		auto type = node.isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		if(!type) return false;
+
+		return type->getName()->getValue() == "completed_task" && type->getTypeParameter().size() == 1;
+	}
 
 	/////////////////////////////// PrecOperation utility
 
@@ -397,6 +408,17 @@ namespace lang {
 		return builder.callExpr(firstRecfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
 	}
 
+
+	core::ExpressionPtr buildTaskToUnreleasedTreeture(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto typeParm = param->getType().as<core::GenericTypePtr>().getTypeParameter(0);
+		core::GenericTypePtr returnType = TreetureType(typeParm, false);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getTaskToUnreleasedTreeture(), param);
+	}
+
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
@@ -469,14 +491,22 @@ namespace lang {
 		return builder.callExpr(returnType, allS.getRecfunToFun(), param);
 	}
 
-	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
+	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
+		if(!closureType) {
+			assert_true(utils::hasCallOperator(lambdaExpr));
+			closureType = utils::extractCallOperatorType(lambdaExpr);
+		}
 		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getCppLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
 
-	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType) {
+	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
+		if(!closureType) {
+			assert_true(utils::hasCallOperator(lambdaExpr));
+			closureType = utils::extractCallOperatorType(lambdaExpr);
+		}
 		assert_eq(closureType.getKind(), core::FK_PLAIN) << "Trying to build a lambda of non-plain type.";
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();

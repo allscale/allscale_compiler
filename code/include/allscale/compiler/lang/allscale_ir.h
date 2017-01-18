@@ -243,13 +243,19 @@ namespace lang {
 
 	bool isTreeture(const core::NodePtr& node);
 
+	bool isCompletedTask(const core::NodePtr& node);
+
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
 	                                     const core::ExpressionList& baseBinds,
 	                                     const core::ExpressionList& stepBinds);
 
 	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns);
 
-	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param);
+	// completed_task
+
+	core::ExpressionPtr buildTaskToUnreleasedTreeture(const core::ExpressionPtr& param);
+
+	// treeture
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
 
@@ -264,9 +270,11 @@ namespace lang {
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
+	// lambda utils
 
-	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, const core::FunctionTypePtr& closureType);
+	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
+
+	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
 
 }
 }
