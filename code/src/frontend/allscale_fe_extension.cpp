@@ -81,12 +81,8 @@ namespace frontend {
 			// completed tasks
 			{ "allscale::api::core::detail::completed_task", "completed_task<TEMPLATE_T_0>" },
 			// treetures
-			{ "allscale::api::core::impl::reference::treeture", "treeture<TEMPLATE_T_0,t>" },
-			{ "allscale::api::core::impl::reference::unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
-			{ "allscale::api::core::impl::reference::lazy_unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
-			{ "allscale::api::core::impl::sequential::treeture", "treeture<TEMPLATE_T_0,t>" },
-			{ "allscale::api::core::impl::sequential::unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
-			{ "allscale::api::core::impl::sequential::lazy_unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+			{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
+			{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
 		};
 
 		/// Extract type argument #id from a C++ template instantiation declared by recordDecl
@@ -179,21 +175,26 @@ namespace frontend {
 				if(auto recordType = llvm::dyn_cast<clang::RecordType>(type)) {
 					auto recordDecl = recordType->getDecl();
 					auto name = recordDecl->getQualifiedNameAsString();
-					// replace if we have a map entry for this name
-					if(::containsKey(typeIrMap, name)) {
-						ret = typeIrMap[name];
-						core::IRBuilder builder(ret->getNodeManager());
-						// replace all placeholders in generated IR type
-						ret = core::transform::transformBottomUpGen(ret, [&](const core::TypePtr& typeIn) -> core::TypePtr {
-							auto typeForMatching = typeIn;
-							if(auto genTy = typeIn.isa<core::GenericTypePtr>()) {
-								typeForMatching = builder.genericType(genTy->getName()->getValue());
-							}
-							if(::containsKey(placeholderReplacer, typeForMatching)) {
-								return placeholderReplacer[typeForMatching](recordDecl, typeIn);
-							}
-							return typeIn;
-						});
+
+					// replace if we have a map entry matching this name
+					for(const auto& mapping : typeIrMap) {
+						std::regex pattern(mapping.first);
+						if(std::regex_match(name, pattern)) {
+							ret = mapping.second;
+							core::IRBuilder builder(ret->getNodeManager());
+							// replace all placeholders in generated IR type
+							ret = core::transform::transformBottomUpGen(ret, [&](const core::TypePtr& typeIn) -> core::TypePtr {
+								auto typeForMatching = typeIn;
+								if(auto genTy = typeIn.isa<core::GenericTypePtr>()) {
+									typeForMatching = builder.genericType(genTy->getName()->getValue());
+								}
+								if(::containsKey(placeholderReplacer, typeForMatching)) {
+									return placeholderReplacer[typeForMatching](recordDecl, typeIn);
+								}
+								return typeIn;
+							});
+							break;
+						}
 					}
 				}
 				return ret;
