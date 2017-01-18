@@ -1,10 +1,6 @@
-includes="${TEST_DIR_PATH}/../api/code/include/","${boost_include}","${hpx_include}","${hpx_root_dir}","${allscale_runtime_include}"
-intercepted_header_file_dirs="${TEST_DIR_PATH}/../api/code/include/allscale/api/core/"
 files=
 definitions=
 compFlags=
-libPaths="${boost_lib}","${allscale_root_dir}/src","${hpx_root_dir}/lib"
-libNames="allscale","hpx_init","hpx","boost_chrono","boost_date_time","boost_filesystem","boost_program_options","boost_regex","boost_system","boost_thread","boost_atomic"
 excludeSteps="*_ocl_*","*_c_*","*_run_*"
 use_omp=0
 use_opencl=0
@@ -20,9 +16,3 @@ use_cpp[insiemecc_seq_cpp_compile]=1
 use_libmath=1
 use_libpthread=1
 outputAwk=
-
-# finally the compiler configuration settings
-compilerConfigurationFile[allscalecc]="${CUR_CONFIG_PATH}/compilerConfiguration.allscalecc"
-compilerConfigurationFile[insiemecc]="${CUR_CONFIG_PATH}/../insieme/test/compilerConfiguration.insiemecc"
-compilerConfigurationFile[g++]="${CUR_CONFIG_PATH}/../insieme/test/compilerConfiguration.g++_and_clang"
-compilerConfigurationFile[clang++]="${CUR_CONFIG_PATH}/../insieme/test/compilerConfiguration.g++_and_clang"
