@@ -6,11 +6,11 @@ namespace allscale {
 namespace compiler {
 namespace utils {
 
-	bool hasCallOperator(const insieme::core::StructPtr& sourceLambda);
+	bool hasCallOperator(const insieme::core::NodePtr& node);
 
-	insieme::core::MemberFunctionPtr extractCallOperator(const insieme::core::StructPtr& sourceLambda);
+	insieme::core::MemberFunctionPtr extractCallOperator(const insieme::core::NodePtr& node);
 
-	insieme::core::FunctionTypePtr extractCallOperatorType(const insieme::core::StructPtr& sourceLambda);
+	insieme::core::FunctionTypePtr extractCallOperatorType(const insieme::core::NodePtr& node);
 
 }
 }
