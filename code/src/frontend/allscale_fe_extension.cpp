@@ -63,6 +63,14 @@ namespace frontend {
 			}
 			return argExpr;
 		}
+
+		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter) {
+			if(auto mat = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(clangExpr)) clangExpr = mat->GetTemporaryExpr();
+			if(auto lambda = llvm::dyn_cast<clang::LambdaExpr>(clangExpr)) {
+				return converter.convertType(lambda->getCallOperator()->getType()).as<core::FunctionTypePtr>();
+			}
+			return {};
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// TYPES
@@ -246,6 +254,11 @@ namespace frontend {
 
 		/// Utility for the specification of simple call mappings (C++ to IR)
 		class SimpleCallMapper {
+		  protected:
+			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
+				return converter.convertExpr(clangArg);
+			}
+
 		  private:
 			const string targetIRString;
 			bool derefThisArg;
@@ -261,7 +274,7 @@ namespace frontend {
 				}
 				// add normal arguments
 				for(const auto& arg : call->arguments()) {
-					args.push_back(converter.convertExpr(arg));
+					args.push_back(convertArgument(arg, converter));
 				}
 				return converter.getIRBuilder().callExpr(callee, args);
 			}
@@ -277,14 +290,47 @@ namespace frontend {
 			}
 		};
 
+		/// Utility for the specification of treeture/task aggregation (C++ to IR)
+		/// same as SimpleCallMapper, but skips std::move and converts completed_task to treeture as required
+		class AggregationCallMapper : public SimpleCallMapper {
+		  protected:
+			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) override {
+				auto ret = converter.convertExpr(clangArg);
+				if(auto clangCall = llvm::dyn_cast<clang::CallExpr>(clangArg)) {
+					if(auto namedDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(clangCall->getCalleeDecl())) {
+						ret = derefOrDematerialize(converter.convertExpr(clangCall->getArg(0)));
+					}
+				}
+				if(lang::isCompletedTask(ret)) {
+					ret = lang::buildTaskToUnreleasedTreeture(ret);
+				}
+				if(auto lambdaType = extractLambdaOperationType(clangArg, converter)) {
+					ret = lang::buildCppLambdaToLambda(ret, lambdaType);
+				}
+				return ret;
+			}
+		  public:
+			AggregationCallMapper(const string& targetIRString) : SimpleCallMapper(targetIRString) {}
+		};
+
 
 		/// Mapping specification from C++ to IR used during call expression translation
 		const static std::map<std::string, CallMapper> callMap = {
+			// completed_tasks
 			{ "allscale::api::core::done", SimpleCallMapper("task_done") },
 			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
 			{ "allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", SimpleCallMapper("task_to_unreleased_treeture") },
+			// treeture
 			{ "allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true) },
+			{ "allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true) },
+			{ "allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true) },
+			{ "allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true) },
+			// task_reference
 			{ "allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true) },
+			{ "allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true) },
+			{ "allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true) },
+			// treeture aggregation
+			{ "allscale::api::core::combine", AggregationCallMapper("treeture_combine") },
 		};
 
 	}
