@@ -281,7 +281,9 @@ namespace frontend {
 		const static std::map<std::string, CallMapper> callMap = {
 			{ "allscale::api::core::done", SimpleCallMapper("task_done") },
 			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
-			{ "allscale::api::core::impl::reference::detail::treeture.*::wait", SimpleCallMapper("treeture_wait", true) }
+			{ "allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", SimpleCallMapper("task_to_unreleased_treeture") },
+			{ "allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true) },
+			{ "allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true) },
 		};
 
 	}
