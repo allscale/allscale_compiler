@@ -64,10 +64,17 @@ namespace frontend {
 			return argExpr;
 		}
 
-		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter) {
+		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter, bool deref) {
 			if(auto mat = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(clangExpr)) clangExpr = mat->GetTemporaryExpr();
 			if(auto lambda = llvm::dyn_cast<clang::LambdaExpr>(clangExpr)) {
-				return converter.convertType(lambda->getCallOperator()->getType()).as<core::FunctionTypePtr>();
+				auto ret = converter.convertType(lambda->getCallOperator()->getType()).as<core::FunctionTypePtr>();
+				if(deref) {
+					auto dereffedParamTypes = ::transform(ret->getParameterTypeList(), [](const core::TypePtr& t) {
+						return core::analysis::isRefType(t) ? core::analysis::getReferencedType(t) : t;
+					});
+					ret = converter.getIRBuilder().functionType(dereffedParamTypes, ret->getReturnType(), ret->getKind());
+				}
+				return ret;
 			}
 			return {};
 		}
@@ -87,7 +94,7 @@ namespace frontend {
 			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
 			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
 			// completed tasks
-			{ "allscale::api::core::detail::completed_task", "completed_task<TEMPLATE_T_0>" },
+			{ "allscale::api::core::detail::completed_task", "treeture<TEMPLATE_T_0,f>" },
 			// treetures
 			{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
 			{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
@@ -252,6 +259,19 @@ namespace frontend {
 
 		using CallMapper = std::function<core::ExpressionPtr(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter)>;
 
+
+		/// Utility for the specification of noop call mappings (C++ to IR)
+		class NoopCallMapper {
+		public:
+			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+				if(auto memCall = llvm::dyn_cast<clang::CXXMemberCallExpr>(call)) {
+					auto thisArg = converter.convertExpr(memCall->getImplicitObjectArgument());
+					return thisArg;
+				}
+				return converter.convertExpr(call->getArg(0));
+			}
+		};
+
 		/// Utility for the specification of simple call mappings (C++ to IR)
 		class SimpleCallMapper {
 		  protected:
@@ -301,10 +321,7 @@ namespace frontend {
 						ret = derefOrDematerialize(converter.convertExpr(clangCall->getArg(0)));
 					}
 				}
-				if(lang::isCompletedTask(ret)) {
-					ret = lang::buildTaskToUnreleasedTreeture(ret);
-				}
-				if(auto lambdaType = extractLambdaOperationType(clangArg, converter)) {
+				if(auto lambdaType = extractLambdaOperationType(clangArg, converter, true)) {
 					ret = lang::buildCppLambdaToLambda(ret, lambdaType);
 				}
 				return ret;
@@ -317,9 +334,9 @@ namespace frontend {
 		/// Mapping specification from C++ to IR used during call expression translation
 		const static std::map<std::string, CallMapper> callMap = {
 			// completed_tasks
-			{ "allscale::api::core::done", SimpleCallMapper("task_done") },
-			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("task_to_treeture") },
-			{ "allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", SimpleCallMapper("task_to_unreleased_treeture") },
+			{ "allscale::api::core::done", SimpleCallMapper("treeture_done") },
+			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run") },
+			{ "allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper() },
 			// treeture
 			{ "allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true) },
 			{ "allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true) },

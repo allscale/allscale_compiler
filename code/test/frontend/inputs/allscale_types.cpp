@@ -58,7 +58,7 @@ int main() {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMPLETED TASKS //////
 
 	#pragma test expect_ir(R"({
-		var ref<ptr<completed_task<uint<4>>>,f,f,plain> v0;
+		var ref<ptr<treeture<uint<4>,f>>,f,f,plain> v0;
 	})")
 	{
 		allscale::api::core::detail::completed_task<unsigned>* myCompTask;

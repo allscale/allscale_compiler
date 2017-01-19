@@ -408,17 +408,6 @@ namespace lang {
 		return builder.callExpr(firstRecfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
 	}
 
-
-	core::ExpressionPtr buildTaskToUnreleasedTreeture(const core::ExpressionPtr& param) {
-		assert_true(param) << "Given node is null!";
-		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
-		auto typeParm = param->getType().as<core::GenericTypePtr>().getTypeParameter(0);
-		core::GenericTypePtr returnType = TreetureType(typeParm, false);
-		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(returnType, allS.getTaskToUnreleasedTreeture(), param);
-	}
-
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();

@@ -108,7 +108,7 @@ namespace checks {
 		for(unsigned paramIndex = 0; paramIndex < funType.getParameterTypeList().size(); ++paramIndex) {
 			auto expectedParamType = funType.getParameterType(paramIndex);
 			auto actualParamType = operatorType.getParameterType(paramIndex + 1);
-			if(!types::typeMatchesWithOptionalMaterialization(address->getNodeManager(), expectedParamType, actualParamType)) {
+			if(!types::typeMatchesWithOptionalMaterialization(address->getNodeManager(), actualParamType, expectedParamType)) {
 				add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE,
 												 format("wrong parameter type for lambda, expected: %s actual: %s", *expectedParamType, *actualParamType), Message::ERROR));
 			}

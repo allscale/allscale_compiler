@@ -109,7 +109,7 @@ namespace backend {
 		{
 			const lang::AllscaleModule& ext = manager.getLangExtension<lang::AllscaleModule>();
 
-			table[ext.getTaskDone()] = OP_CONVERTER {
+			table[ext.getTreetureDone()] = OP_CONVERTER {
 
 				// add dependency to result type
 				auto& resTypeInfo = GET_TYPE_INFO(call->getType());
