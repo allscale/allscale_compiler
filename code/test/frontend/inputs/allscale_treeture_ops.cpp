@@ -1,6 +1,7 @@
 
 #include "allscale/api/core/prec.h"
 #include "allscale/api/core/treeture.h"
+
 #include "allscale/api/user/arithmetic.h"
 
 using namespace allscale::api::core;
@@ -60,6 +61,8 @@ int main() {
 		{
 			var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> b = treeture_done(2);
+			treeture_sequential(*a, *b);
+			treeture_parallel(*a, *b);
 			treeture_combine(
 				*a,
 				*b,
@@ -72,9 +75,11 @@ int main() {
 
 		}
 	)")
-	{
+	{ // this code is not actually correct, but it is sufficient for testing
 		auto a = done(1);
 		auto b = done(2);
+		sequential(std::move(a), std::move(b));
+		parallel(std::move(a), std::move(b));
 		combine(std::move(a), std::move(b), [](int m, int n) { return m + n; });
 	}
 

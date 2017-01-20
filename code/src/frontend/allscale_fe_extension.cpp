@@ -348,6 +348,8 @@ namespace frontend {
 			{ "allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true) },
 			// treeture aggregation
 			{ "allscale::api::core::combine", AggregationCallMapper("treeture_combine") },
+			{ "allscale::api::core::sequential", AggregationCallMapper("treeture_sequential") },
+			{ "allscale::api::core::parallel", AggregationCallMapper("treeture_parallel") },
 		};
 
 	}

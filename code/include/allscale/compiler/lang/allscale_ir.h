@@ -42,6 +42,8 @@ namespace lang {
 		LANG_EXT_LITERAL(TreetureRight, "treeture_right", "(treeture<'a,'r>) -> treeture<unit, f>")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
+		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
+		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
 		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a, f>, treeture<'b, f>, ('a,'b) -> 'c, bool) -> treeture<'c, f>")
 
 		LANG_EXT_LITERAL(TreetureToRef,   "treeture_to_ref",   "(treeture<'a,'r>, type<ref<treeture<'a, 'r>, 'c, 'v, 'k>>) -> ref<treeture<'a,'r>, 'c, 'v, 'k>")
