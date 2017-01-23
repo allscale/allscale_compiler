@@ -16,6 +16,8 @@ int main() {
 		auto a = done(1);
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// METHODS ////
+
 	// methods on treetures
 
 	#pragma test expect_ir(R"({
@@ -48,6 +50,8 @@ int main() {
 		a.getRight();
 	}
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS ////
+
 	// treeture combination operations
 
 	#pragma test expect_ir(R"(
@@ -61,9 +65,10 @@ int main() {
 		{
 			var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> b = treeture_done(2);
-			treeture_sequential(*a, *b);
-			treeture_parallel(*a, *b);
+			treeture_sequential(list_empty(type_lit(treeture<'_dT,'_dR>)), *a, *b);
+			treeture_parallel(list_empty(type_lit(treeture<'_dT,'_dR>)), *a, *b);
 			treeture_combine(
+				list_empty(type_lit(treeture<'_dT,'_dR>)),
 				*a,
 				*b,
 				cpp_lambda_to_lambda(
@@ -99,6 +104,7 @@ int main() {
 		};
 		def __any_string__user_api_add = function (v628 : ref<treeture<int<4>,f>,f,f,cpp_rref>, v629 : ref<treeture<int<4>,f>,f,f,cpp_rref>) -> treeture<int<4>,f> {
 			return treeture_combine(
+				list_empty(type_lit(treeture<'_dT,'_dR>)),
 				*v628,
 				*v629,
 				cpp_lambda_to_lambda(
@@ -131,6 +137,43 @@ int main() {
 		auto b = done(2);
 		allscale::api::user::add(std::move(a), std::move(b));
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS + DEPENDENCIES ////
+
+	#pragma test expect_ir(R"(
+		decl struct __any_string__combine;
+		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
+		def struct __any_string__combine {
+			const function IMP__operator_call_ = (v673 : ref<int<4>,f,f,plain>, v674 : ref<int<4>,f,f,plain>) -> int<4> {
+				return *v673+*v674;
+			}
+		};
+		{
+			var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1);
+			var ref<treeture<int<4>,f>,f,f,plain> b = treeture_done(2);
+			treeture_sequential(list_empty(type_lit(treeture<'_dT,'_dR>)), *a, *b);
+			treeture_parallel(list_empty(type_lit(treeture<'_dT,'_dR>)), *a, *b);
+			treeture_combine(
+				list_empty(type_lit(treeture<'_dT,'_dR>)),
+				*a,
+				*b,
+				cpp_lambda_to_lambda(
+					<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {},
+					type_lit((int<4>, int<4>) -> int<4>)
+				),
+				true
+			);
+
+		}
+	)")
+	{ // this code is not actually correct, but it is sufficient for testing
+		auto a = done(1);
+		auto b = done(2);
+		sequential(std::move(a), std::move(b));
+		parallel(std::move(a), std::move(b));
+		combine(std::move(a), std::move(b), [](int m, int n) { return m + n; });
+	}
+
 
 	return 0;
 }

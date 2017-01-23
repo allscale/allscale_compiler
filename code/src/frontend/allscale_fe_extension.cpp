@@ -12,6 +12,7 @@
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/lang/reference.h"
+#include "insieme/core/lang/list.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/tu/ir_translation_unit_io.h"
@@ -77,6 +78,12 @@ namespace frontend {
 				return ret;
 			}
 			return {};
+		}
+
+		core::ExpressionPtr buildDependencyList(insieme::frontend::conversion::Converter& converter) {
+			auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
+			auto dependencyType = converter.getIRBuilder().parseType("treeture<'_dT, '_dR>", allscaleExt.getSymbols());;
+			return core::lang::buildListEmpty(dependencyType);
 		}
 	}
 
@@ -278,6 +285,9 @@ namespace frontend {
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 				return converter.convertExpr(clangArg);
 			}
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
+				return args;
+			}
 
 		  private:
 			const string targetIRString;
@@ -296,7 +306,7 @@ namespace frontend {
 				for(const auto& arg : call->arguments()) {
 					args.push_back(convertArgument(arg, converter));
 				}
-				return converter.getIRBuilder().callExpr(callee, args);
+				return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(args, converter));
 			}
 
 		  public:
@@ -312,6 +322,7 @@ namespace frontend {
 
 		/// Utility for the specification of treeture/task aggregation (C++ to IR)
 		/// same as SimpleCallMapper, but skips std::move and converts completed_task to treeture as required
+		/// also postprocesses argument list in order to generate empty dependencies list if none is available
 		class AggregationCallMapper : public SimpleCallMapper {
 		  protected:
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) override {
@@ -326,6 +337,17 @@ namespace frontend {
 				}
 				return ret;
 			}
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
+				                                                 insieme::frontend::conversion::Converter& converter) override {
+				if(args.size() == 0 || !core::lang::isList(args[0])) {
+					core::ExpressionList ret;
+					ret.push_back(buildDependencyList(converter));
+					std::copy(args.cbegin(), args.cend(), std::back_inserter(ret));
+					return ret;
+				}
+				return args;
+			}
+
 		  public:
 			AggregationCallMapper(const string& targetIRString) : SimpleCallMapper(targetIRString) {}
 		};

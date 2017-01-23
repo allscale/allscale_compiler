@@ -23,7 +23,7 @@ namespace lang {
 
 	  public:
 
-		TYPE_ALIAS("list<treeref>", "dependencies");
+		TYPE_ALIAS("dependencies", "list<treeture<'_dT, '_dR>>");
 
 		/**
 		 * A constructor for functions usable within a prec call.
@@ -34,6 +34,7 @@ namespace lang {
 		LANG_EXT_LITERAL(Prec, "prec", "( (recfun<'a,'b>, 'c...) ) -> recfun<'a,'b>")
 
 		// treetures
+
 		LANG_EXT_LITERAL(TreetureDone, "treeture_done", "('a) -> treeture<'a, f>")
 		LANG_EXT_LITERAL(TreetureRun, "treeture_run", "(treeture<'a, f>) -> treeture<'a, t>")
 
@@ -42,12 +43,14 @@ namespace lang {
 		LANG_EXT_LITERAL(TreetureRight, "treeture_right", "(treeture<'a,'r>) -> treeture<unit, f>")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
-		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
-		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
-		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(treeture<'a, f>, treeture<'b, f>, ('a,'b) -> 'c, bool) -> treeture<'c, f>")
+		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
+		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
+		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(dependencies, treeture<'a, f>, treeture<'b, f>, ('a,'b) -> 'c, bool) -> treeture<'c, f>")
 
 		LANG_EXT_LITERAL(TreetureToRef,   "treeture_to_ref",   "(treeture<'a,'r>, type<ref<treeture<'a, 'r>, 'c, 'v, 'k>>) -> ref<treeture<'a,'r>, 'c, 'v, 'k>")
 		LANG_EXT_LITERAL(TreetureFromRef, "treeture_from_ref", "(ref<treeture<'a,'r>, 'c, 'v, 'k>) -> treeture<'a,'r>")
+
+		// recfuns and lambda operations
 
 		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 		LANG_EXT_LITERAL(RecfunToDepFun, "recfun_to_dep_fun", "(recfun<'a,'b>) -> (dependencies, 'a) -> treeture<'b,f>")
