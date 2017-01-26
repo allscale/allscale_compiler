@@ -21,6 +21,7 @@ ExternalProject_Add(
 		-DHPX_WITH_MALLOC=system
 		INSTALL_COMMAND ""
 		EXCLUDE_FROM_ALL 1
+		BUILD_ALWAYS 1
 )
 
 ExternalProject_Get_Property(hpx source_dir binary_dir)
@@ -44,6 +45,7 @@ ExternalProject_Add(
 		-DALLSCALE_WITH_TESTS=off
 		INSTALL_COMMAND ""
 		EXCLUDE_FROM_ALL 1
+		BUILD_ALWAYS 1
 )
 
 ExternalProject_Get_Property(allscale_runtime source_dir binary_dir)
