@@ -88,5 +88,14 @@ int main() {
 		impl::sequential::lazy_unreleased_treeture<double, int /* placeholder */>* t2;
 	}
 
+	///
+
+	#pragma test expect_ir(R"({
+		var ref<ptr<dependencies>,f,f,plain> v0;
+	})")
+	{
+		dependencies* x;
+	}
+
 	return 0;
 }

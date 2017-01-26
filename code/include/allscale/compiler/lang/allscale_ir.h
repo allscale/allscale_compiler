@@ -23,7 +23,6 @@ namespace lang {
 
 	  public:
 
-		TYPE_ALIAS("dependencies", "list<treeture<'_dT, '_dR>>");
 
 		/**
 		 * A constructor for functions usable within a prec call.
@@ -32,6 +31,13 @@ namespace lang {
 		LANG_EXT_LITERAL(BuildRecfun, "build_recfun" , "(('a) => bool, list<('a) => 'b>, list<('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>>) -> recfun<'a,'b>")
 
 		LANG_EXT_LITERAL(Prec, "prec", "( (recfun<'a,'b>, 'c...) ) -> recfun<'a,'b>")
+
+		// dependencies
+
+		TYPE_ALIAS("dependencies", "list<treeture<'_dT, '_dR>>");
+
+		LANG_EXT_LITERAL(DependencyAfter, "dependency_after", "('a...) -> dependencies")
+
 
 		// treetures
 
