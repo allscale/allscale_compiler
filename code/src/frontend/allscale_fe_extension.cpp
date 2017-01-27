@@ -82,8 +82,7 @@ namespace frontend {
 
 		core::ExpressionPtr buildDependencyList(insieme::frontend::conversion::Converter& converter) {
 			auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
-			auto dependencyType = converter.getIRBuilder().parseType("treeture<'_dT, '_dR>", allscaleExt.getSymbols());;
-			return core::lang::buildListEmpty(dependencyType);
+			return converter.getIRBuilder().callExpr(allscaleExt.getDependencyAfter());
 		}
 	}
 
@@ -106,7 +105,7 @@ namespace frontend {
 			{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
 			{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
 			// dependencies
-			{ "allscale::api::core::dependencies", "list<treeture<'_dT,'_dR>>" },
+			{ "allscale::api::core::dependencies", "dependencies" },
 		};
 
 		/// Extract type argument #id from a C++ template instantiation declared by recordDecl
@@ -333,10 +332,11 @@ namespace frontend {
 				if(auto clangCall = llvm::dyn_cast<clang::CallExpr>(clangArg)) {
 					if(auto namedDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(clangCall->getCalleeDecl())) {
 						if(namedDecl->getQualifiedNameAsString() == "std::move") {
-							ret = derefOrDematerialize(converter.convertExpr(clangCall->getArg(0)));
+							ret = converter.convertExpr(clangCall->getArg(0));
 						}
 					}
 				}
+				ret = derefOrDematerialize(ret);
 				if(auto lambdaType = extractLambdaOperationType(clangArg, converter, true)) {
 					ret = lang::buildCppLambdaToLambda(ret, lambdaType);
 				}
@@ -344,7 +344,7 @@ namespace frontend {
 			}
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
 				                                                 insieme::frontend::conversion::Converter& converter) override {
-				if(requiresDependencies && (args.size() == 0 || !core::lang::isList(args[0]))) {
+				if(requiresDependencies && (args.size() == 0 || !lang::isDependencies(args[0]))) {
 					core::ExpressionList ret;
 					ret.push_back(buildDependencyList(converter));
 					std::copy(args.cbegin(), args.cend(), std::back_inserter(ret));
@@ -355,7 +355,7 @@ namespace frontend {
 
 		  public:
 			AggregationCallMapper(const string& targetIRString, bool requiresDependencies = false)
-				: SimpleCallMapper(targetIRString), requiresDependencies(requiresDependencies) {}
+				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
 		};
 
 
@@ -380,7 +380,8 @@ namespace frontend {
 			{ "allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true) },
 			{ "allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true) },
 			// dependencies
-			{ "allscale::api::core::after", AggregationCallMapper("dependency_after") }
+			{ "allscale::api::core::after", AggregationCallMapper("dependency_after") },
+			{ "allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add") },
 		};
 
 	}

@@ -34,10 +34,8 @@ namespace lang {
 
 		// dependencies
 
-		TYPE_ALIAS("dependencies", "list<treeture<'_dT, '_dR>>");
-
 		LANG_EXT_LITERAL(DependencyAfter, "dependency_after", "('a...) -> dependencies")
-
+		LANG_EXT_LITERAL(DependencyAdd, "dependency_add", "(dependencies, treeture<'a, 'r>) -> dependencies")
 
 		// treetures
 
@@ -245,6 +243,8 @@ namespace lang {
 		static PrecOperation fromIR(const core::ExpressionPtr&);
 
 	};
+
+	bool isDependencies(const core::NodePtr& node);
 
 	bool isRecFun(const core::NodePtr& node);
 

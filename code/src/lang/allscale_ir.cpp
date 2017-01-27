@@ -14,6 +14,17 @@ namespace allscale {
 namespace compiler {
 namespace lang {
 
+	/////////////////////////////// Dependencies
+
+	bool isDependencies(const core::NodePtr& node) {
+		auto type = node.isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		if(!type) return false;
+
+		// check properties
+		return type->getTypeParameter().size() == 0 && type->getParents().empty() && type->getName()->getValue() == "dependencies";
+	}
+
 	/////////////////////////////// RecFun
 
 	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
