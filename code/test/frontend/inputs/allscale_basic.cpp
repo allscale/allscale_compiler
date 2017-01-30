@@ -52,29 +52,29 @@ using namespace allscale::api::core;
 			))
 	))"
 
-auto testFunReturnPrec() {
-	return prec(fun(
-			[](int x)->bool { return x < 2; },
-			[](int x)->int { return x; },
-			[](int x, const auto& f) {
-				f(x - 1);
-				return done(1);
-			}
-		)
-	);
-}
-
-auto testFunReturnPrecCallResult(int i) {
-	return prec(fun(
-			[](int x)->bool { return x < 2; },
-			[](int x)->int { return x; },
-			[](int x, const auto& f) {
-				f(x - 1);
-				return done(1);
-			}
-		)
-	)(i);
-}
+//auto testFunReturnPrec() {
+//	return prec(fun(
+//			[](int x)->bool { return x < 2; },
+//			[](int x)->int { return x; },
+//			[](int x, const auto& f) {
+//				f(x - 1);
+//				return done(1);
+//			}
+//		)
+//	);
+//}
+//
+//auto testFunReturnPrecCallResult(int i) {
+//	return prec(fun(
+//			[](int x)->bool { return x < 2; },
+//			[](int x)->int { return x; },
+//			[](int x, const auto& f) {
+//				f(x - 1);
+//				return done(1);
+//			}
+//		)
+//	)(i);
+//}
 
 int main() {
 	; // this is required because of the clang compound source location bug
@@ -96,115 +96,115 @@ int main() {
 		)(14);
 	}
 
-	// result of call to prec
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
-			;
-			(*simpleFun)(12);
-		}
-	)")
-	{
-		auto simpleFun = prec(fun(
-				[](int x)->bool { return x < 2; },
-				[](int x)->int { return x; },
-				[](int x, const auto& f) {
-					f(x - 1);
-					return done(1);
-				}
-			)
-		);
+	//// result of call to prec
+	//#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
+	//		;
+	//		(*simpleFun)(12);
+	//	}
+	//)")
+	//{
+	//	auto simpleFun = prec(fun(
+	//			[](int x)->bool { return x < 2; },
+	//			[](int x)->int { return x; },
+	//			[](int x, const auto& f) {
+	//				f(x - 1);
+	//				return done(1);
+	//			}
+	//		)
+	//	);
 
-		simpleFun(12);
-	}
+	//	simpleFun(12);
+	//}
 
-	// result type of call to prec assigned to a variable
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
-			;
-			var ref<treeture<int<4>,f>,f,f,plain> res = (*simpleFun)(12);
-		}
-	)")
-	{
-		auto simpleFun = prec(fun(
-				[](int x)->bool { return x < 2; },
-				[](int x)->int { return x; },
-				[](int x, const auto& f) {
-					f(x - 1);
-					return done(1);
-				}
-			)
-		);
+	//// result type of call to prec assigned to a variable
+	//#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
+	//		;
+	//		var ref<treeture<int<4>,f>,f,f,plain> res = (*simpleFun)(12);
+	//	}
+	//)")
+	//{
+	//	auto simpleFun = prec(fun(
+	//			[](int x)->bool { return x < 2; },
+	//			[](int x)->int { return x; },
+	//			[](int x, const auto& f) {
+	//				f(x - 1);
+	//				return done(1);
+	//			}
+	//		)
+	//	);
 
-		auto res = simpleFun(12);
-	}
+	//	auto res = simpleFun(12);
+	//}
 
-	// result type of call to prec assigned to a variable - also calling get on the result
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
-			;
-			var ref<treeture<int<4>,f>,f,f,plain> res = (*simpleFun)(12);
-			treeture_get(*res);
-		}
-	)")
-	{
-		auto simpleFun = prec(fun(
-				[](int x)->bool { return x < 2; },
-				[](int x)->int { return x; },
-				[](int x, const auto& f) {
-					f(x - 1);
-					return done(1);
-				}
-			)
-		);
+	//// result type of call to prec assigned to a variable - also calling get on the result
+	//#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
+	//		;
+	//		var ref<treeture<int<4>,f>,f,f,plain> res = (*simpleFun)(12);
+	//		treeture_get(*res);
+	//	}
+	//)")
+	//{
+	//	auto simpleFun = prec(fun(
+	//			[](int x)->bool { return x < 2; },
+	//			[](int x)->int { return x; },
+	//			[](int x, const auto& f) {
+	//				f(x - 1);
+	//				return done(1);
+	//			}
+	//		)
+	//	);
 
-		auto res = simpleFun(12);
-		res.get();
-	}
+	//	auto res = simpleFun(12);
+	//	res.get();
+	//}
 
-	// result type of call to prec assigned to a variable - also calling get on the result and directly assigning the result
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
-			;
-			var ref<int<4>,f,f,plain> i = treeture_get((*simpleFun)(13));
-		}
-	)")
-	{
-		auto simpleFun = prec(fun(
-				[](int x)->bool { return x < 2; },
-				[](int x)->int { return x; },
-				[](int x, const auto& f) {
-					f(x - 1);
-					return done(1);
-				}
-			)
-		);
+	//// result type of call to prec assigned to a variable - also calling get on the result and directly assigning the result
+	//#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
+	//		;
+	//		var ref<int<4>,f,f,plain> i = treeture_get((*simpleFun)(13));
+	//	}
+	//)")
+	//{
+	//	auto simpleFun = prec(fun(
+	//			[](int x)->bool { return x < 2; },
+	//			[](int x)->int { return x; },
+	//			[](int x, const auto& f) {
+	//				f(x - 1);
+	//				return done(1);
+	//			}
+	//		)
+	//	);
 
-		auto i = simpleFun(13).get();
-	}
+	//	auto i = simpleFun(13).get();
+	//}
 
-	// call to result of function returning prec
-	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
-		def IMP_testFunReturnPrec = function () -> (ref<int<4>,t,f,cpp_ref>) => treeture<int<4>,f> {
-			return
-	)", SIMPLE_PREC_CALL, R"(;
-		};
-		{
-			var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrec()(4);
-		}
-	)")
-	{
-		auto a = testFunReturnPrec()(4);
-	}
+	//// call to result of function returning prec
+	//#pragma test expect_ir(SIMPLE_PREC_IR, R"(
+	//	def IMP_testFunReturnPrec = function () -> (ref<int<4>,t,f,cpp_ref>) => treeture<int<4>,f> {
+	//		return
+	//)", SIMPLE_PREC_CALL, R"(;
+	//	};
+	//	{
+	//		var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrec()(4);
+	//	}
+	//)")
+	//{
+	//	auto a = testFunReturnPrec()(4);
+	//}
 
-	// call to function returning the result of prec
-	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
-		def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>>) -> treeture<int<4>,f> {
-			return
-	)", SIMPLE_PREC_CALL, R"( (*i);
-		};
-		{
-			var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrecCallResult(5);
-		}
-	)")
-	{
-		auto a = testFunReturnPrecCallResult(5);
-	}
+	//// call to function returning the result of prec
+	//#pragma test expect_ir(SIMPLE_PREC_IR, R"(
+	//	def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>>) -> treeture<int<4>,f> {
+	//		return
+	//)", SIMPLE_PREC_CALL, R"( (*i);
+	//	};
+	//	{
+	//		var ref<treeture<int<4>,f>,f,f,plain> v0 = IMP_testFunReturnPrecCallResult(5);
+	//	}
+	//)")
+	//{
+	//	auto a = testFunReturnPrecCallResult(5);
+	//}
 
 	return 0;
 }

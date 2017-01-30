@@ -38,7 +38,7 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_dependency_ops.cpp");
 	}
 
-	TEST(AllScaleConversionTest, DISABLED_Basic) {
+	TEST(AllScaleConversionTest, Basic) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
 	}
 

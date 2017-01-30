@@ -245,10 +245,19 @@ namespace frontend {
 			return mappedType;
 		}
 
-		// if the passed type is an AutoType and is dependent, we can't really translate it correctly.
+		// if the passed type is an AutoType or BuiltinType and is dependent, we can't really translate it correctly.
 		// we create a dummy replacement type to move forward in the translation and assert this replacement doesn't survive in the final IR
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
 			if(autoType->isDependentType()) { return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER); }
+		}
+		if(auto builtinType = llvm::dyn_cast<clang::BuiltinType>(type)) {
+			std::cout << "Builtin: ";
+			builtinType->dump();
+			std::cout << std::endl;
+			if(builtinType->isDependentType()) {
+				std::cout << "Dependent Builtin" << std::endl;
+				return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER);
+			}
 		}
 
 		return{};
@@ -289,6 +298,10 @@ namespace frontend {
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
 				return args;
 			}
+			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+				auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
+				return converter.getIRBuilder().parseExpr(targetIRString, allscaleExt.getSymbols());
+			}
 
 		  private:
 			const string targetIRString;
@@ -314,10 +327,8 @@ namespace frontend {
 			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
 
 			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
-				auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
-				auto targetFun = converter.getIRBuilder().parseExpr(targetIRString, allscaleExt.getSymbols());
-
-				return buildCallWithDefaultParamConversion(targetFun, call, converter);
+				auto callee = generateCallee(call, converter);
+				return buildCallWithDefaultParamConversion(callee, call, converter);
 			}
 		};
 
@@ -358,32 +369,53 @@ namespace frontend {
 				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
 		};
 
+		class RecFunCallMapper : public SimpleCallMapper {
+		  protected:
+			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) override {
+				auto opCall = llvm::dyn_cast<clang::CXXOperatorCallExpr>(call);
+				assert_true(opCall);
+				auto recfunArg = converter.convertExpr(opCall->getArg(0));
+				assert_true(recfunArg);
+				return lang::buildRecfunToFun(derefOrDematerialize(recfunArg));
+			}
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
+				insieme::frontend::conversion::Converter& converter) override {
+				assert_ge(args.size(), 1);
+				return core::ExpressionList(args.cbegin() + 1, args.cend());
+			}
 
-		/// Mapping specification from C++ to IR used during call expression translation
-		const static std::map<std::string, CallMapper> callMap = {
-			// completed_tasks
-			{ "allscale::api::core::done", SimpleCallMapper("treeture_done") },
-			{ "allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run") },
-			{ "allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper() },
-			// treeture
-			{ "allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true) },
-			{ "allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true) },
-			{ "allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true) },
-			{ "allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true) },
-			{ "allscale::api::core::impl::.*treeture.*::getTaskReference", NoopCallMapper() },
-			// task_reference
-			{ "allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true) },
-			{ "allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true) },
-			{ "allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true) },
-			// treeture aggregation
-			{ "allscale::api::core::combine", AggregationCallMapper("treeture_combine", true) },
-			{ "allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true) },
-			{ "allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true) },
-			// dependencies
-			{ "allscale::api::core::after", AggregationCallMapper("dependency_after") },
-			{ "allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add") },
+		  public:
+			RecFunCallMapper() : SimpleCallMapper("") { }
 		};
 
+		/// Mapping specification from C++ to IR used during call expression translation
+		const static std::map<std::string, CallMapper>
+			callMap = {
+			    // completed_tasks
+			    {"allscale::api::core::done", SimpleCallMapper("treeture_done")},
+			    {"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
+			    {"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper()},
+			    // treeture
+			    {"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
+			    {"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
+			    {"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
+			    {"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
+			    {"allscale::api::core::impl::.*treeture.*::getTaskReference", NoopCallMapper()},
+			    // task_reference
+			    {"allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true)},
+			    {"allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true)},
+			    {"allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true)},
+			    // treeture aggregation
+			    {"allscale::api::core::combine", AggregationCallMapper("treeture_combine", true)},
+			    {"allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true)},
+			    {"allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true)},
+			    // dependencies
+			    {"allscale::api::core::after", AggregationCallMapper("dependency_after")},
+			    {"allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add")},
+			    // prec operation
+			    {R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", RecFunCallMapper() },
+
+		};
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
