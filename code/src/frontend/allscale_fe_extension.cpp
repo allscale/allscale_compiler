@@ -389,32 +389,32 @@ namespace frontend {
 		};
 
 		/// Mapping specification from C++ to IR used during call expression translation
-		const static std::map<std::string, CallMapper>
-			callMap = {
-			    // completed_tasks
-			    {"allscale::api::core::done", SimpleCallMapper("treeture_done")},
-			    {"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
-			    {"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper()},
-			    // treeture
-			    {"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
-			    {"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
-			    {"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
-			    {"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
-			    {"allscale::api::core::impl::.*treeture.*::getTaskReference", NoopCallMapper()},
-			    // task_reference
-			    {"allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true)},
-			    {"allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true)},
-			    {"allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true)},
-			    // treeture aggregation
-			    {"allscale::api::core::combine", AggregationCallMapper("treeture_combine", true)},
-			    {"allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true)},
-			    {"allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true)},
-			    // dependencies
-			    {"allscale::api::core::after", AggregationCallMapper("dependency_after")},
-			    {"allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add")},
-			    // prec operation
-			    {R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", RecFunCallMapper() },
-
+		const static std::map<std::string, CallMapper> callMap = {
+			// completed_tasks
+			{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
+			{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
+			{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper()},
+			// treeture
+			{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
+			{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
+			{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
+			{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
+			{"allscale::api::core::impl::.*treeture.*::getTaskReference", NoopCallMapper()},
+			// task_reference
+			{"allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true)},
+			{"allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true)},
+			{"allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true)},
+			// treeture aggregation
+			{"allscale::api::core::combine", AggregationCallMapper("treeture_combine", true)},
+			{"allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true)},
+			{"allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true)},
+			// dependencies
+			{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
+			{"allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add")},
+			// prec operation
+			{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", RecFunCallMapper()},
+			// fun
+			{"allscale::api::core::fun", FunConstructionMapper()},
 		};
 	}
 
