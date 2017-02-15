@@ -55,6 +55,19 @@ int main() {
 		TestCallableType* myCallable;
 	}
 
+	// step case param argument
+	using TestRecFunParamParallelCallableType = allscale::api::core::detail::callable<0, TestFunDefType>::ParallelCallable;
+	using TestRecFunParamSequentialCallableType = allscale::api::core::detail::callable<0, TestFunDefType>::SequentialCallable;
+
+	#pragma test expect_ir(R"({
+		var ref<ptr<recfun<int<4>,real<8>>>,f,f,plain> v0;
+		var ref<ptr<recfun<int<4>,real<8>>>,f,f,plain> v1;
+	})")
+	{
+		TestRecFunParamParallelCallableType* myRecFunParallelParam;
+		TestRecFunParamSequentialCallableType* myRecFunSequentialParam;
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMPLETED TASKS //////
 
 	#pragma test expect_ir(R"({

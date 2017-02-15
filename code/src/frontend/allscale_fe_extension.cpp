@@ -99,6 +99,7 @@ namespace frontend {
 			{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
 			{ "allscale::api::core::detail::prec_operation", "recfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
 			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
+			{ "allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable", "TUPLE_TYPE_0<('ENCLOSING_TEMPLATE_T_0...)>" },
 			// completed tasks
 			{ "allscale::api::core::detail::completed_task", "treeture<TEMPLATE_T_0,f>" },
 			// treetures
@@ -144,6 +145,15 @@ namespace frontend {
 			}
 			return ret;
 		}
+		/// Extract type argument #id from a C++ template instantiation declared by the type enclosing recordDecl
+		core::TypeList extractEnclosingTemplateTypeArgumentPack(const clang::RecordDecl* recordDecl, int id, insieme::frontend::conversion::Converter& converter) {
+			if(auto cxxRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(recordDecl)) {
+				auto enclosingRecordDecl = llvm::dyn_cast<clang::CXXRecordDecl>(cxxRecordDecl->getDeclContext());
+				assert_true(enclosingRecordDecl) << "Enclosing context is not a CXXRecordDecl";
+				return extractTemplateTypeArgumentPack(enclosingRecordDecl, id, converter);
+			}
+			return {};
+		}
 	}
 
 	namespace detail {
@@ -156,7 +166,6 @@ namespace frontend {
 			std::map<core::TypePtr, CodeExtractor> placeholderReplacer;
 
 			const unsigned MAX_MAPPED_TEMPLATE_ARGS = 8;
-			const char* TEMPLATE_ARG_PATTERN = "TEMPLATE_T_%u";
 
 		public:
 			TypeMapper(insieme::frontend::conversion::Converter& converter) {
@@ -171,23 +180,32 @@ namespace frontend {
 
 				// generate the template placeholder replacers to be applied on mapped IR
 				for(unsigned i = 0; i < MAX_MAPPED_TEMPLATE_ARGS; ++i) {
-					std::string name = ::format(TEMPLATE_ARG_PATTERN, i);
+					std::string name = ::format("TEMPLATE_T_%u", i);
 					// single argument
-					auto type = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
-					placeholderReplacer[type] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
+					auto singleType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
+					placeholderReplacer[singleType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
 						return extractTemplateTypeArgument(recordDecl, i, converter);
 					};
+
 					// variadic argument
 					name = ::format("('%s...)", name);
 					auto variadicType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
 					placeholderReplacer[variadicType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
 						return converter.getIRBuilder().tupleType(extractTemplateTypeArgumentPack(recordDecl, i, converter));
 					};
+
 					// type extraction from tuple types
-					name = ::format("TUPLE_TYPE_%d", i);
+					name = ::format("TUPLE_TYPE_%u", i);
 					auto tupleTypeExtractorType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
 					placeholderReplacer[tupleTypeExtractorType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
 						return irType.as<core::GenericTypePtr>()->getTypeParameter(0).as<core::TupleTypePtr>()->getElement(i);
+					};
+
+					// variadic argument from enclosing type
+					name = ::format("('ENCLOSING_TEMPLATE_T_%u...)", i);
+					auto enclosingSingleType = converter.getIRBuilder().parseType(name, allscaleExt.getSymbols());
+					placeholderReplacer[enclosingSingleType] = [&converter, i](const clang::RecordDecl* recordDecl, const core::TypePtr& irType) {
+						return converter.getIRBuilder().tupleType(extractEnclosingTemplateTypeArgumentPack(recordDecl, i, converter));
 					};
 				}
 			}
