@@ -374,6 +374,22 @@ namespace frontend {
 			});
 		}
 
+		/**
+		 * Skips the given node if it is of type ClangTypeToSkip, and converts it's shild node instead, which is determined by calling the passed childExtractor
+		 */
+		template<typename ClangTypeToSkip>
+		core::ExpressionPtr skipClangExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter,
+																			std::function<const clang::Expr*(const ClangTypeToSkip*)> childExtractor) {
+			if(auto clangTypedExpr = llvm::dyn_cast<ClangTypeToSkip>(expr)) {
+				auto retType = converter.convertType(expr->getType());
+				if(lang::isTreeture(retType) || lang::isRecFun(retType)) {
+					return converter.convertExpr(childExtractor(clangTypedExpr));
+				}
+			}
+			return {};
+		}
+
+
 		using CallMapper = std::function<core::ExpressionPtr(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter)>;
 
 		/// Utility for the specification of noop call mappings (C++ to IR)
@@ -629,12 +645,12 @@ namespace frontend {
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
 		expr->dumpColor();
 
-		if(auto construct = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
-			auto retType = converter.convertType(expr->getType());
-			if(lang::isTreeture(retType)) {
-				return converter.convertExpr(construct->getArg(0));
-			}
-		}
+		// we don't need special handling for CXXConstructExpr, MaterializeTemporaryExpr, ExprWithCleanups and VisitCXXBindTemporaryExpr on our AllScale types
+		// these nodes are skipped and we only handle their respective child
+		if(auto s = skipClangExpr<clang::CXXConstructExpr>(expr, converter,         [](const auto sE) { return sE->getArg(0); }))          { return s; }
+		if(auto s = skipClangExpr<clang::MaterializeTemporaryExpr>(expr, converter, [](const auto sE) { return sE->GetTemporaryExpr(); })) { return s; }
+		if(auto s = skipClangExpr<clang::ExprWithCleanups>(expr, converter,         [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
+		if(auto s = skipClangExpr<clang::CXXBindTemporaryExpr>(expr, converter,     [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 
 		// we handle certain calls specially, which we differentiate by their callee's name
 		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
@@ -649,17 +665,6 @@ namespace frontend {
 						std::cout << "Matched " << mapping.first << std::endl;
 						return mapping.second(call, converter);
 					}
-				}
-
-				if(name == "allscale::api::core::prec") {
-				}
-				if(name == "allscale::api::core::fun") {
-				}
-				if(name == "allscale::api::core::done") {
-					//assert_eq(call->getNumArgs(), 1);
-					//return lang::buildTreetureDone(converter.convertExpr(call->getArg(0)));
-				}
-				if(name == "allscale::api::core::combine") {
 				}
 			}
 		}
