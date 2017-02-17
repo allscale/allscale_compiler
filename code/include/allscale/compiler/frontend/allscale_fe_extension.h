@@ -8,19 +8,17 @@
 
 #include <boost/optional.hpp>
 
+#include "allscale/compiler/frontend/allscale_fe_extension_types.h"
+#include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
+
 namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	namespace detail {
-		class TypeMapper;
-		struct TypeMapperDeleter {
-			void operator()(TypeMapper* tm);
-		};
-	}
-
 	class AllscaleExtension : public insieme::frontend::extensions::FrontendExtension {
-		std::unique_ptr<detail::TypeMapper, detail::TypeMapperDeleter> typeMapper;
+
+		detail::TypeMapper typeMapper;
+
 		detail::TypeMapper& getTypeMapper(insieme::frontend::conversion::Converter& converter);
 
 	  protected:
