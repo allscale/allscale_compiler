@@ -28,27 +28,14 @@ namespace frontend {
 
 		virtual insieme::core::TypePtr Visit(const clang::QualType& type, insieme::frontend::conversion::Converter& converter) override;
 
-		virtual insieme::core::TypePtr PostVisit(const clang::QualType& type, const insieme::core::TypePtr& irType,
-			                                     insieme::frontend::conversion::Converter& converter) override;
-
 		// Expressions
 
 		virtual insieme::core::ExpressionPtr Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) override;
 
-		virtual insieme::core::ExpressionPtr PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
-			                                           insieme::frontend::conversion::Converter& converter) override;
-
 		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr, insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
-			                                       insieme::frontend::conversion::Converter& converter) override;
-
-		virtual std::pair<insieme::core::VariablePtr, insieme::core::ExpressionPtr> PostVisit(const clang::VarDecl* varDecl,
-			                                                                                  const insieme::core::VariablePtr& var,
-			                                                                                  const insieme::core::ExpressionPtr& varInit,
-			                                                                                  insieme::frontend::conversion::Converter& converter) override;
+		                                           insieme::frontend::conversion::Converter& converter) override;
 
 		// TU and Program
-
-		virtual insieme::core::tu::IRTranslationUnit IRVisit(insieme::core::tu::IRTranslationUnit& tu) override;
 
 		virtual insieme::core::ProgramPtr IRVisit(insieme::core::ProgramPtr& prog) override;
 	};

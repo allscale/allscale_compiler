@@ -24,6 +24,7 @@ namespace frontend {
 		return {};
 	}
 
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// TYPES
 
 	namespace {
@@ -62,12 +63,6 @@ namespace frontend {
 		}
 
 		return{};
-	}
-
-	insieme::core::TypePtr AllscaleExtension::PostVisit(const clang::QualType& typeIn, const insieme::core::TypePtr& irType,
-		insieme::frontend::conversion::Converter& converter) {
-
-		return irType;
 	}
 
 
@@ -123,23 +118,7 @@ namespace frontend {
 	}
 
 
-	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
-		                                                      insieme::frontend::conversion::Converter& converter) {
-
-		return irExpr;
-	}
-
-	std::pair<core::VariablePtr, core::ExpressionPtr> AllscaleExtension::PostVisit(const clang::VarDecl* varDecl, const core::VariablePtr& var,
-		                                                                           const core::ExpressionPtr& varInit,
-		                                                                           insieme::frontend::conversion::Converter& converter) {
-
-		return {var, varInit};
-	}
-
-	insieme::core::tu::IRTranslationUnit AllscaleExtension::IRVisit(insieme::core::tu::IRTranslationUnit& tu) {
-
-		return tu;
-	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// FINAL POSTPROCESSING
 
 	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& prog) {
 		core::IRBuilder builder(prog->getNodeManager());
