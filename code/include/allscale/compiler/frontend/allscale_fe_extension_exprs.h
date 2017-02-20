@@ -50,6 +50,8 @@ namespace frontend {
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter);
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter);
 			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
+			virtual core::ExpressionPtr postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
+			                                            insieme::frontend::conversion::Converter& converter);
 
 		  public:
 			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
@@ -78,6 +80,8 @@ namespace frontend {
 			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) override;
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
 			                                                     insieme::frontend::conversion::Converter& converter) override;
+			virtual core::ExpressionPtr postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
+			                                            insieme::frontend::conversion::Converter& converter) override;
 
 		  public:
 			RecFunCallMapper() : SimpleCallMapper("") { }

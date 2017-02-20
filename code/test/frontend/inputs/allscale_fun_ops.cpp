@@ -50,13 +50,13 @@ int main() {
 					)]
 			);
 			var ref<recfun<int<4>,real<8>>,f,f,plain> v770 = prec((*v628));
-			recfun_to_fun(*v770)(1);
+			treeture_run(recfun_to_fun(*v770)(1));
 		}
 	)")
 	{
 		auto funVar = fun([](int x) { return x<=2; },
-											[](int x) { return (double) x; },
-											[](int x, const auto& f) { f(x-2); return f(x-1); });
+		                  [](int x) { return (double) x; },
+		                  [](int x, const auto& f) { f(x-2); return f(x-1); });
 
 		auto precRes = prec(funVar);
 		precRes(1);

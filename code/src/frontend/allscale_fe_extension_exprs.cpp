@@ -242,10 +242,15 @@ namespace detail {
 		auto& allscaleExt = converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
 		return converter.getIRBuilder().parseExpr(targetIRString, allscaleExt.getSymbols());
 	}
+	core::ExpressionPtr SimpleCallMapper::postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
+	                                                      insieme::frontend::conversion::Converter& converter) {
+		return translatedCall;
+	}
 
 	core::ExpressionPtr SimpleCallMapper::operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 		auto callee = generateCallee(call, converter);
-		return buildCallWithDefaultParamConversion(callee, call, converter);
+		auto translatedCall = buildCallWithDefaultParamConversion(callee, call, converter);
+		return postprocessCall(call, translatedCall, converter);
 	}
 
 
@@ -286,9 +291,22 @@ namespace detail {
 		return lang::buildRecfunToFun(derefOrDematerialize(recfunArg));
 	}
 	core::ExpressionList RecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
-	                                                                       insieme::frontend::conversion::Converter& converter) {
+	                                                               insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
 		return core::ExpressionList(args.cbegin() + 1, args.cend());
+	}
+	core::ExpressionPtr RecFunCallMapper::postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
+	                                                      insieme::frontend::conversion::Converter& converter) {
+		auto callType = converter.convertType(call->getType());
+
+		lang::TreetureType callTreeture(callType);
+		lang::TreetureType translatedTreeture(translatedCall);
+
+		// add call to treeture_run if the translated IR treeture isn't released, but the clang treeture is
+		if(callTreeture.isReleased() && !translatedTreeture.isReleased()) {
+			return lang::buildTreetureRun(translatedCall);
+		}
+		return translatedCall;
 	}
 
 
