@@ -128,6 +128,83 @@ namespace lang {
 		EXPECT_EQ(builder.parseType("treeture<int<4>,'b>"),TreetureType(builder.parseType("treeture<int<4>,'b>")).toIRType());
 	}
 
+	TEST(TreetureType, IsTreeture) {
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
+
+		// correct treeture types
+		auto t1 = builder.parseType("treeture<int<4>,f>");
+		ASSERT_TRUE(t1);
+		EXPECT_TRUE(isTreeture(t1));
+
+		auto t2 = builder.parseType("treeture<bool,f>");
+		ASSERT_TRUE(t2);
+		EXPECT_TRUE(isTreeture(t2));
+
+		// incorrect treeture types
+		auto it1 = builder.parseType("treeture<int<4>>");
+		ASSERT_TRUE(it1);
+		EXPECT_FALSE(isTreeture(it1));
+
+		auto it2 = builder.parseType("treeture<int<4>,f,f>");
+		ASSERT_TRUE(it2);
+		EXPECT_FALSE(isTreeture(it2));
+
+		auto it3 = builder.parseType("treeture<int<4>,x>");
+		ASSERT_TRUE(it3);
+		EXPECT_FALSE(isTreeture(it3));
+
+		auto it4 = builder.parseType("tree<int<4>,f>");
+		ASSERT_TRUE(it4);
+		EXPECT_FALSE(isTreeture(it4));
+
+		// check type of expression
+		auto et1 = builder.parseExpr("decl foo  : () -> treeture<int<4>,f>; foo()");
+		ASSERT_TRUE(et1);
+		EXPECT_TRUE(isTreeture(et1));
+
+		auto et2 = builder.parseExpr("decl bar : () -> treeture<int<4>,x>; bar()");
+		ASSERT_TRUE(et2);
+		EXPECT_FALSE(isTreeture(et2));
+	}
+
+	TEST(RecFunType, IsRecFun) {
+		core::NodeManager nm;
+		core::IRBuilder builder(nm);
+
+		// correct recfun types
+		auto rf1 = builder.parseType("recfun<bool,bool>");
+		ASSERT_TRUE(rf1);
+		EXPECT_TRUE(isRecFun(rf1));
+
+		auto rf2 = builder.parseType("recfun<int<4>,real<8>>");
+		ASSERT_TRUE(rf2);
+		EXPECT_TRUE(isRecFun(rf2));
+
+		// incorrect recfun types
+		auto irf1 = builder.parseType("recfun<bool>");
+		ASSERT_TRUE(irf1);
+		EXPECT_FALSE(isRecFun(irf1));
+
+		auto irf2 = builder.parseType("recfun<bool,bool,bool>");
+		ASSERT_TRUE(irf2);
+		EXPECT_FALSE(isRecFun(irf2));
+
+		auto irf3 = builder.parseType("rec<bool,bool>");
+		ASSERT_TRUE(irf3);
+		EXPECT_FALSE(isRecFun(irf3));
+
+		// check type of expression
+		auto erf1 = builder.parseExpr("decl foo : () -> recfun<bool,bool>; foo()");
+		ASSERT_TRUE(erf1);
+		EXPECT_TRUE(isRecFun(erf1));
+
+		// check type of expression
+		auto erf2 = builder.parseExpr("decl bar : () -> recfun<bool>; bar()");
+		ASSERT_TRUE(erf2);
+		EXPECT_FALSE(isRecFun(erf2));
+	}
+
 } // end namespace lang
 } // end namespace compiler
 } // end namespace allscale

@@ -1,5 +1,6 @@
 #include "allscale/compiler/backend/allscale_type_handler.h"
 
+#include "insieme/core/lang/pointer.h"
 #include "insieme/backend/c_ast/c_ast_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
@@ -19,6 +20,9 @@ namespace backend {
 			auto& mgr = converter.getCNodeManager();
 			auto& fragmentManager = converter.getFragmentManager();
 			auto& typeManager = converter.getTypeManager();
+
+			// ignore pointer types (they are also tuples, but handled differently)
+			if (insieme::core::lang::isPointer(tuple)) return nullptr;
 
 			// create tuple type name
 			auto type = mgr->create<c_ast::NamedType>(mgr->create("hpx::util::tuple"));

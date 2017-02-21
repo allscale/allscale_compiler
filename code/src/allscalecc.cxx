@@ -4,41 +4,46 @@
 
 #include <boost/filesystem.hpp>
 
-#include "insieme/driver/cmd/commandline_options.h"
-#include "insieme/driver/utils/object_file_utils.h"
+#include "insieme/core/checks/ir_checks.h"
 
+#include "insieme/driver/cmd/commandline_options.h"
+#include "insieme/driver/cmd/common_options.h"
+#include "insieme/driver/utils/object_file_utils.h"
+#include "insieme/driver/utils/driver_utils.h"
+
+#include "allscale/compiler/config.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
+#include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/backend/allscale_backend.h"
 
 namespace driver = insieme::driver;
 namespace core = insieme::core;
 
 int main(int argc, char** argv) {
-	std::cout << "Allscale compiler - Version: epsilon\n";
+	std::cout << "Allscale compiler - Version: " << allscale::compiler::getVersion() << std::endl;
 
 	// -------------- options ---------------
 
-	// the target file
-	std::string target;
-
-	// the target code file (if requested)
-	std::string targetCode;
+	// object holding common command line options
+	driver::cmd::CommonOptions commonOptions;
 
 	// the optimization level
 	unsigned opt_level;
 
-	// a flag to indicate that it should only compile, but not link the resulting code
-	bool compileOnly = false;
-
+	// This option is here only for compatibility reasons, because insiemecc accepts this flag and the integration test driver sets it when executing
+	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
+	std::string backendString;
 
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
 	auto parser = driver::cmd::Options::getParser();
-	parser.addFlag("compile,c", compileOnly, "compilation only");
-	parser.addParameter<std::string>("o",target,"a.out","the binary target file");
-	parser.addParameter<std::string>("targetcode,t", targetCode,"","file to dump target code to");
-	parser.addParameter<unsigned>("O",opt_level,0,"optimization level");
+	// register common options and flags needed by more then one driver
+	commonOptions.addFlagsAndParameters(parser);
+
+	// register allscalecc specific flags and parameters
+	parser.addParameter("O",       opt_level,     0u,              "optimization level");
+	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -46,6 +51,10 @@ int main(int argc, char** argv) {
 
 	// if e.g. help was specified, exit with zero
 	if(options.gracefulExit) { return 0; }
+
+	if(!backendString.empty()) {
+		std::cout << "WARNING: The --backend option has been specified. this option is supported only for compatibility reasons and will be ignored." << std::endl;
+	}
 
 
 	// Step 2: filter input files
@@ -58,33 +67,51 @@ int main(int argc, char** argv) {
 	allscale::compiler::frontend::configureConversionJob(options.job);
 
 	// update file name extension of building a lib file
-	bool createSharedObject = boost::filesystem::extension(target) == ".so";
+	bool createSharedObject = boost::filesystem::extension(commonOptions.outFile) == ".so";
 
 	// if it is compile only or if it should become an object file => save it
-	if(compileOnly || createSharedObject) {
+	if(commonOptions.compileOnly || createSharedObject) {
 		auto res = options.job.toIRTranslationUnit(mgr);
 		std::cout << "Saving object file ...\n";
-		driver::utils::saveLib(res, target);
-		return driver::utils::isInsiemeLib(target) ? 0 : 1;
+		driver::utils::saveLib(res, commonOptions.outFile);
+		return driver::utils::isInsiemeLib(commonOptions.outFile) ? 0 : 1;
 	}
 
 	// Step 3: load input code
 	std::cout << "Parsing input files ...\n";
 	auto program = options.job.execute(mgr);
 
+	// dump IR code
+	if(!commonOptions.dumpIR.empty()) {
+		std::cout << "Dumping intermediate representation ...\n";
+		std::ofstream out(commonOptions.dumpIR.string());
+		out << core::printer::PrettyPrinter(program, core::printer::PrettyPrinter::PRINT_DEREFS);
+	}
+
+	// perform semantic checks - also including the AllScale specific checks
+	if(commonOptions.checkSema || commonOptions.checkSemaOnly) {
+		core::checks::MessageList errors;
+		int retval = driver::utils::checkSema(program, errors, allscale::compiler::checks::getFullCheck());
+		if(commonOptions.checkSemaOnly) { return retval; }
+	}
+
 	// Step 4: convert src file to target code
 	std::cout << "Producing target code ... \n";
 	auto code = allscale::compiler::backend::convert(program);
 
-	// check whether target code is requested
-	if (!targetCode.empty()) {
-		std::ofstream out(targetCode);
+	// dump source file if requested, exit if requested
+	insieme::frontend::path filePath = commonOptions.dumpTRG;
+	if(!commonOptions.dumpTRGOnly.empty()) { filePath = commonOptions.dumpTRGOnly; }
+	if(!filePath.empty()) {
+		std::cout << "Dumping target code ...\n";
+		std::ofstream out(filePath.string());
 		out << *code;
+		if(!commonOptions.dumpTRGOnly.empty()) { return 0; }
 	}
 
 	// Step 5: built the resulting binary
 	std::cout << "Compiling target code (-O" << opt_level << ") ... \n";
-	auto ok = allscale::compiler::backend::compileTo(code, target, opt_level);
+	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), opt_level);
 
 	// return result
 	return (ok)?0:1;
