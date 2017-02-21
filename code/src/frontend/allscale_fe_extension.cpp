@@ -103,6 +103,8 @@ namespace frontend {
 	                                                      insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
 	                                                      insieme::frontend::conversion::Converter& converter) {
 
+		auto& allscaleExt = irExpr->getNodeManager().getLangExtension<lang::AllscaleModule>();
+
 		std::cout << "!!\n";
 		if(castExpr->getCastKind() == clang::CK_UncheckedDerivedToBase) {
 			std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
@@ -110,6 +112,13 @@ namespace frontend {
 			if(core::analysis::isRefType(irExpr)) irSourceType = core::analysis::getReferencedType(irSourceType);
 			if(lang::isTreeture(irSourceType)) {
 				std::cout << "!! Casting treeture\n";
+				return irExpr;
+			}
+		}
+
+		// treeture_get has different semantics
+		if(castExpr->getCastKind() == clang::CK_LValueToRValue) {
+			if(allscaleExt.isCallOfTreetureGet(irExpr)) {
 				return irExpr;
 			}
 		}
