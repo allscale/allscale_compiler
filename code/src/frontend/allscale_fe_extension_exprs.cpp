@@ -23,6 +23,7 @@ namespace detail {
 		// completed_tasks
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
+		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper()},
 		// treeture
 		{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
