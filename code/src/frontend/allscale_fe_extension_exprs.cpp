@@ -293,7 +293,12 @@ namespace detail {
 	core::ExpressionList RecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
 	                                                               insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
-		return core::ExpressionList(args.cbegin() + 1, args.cend());
+		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
+		// we need to insert a cast to cpp_ref in case we get a plain ref. Here we need to mirror the semantics of Converter::convertCxxArgExpr
+		if(!newArgs.empty() && core::lang::isPlainReference(newArgs.back())) {
+			newArgs.back() = core::lang::buildRefKindCast(newArgs.back(), core::lang::ReferenceType::Kind::CppReference);
+		}
+		return newArgs;
 	}
 	core::ExpressionPtr RecFunCallMapper::postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
 	                                                      insieme::frontend::conversion::Converter& converter) {

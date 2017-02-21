@@ -486,9 +486,8 @@ namespace lang {
 		auto& mgr = param->getNodeManager();
 		core::IRBuilder builder(mgr);
 		RecFunType recFun(param);
-		auto returnType = builder.functionType(recFun.getParamType(), (core::GenericTypePtr) TreetureType(recFun.getReturnType(), false));
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(returnType, allS.getRecfunToFun(), param);
+		return builder.callExpr(allS.getRecfunToFun(), param);
 	}
 
 	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
