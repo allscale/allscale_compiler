@@ -27,7 +27,9 @@ namespace lang {
 
 	/////////////////////////////// RecFun
 
-	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) { }
+	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) {
+		assert_true(!core::lang::isReference(param) || core::lang::isConstCppReference(param));
+	}
 
 	RecFunType::RecFunType(const core::NodePtr& node) {
 		assert_true(node) << "Given node is null!";

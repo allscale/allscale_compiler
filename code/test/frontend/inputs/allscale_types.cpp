@@ -68,7 +68,7 @@ int main() {
 		TestRecFunParamSequentialCallableType* myRecFunSequentialParam;
 	}
 
-	// fun def with references - they are ignored
+	// fun def with references
 	using TestFunDefTypeReferences = fun_def<double, const int&,
 		std::function<bool(const int&)>,                   // base test
 		std::tuple<std::function<double(const int&)>>,     // base case
@@ -76,7 +76,7 @@ int main() {
 	>;
 
 	#pragma test expect_ir(R"({
-		var ref<ptr<recfun<int<4>,real<8>>>,f,f,plain> v0;
+		var ref<ptr<recfun<ref<int<4>,t,f,cpp_ref>,real<8>>>,f,f,plain> v0;
 	})")
 	{
 		TestFunDefTypeReferences* myFunDef;
@@ -115,15 +115,15 @@ int main() {
 		impl::sequential::lazy_unreleased_treeture<double, int /* placeholder */>* t2;
 	}
 
-	// references are ignored
+	// references are not ignored
 	#pragma test expect_ir(R"({
 		var ref<ptr<treeture<int<4>,t>>,f,f,plain> v0;
-		var ref<ptr<treeture<real<4>,f>>,f,f,plain> v1;
-		var ref<ptr<treeture<real<8>,f>>,f,f,plain> v2;
+		var ref<ptr<treeture<ref<real<4>,t,f,cpp_ref>,f>>,f,f,plain> v1;
+		var ref<ptr<treeture<ref<real<8>,t,f,cpp_ref>,f>>,f,f,plain> v2;
 	})")
 	{
 		impl::sequential::treeture<const int>* t0;
-		impl::sequential::unreleased_treeture<float&>* t1;
+		impl::sequential::unreleased_treeture<const float&>* t1;
 		impl::sequential::lazy_unreleased_treeture<const double&, int /* placeholder */>* t2;
 	}
 

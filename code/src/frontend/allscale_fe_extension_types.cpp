@@ -37,12 +37,6 @@ namespace detail {
 	const unsigned MAX_MAPPED_TEMPLATE_ARGS = 8;
 
 	namespace {
-		core::TypePtr getPlainType(const core::TypePtr& type) {
-			if(core::lang::isReference(type)) {
-				return core::analysis::getReferencedType(type);
-			}
-			return type;
-		}
 		/// Extract type argument #id from a C++ template instantiation declared by recordDecl
 		core::TypePtr extractTemplateTypeArgument(const clang::RecordDecl* recordDecl, int id, insieme::frontend::conversion::Converter& converter) {
 			if(auto specializedDecl = llvm::dyn_cast<clang::ClassTemplateSpecializationDecl>(recordDecl)) {
@@ -50,7 +44,7 @@ namespace detail {
 				for(auto a : specializedDecl->getTemplateArgs().asArray()) {
 					if(a.getKind() == clang::TemplateArgument::Type) {
 						if(i == id) {
-							return getPlainType(converter.convertType(a.getAsType()));
+							return converter.convertType(a.getAsType());
 						}
 						i++;
 					}
@@ -68,7 +62,7 @@ namespace detail {
 						if(i == id) {
 							for(auto inner : a.getPackAsArray()) {
 								if(inner.getKind() == clang::TemplateArgument::Type) {
-									ret.push_back(getPlainType(converter.convertType(inner.getAsType())));
+									ret.push_back(converter.convertType(inner.getAsType()));
 								}
 							}
 							break;
