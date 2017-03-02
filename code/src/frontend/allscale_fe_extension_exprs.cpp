@@ -5,6 +5,7 @@
 
 #include "insieme/frontend/converter.h"
 #include "insieme/frontend/utils/name_manager.h"
+#include "insieme/core/analysis/type_utils.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/utils/name_mangling.h"
@@ -102,13 +103,28 @@ namespace detail {
 			return argExpr;
 		}
 
-		core::ExpressionPtr derefOrCopy(const core::ExpressionPtr& exprIn) {
+		core::ExpressionPtr derefOrCopy(const core::ExpressionPtr& exprIn, insieme::frontend::conversion::Converter& converter) {
 			core::IRBuilder builder(exprIn->getNodeManager());
-			// if the given expression is a plain reference, we need to deref it
-			if(core::lang::isPlainReference(exprIn)) return builder.deref(exprIn);
+
+			//get the inner type
+			assert_true(core::lang::isReference(exprIn));
+			auto innerType = core::analysis::getReferencedType(exprIn);
+
+			// check whether it is a trivial type. We need to look up the real TagType in the translation unit to do so
+			auto& typeMap = converter.getIRTranslationUnit().getTypes();
+			bool isTrivial = true;
+			if(const auto& genType = innerType.as<core::GenericTypePtr>()) {
+				auto fullType = typeMap.find(genType);
+				if(fullType != typeMap.end()) {
+					isTrivial = core::analysis::isTrivial(fullType->second);
+				}
+			}
+
+			// if the given expression is a plain reference and trivial, we need to deref it
+			if(core::lang::isPlainReference(exprIn) && isTrivial) return builder.deref(exprIn);
 
 			// otherwise we need to cast it to const cpp_ref to encode copy construction
-			return core::lang::buildRefKindCast(exprIn, core::lang::ReferenceType::Kind::CppReference);
+			return core::lang::buildRefCast(exprIn, core::lang::buildRefType(innerType, true, false, core::lang::ReferenceType::Kind::CppReference));
 		}
 
 		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter, bool deref) {
@@ -306,7 +322,7 @@ namespace detail {
 		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
 		// we need to correctly handle the argument passing here, as the C++ method always takes a const cpp_ref
 		if(!newArgs.empty() && core::lang::isPlainReference(newArgs.back())) {
-			newArgs.back() = derefOrCopy(newArgs.back());
+			newArgs.back() = derefOrCopy(newArgs.back(), converter);
 		}
 		return newArgs;
 	}
