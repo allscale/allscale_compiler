@@ -56,7 +56,7 @@ namespace lang {
 
 		// recfuns and lambda operations
 
-		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> (ref<'a,t,f,cpp_ref>) -> treeture<'b,f>")
+		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 		LANG_EXT_LITERAL(RecfunToDepFun, "recfun_to_dep_fun", "(recfun<'a,'b>) -> (dependencies, 'a) -> treeture<'b,f>")
 
 		LANG_EXT_LITERAL(CppLambdaToClosure, "cpp_lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")

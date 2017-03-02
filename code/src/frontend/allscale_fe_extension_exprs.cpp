@@ -102,6 +102,15 @@ namespace detail {
 			return argExpr;
 		}
 
+		core::ExpressionPtr derefOrCopy(const core::ExpressionPtr& exprIn) {
+			core::IRBuilder builder(exprIn->getNodeManager());
+			// if the given expression is a plain reference, we need to deref it
+			if(core::lang::isPlainReference(exprIn)) return builder.deref(exprIn);
+
+			// otherwise we need to cast it to const cpp_ref to encode copy construction
+			return core::lang::buildRefKindCast(exprIn, core::lang::ReferenceType::Kind::CppReference);
+		}
+
 		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter, bool deref) {
 			if(auto mat = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(clangExpr)) clangExpr = mat->GetTemporaryExpr();
 			if(auto lambda = llvm::dyn_cast<clang::LambdaExpr>(clangExpr)) {
@@ -295,9 +304,9 @@ namespace detail {
 	                                                               insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
 		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
-		// we need to insert a cast to cpp_ref in case we get a plain ref. Here we need to mirror the semantics of Converter::convertCxxArgExpr
+		// we need to correctly handle the argument passing here, as the C++ method always takes a const cpp_ref
 		if(!newArgs.empty() && core::lang::isPlainReference(newArgs.back())) {
-			newArgs.back() = core::lang::buildRefKindCast(newArgs.back(), core::lang::ReferenceType::Kind::CppReference);
+			newArgs.back() = derefOrCopy(newArgs.back());
 		}
 		return newArgs;
 	}

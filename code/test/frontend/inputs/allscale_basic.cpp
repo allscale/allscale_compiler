@@ -180,7 +180,7 @@ int main() {
 
 	// direct call of prec result - using a variable not a value
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(recfun_to_fun(", SIMPLE_PREC_CALL, R"(
-			)(ref_kind_cast(v0, type_lit(cpp_ref))));
+			)(*v0));
 		}
 	)")
 	{
@@ -214,7 +214,7 @@ int main() {
 	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
 		def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>,f,f,plain>) -> treeture<int<4>,t> {
 			return treeture_run(recfun_to_fun(
-	)", SIMPLE_PREC_CALL, R"( )(ref_kind_cast(i, type_lit(cpp_ref))));
+	)", SIMPLE_PREC_CALL, R"( )(*i));
 		};
 		{
 			var ref<treeture<int<4>,t>,f,f,plain> v0 = IMP_testFunReturnPrecCallResult(5);
