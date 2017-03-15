@@ -57,7 +57,7 @@ namespace backend {
 				ADD_HEADER("allscale/runtime.hpp");
 
 				// resolve the work item
-				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(0));
+				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(1));
 
 				// add dependency to definition
 				context.addDependency(info.definition);
@@ -71,7 +71,7 @@ namespace backend {
 
 				// create the arguments
 				std::vector<c_ast::NodePtr> args;
-				for(unsigned i=1; i<call->getArgumentList().size(); ++i) {
+				for(unsigned i=2; i<call->getArgumentList().size(); ++i) {
 					args.push_back(CONVERT_EXPR(call->getArgument(i)));
 				}
 
@@ -85,7 +85,7 @@ namespace backend {
 				ADD_HEADER("allscale/runtime.hpp");
 
 				// resolve the name
-				const auto& lit = call->getArgument(0).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
+				const auto& lit = call->getArgument(1).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
 
 				// resolve the work item
 				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, lit->getStringValue());
@@ -102,6 +102,52 @@ namespace backend {
 
 				// return just the function, arguments follow
 				return trg;
+			};
+
+			table[ext.getPrecFunCreate()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// extract arg and result types
+				lang::PrecFunType precFunType(call->getType());
+
+				auto& paramTypeInfo = GET_TYPE_INFO(precFunType.getParamType());
+				auto& returnTypeInfo = GET_TYPE_INFO(precFunType.getReturnType());
+				context.addDependency(paramTypeInfo.definition);
+				context.addDependency(returnTypeInfo.definition);
+
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::make_prec_operation");
+				trg = c_ast::instantiate(trg,paramTypeInfo.rValueType,returnTypeInfo.rValueType);
+
+				// wrap binding into a lambda wrapper
+				core::BindExprPtr bind = ARG(0).as<core::BindExprPtr>();
+				c_ast::ExpressionPtr bindWrapper = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::make_insieme_lambda_wrapper");
+				c_ast::ExpressionPtr closure = c_ast::call(bindWrapper, CONVERT_ARG(0));
+
+				// just forward parameters -- C++ resolution uses member function
+				return c_ast::call(trg,closure);
+
+			};
+
+			table[ext.getPrecFunToFun()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// just forward parameters -- C++ resolution uses member function
+				return CONVERT_ARG(0);
+
+			};
+
+			table[ext.getPrecFunToDepFun()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// just forward parameters -- C++ resolution uses member function
+				return CONVERT_ARG(0);
+
 			};
 		}
 

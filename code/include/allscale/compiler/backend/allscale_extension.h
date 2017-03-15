@@ -39,13 +39,20 @@ namespace backend {
 		// --- a primitive to start a work item ---
 
 		// the operator for spawning a work item
-		LANG_EXT_LITERAL(SpawnWorkItem, "art_spawn", "(art_wi_desc<('Args...),'Res>,'Args...)->treeture<'Res,f>");
+		LANG_EXT_LITERAL(SpawnWorkItem, "art_spawn", "(dependencies,art_wi_desc<('Args...),'Res>,'Args...)->treeture<'Res,f>");
 
 		// the operator for spawning a recursively nested work item
-		LANG_EXT_LITERAL(RecSpawnWorkItem, "art_rec_spawn", "(art_wi_desc<('Args...),'Res>)->('Args...)->treeture<'Res,f>");
+		LANG_EXT_LITERAL(RecSpawnWorkItem, "art_rec_spawn", "(dependencies,art_wi_desc<('Args...),'Res>)->('Args...)->treeture<'Res,f>");
 
 		// the operator for wrapping the execution of the main function
 		LANG_EXT_LITERAL(ProcessMain, "art_main", "(art_wi_desc<('Args...),'Res>,'Args...)->'Res");
+
+
+		// --- a primitive to wrap up work item instances not yet spawned ---
+
+		LANG_EXT_LITERAL(PrecFunCreate,    "art_make_precfun",        "((dependencies,'Arg)=>treeture<'Res,f>)->precfun<'Arg,'Res>");
+		LANG_EXT_LITERAL(PrecFunToFun,     "art_precfun_to_fun",      "(precfun<'Arg,'Res>)->('Arg)->treeture<'Res,f>");
+		LANG_EXT_LITERAL(PrecFunToDepFun,  "art_precfun_to_dep_fun",  "(precfun<'Arg,'Res>)->(dependencies,'Arg)->treeture<'Res,f>");
 
 	};
 

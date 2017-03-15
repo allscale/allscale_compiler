@@ -369,6 +369,7 @@ namespace backend {
 			auto recFun =
 					builder.callExpr(
 						ext2.getRecSpawnWorkItem(),
+						lang::buildNoDependencies(mgr),
 						builder.callExpr(
 							ext2.getCreateWorkItemDescriptionReference(),
 							builder.getIdentifierLiteral(wi_name),
@@ -882,6 +883,11 @@ namespace backend {
 			// create a function wrapping the spawn call (need for bind)
 			core::VariableList params;
 
+			// add the dependency parameter
+			auto& irExt = mgr.getLangExtension<lang::AllscaleModule>();
+			auto depsParam = builder.variable(builder.refType(irExt.getDependenciesType()));
+			params.push_back(depsParam);
+
 			// add the input parameter
 			params.push_back(builder.variable(builder.refType(op.getFunction().getParameterType())));
 
@@ -892,9 +898,10 @@ namespace backend {
 
 			// assemble arguments for inner call
 			core::ExpressionList args;
+			args.push_back(builder.deref(depsParam));
 			args.push_back(desc.toIR(mgr));
-			args.push_back(builder.deref(params[0]));
-			for(unsigned i=1; i<params.size(); ++i) {
+			args.push_back(builder.deref(params[1]));
+			for(unsigned i=2; i<params.size(); ++i) {
 				args.push_back(builder.deref(params[i]));
 			}
 
@@ -912,13 +919,18 @@ namespace backend {
 			);
 
 			// create a bind spawning the work item
+			auto deps = builder.variable(irExt.getDependenciesType());
 			auto param = builder.variable(op.getParameterType());
 			core::ExpressionList bindArgs;
+			bindArgs.push_back(deps);
 			bindArgs.push_back(param);
 			for(const auto& cur : captured) {
 				bindArgs.push_back(cur);
 			}
-			auto res = builder.bindExpr({ param }, builder.callExpr(nestedLambda, bindArgs));
+			auto closure = builder.bindExpr({ deps, param }, builder.callExpr(nestedLambda, bindArgs));
+
+			// wrap up closure into a prec operator instance
+			auto res = builder.callExpr(ext.getPrecFunCreate(),closure);
 
 			// report final call
 			if (debug) {
@@ -945,24 +957,29 @@ namespace backend {
 
 	core::NodePtr PrecConverter::process(const be::Converter& converter, const core::NodePtr& code) {
 
-		// replace all prec calls with actual lambdas
-		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur){
+		// replace all prec calls with prec_operations and strip prec operator unwrapper
+		auto& mgr = code->getNodeManager();
+		const auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
+		core::IRBuilder builder(mgr);
+		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur)->core::NodePtr {
 
-			// interested in recfun_to_fun call enclosing a prec operator
-			if (!lang::isRecFunUnwrapperCall(cur)) return cur;
-
-			// convert to a call expression
-			auto call = cur.as<core::CallExprPtr>();
-			assert_false(call.empty()) << "Invalid IR composition - there has to be one argument!";
-
-			// extract the first argument
-			auto arg = cur.as<core::CallExprPtr>()->getArgument(0);
+			// strip unwrapper
+			if (lang::isPrecFunUnwrapperCall(cur)) {
+				auto call = cur.as<core::CallExprPtr>();
+				auto precOp = call->getArgument(0);
+				if (lang::isPrecFunToFunCall(cur)) {
+					return builder.callExpr(ext.getPrecFunToFun(),precOp);
+				} else if (lang::isPrecFunToDepFunCall(cur)) {
+					return builder.callExpr(ext.getPrecFunToDepFun(),precOp);
+				}
+				assert_fail() << "Unsupported prec-fun wrapper encountered: " << *call->getFunctionExpr();
+			}
 
 			// only interested in prec operators
-			if (!lang::PrecOperation::isPrecOperation(arg)) return cur;
+			if (!lang::PrecOperation::isPrecOperation(cur)) return cur;
 
 			// trigger conversion
-			return convertPrecOperator(converter,arg);
+			return convertPrecOperator(converter,cur);
 
 		}, core::transform::globalReplacement);
 

@@ -79,15 +79,23 @@ namespace backend {
 			return type_info_utils::createInfo(namedType, def);
 		}
 
+		const TypeInfo* handlePrecFunType(ConversionContext& context, const lang::PrecFunType& type) {
+			auto& converter = context.getConverter();
+			auto& mgr = converter.getCNodeManager();
+
+			// this type should be mapped to
+			//		allscale::runtime::prec_operation<A,B,C>
+			// but C is context dependent; fortunately, we can always use auto!
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("auto"));
+			return type_info_utils::createInfo(namedType);
+		}
+
 		const TypeInfo* handleDependenciesType(ConversionContext& context, const insieme::core::TypePtr&) {
 			auto& converter = context.getConverter();
 			auto& mgr = converter.getCNodeManager();
 
 			// convert the type
-			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::dependencies"));
-
-			// TODO: add include dependency!
-			assert_not_implemented() << "This is not yet properly implemented!";
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::runtime::dependencies"));
 
 			// return new type information
 			return type_info_utils::createInfo(namedType);
@@ -109,6 +117,11 @@ namespace backend {
 			// intercept the dependencies type
 			if (lang::isDependencies(type)) {
 				return handleDependenciesType(context,type);
+			}
+
+			// intercept the prec operator type
+			if (lang::isPrecFun(type)) {
+				return handlePrecFunType(context,lang::PrecFunType(type));
 			}
 
 			// it is not a special runtime type => let somebody else try

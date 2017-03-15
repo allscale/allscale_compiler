@@ -34,6 +34,7 @@ namespace lang {
 
 		// dependencies
 
+		LANG_EXT_TYPE(DependenciesType,"dependencies")
 		LANG_EXT_LITERAL(DependencyAfter, "dependency_after", "('a...) -> dependencies")
 		LANG_EXT_LITERAL(DependencyAdd, "dependency_add", "(dependencies, treeture<'a, 'r>) -> dependencies")
 
@@ -278,6 +279,14 @@ namespace lang {
 
 	bool isRecFunUnwrapperCall(const core::NodePtr&);
 
+	bool isPrecFun(const core::NodePtr& node);
+
+	bool isPrecFunToFunCall(const core::NodePtr&);
+
+	bool isPrecFunToDepFunCall(const core::NodePtr&);
+
+	bool isPrecFunUnwrapperCall(const core::NodePtr&);
+
 	bool isTreeture(const core::NodePtr& node);
 
 	bool isCompletedTask(const core::NodePtr& node);
@@ -287,6 +296,10 @@ namespace lang {
 	                                     const core::ExpressionList& stepBinds);
 
 	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns);
+
+	// dependencies
+
+	core::ExpressionPtr buildNoDependencies(core::NodeManager&);
 
 	// treeture
 

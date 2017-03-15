@@ -39,7 +39,7 @@ namespace lang {
 		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
 
 		// check given node type
-		assert_true(isRecFun(type)) << "Given node " << *node << " is not a RecFun type!\nType: " << *type;
+		assert_true(isRecFun(type) || isPrecFun(type)) << "Given node " << *node << " is not a RecFun nor a PrecFun type!\nType: " << *type;
 
 		*this = RecOrPrecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
@@ -89,6 +89,31 @@ namespace lang {
 		return isRecFunToFunCall(node) || isRecFunToDepFunCall(node);
 	}
 
+	bool isPrecFun(const core::NodePtr& node) {
+		// a quick check
+		auto type = node.isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		if(!type) return false;
+
+		// check properties
+		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "precfun";
+	}
+
+	bool isPrecFunToFunCall(const core::NodePtr& node) {
+		if (!node) return false;
+		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
+		return ext.isCallOfPrecfunToFun(node);
+	}
+
+	bool isPrecFunToDepFunCall(const core::NodePtr& node) {
+		if (!node) return false;
+		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
+		return ext.isCallOfPrecfunToDepFun(node);
+	}
+
+	bool isPrecFunUnwrapperCall(const core::NodePtr& node) {
+		return isPrecFunToFunCall(node) || isPrecFunToDepFunCall(node);
+	}
 
 	/////////////////////////////// Treeture
 
@@ -446,6 +471,13 @@ namespace lang {
 		auto precfunType = PrecFunType(firstRecFun);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(precfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
+	}
+
+
+	core::ExpressionPtr buildNoDependencies(core::NodeManager& mgr) {
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getDependencyAfter());
 	}
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
