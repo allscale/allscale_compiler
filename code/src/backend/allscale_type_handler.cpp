@@ -79,6 +79,22 @@ namespace backend {
 			return type_info_utils::createInfo(namedType, def);
 		}
 
+		const TypeInfo* handleDependenciesType(ConversionContext& context, const insieme::core::TypePtr&) {
+			auto& converter = context.getConverter();
+			auto& mgr = converter.getCNodeManager();
+			auto& fragmentManager = converter.getFragmentManager();
+
+			// convert the type
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::dependencies"));
+
+			// TODO: add include dependency!
+			assert_not_implemented() << "This is not yet properly implemented!";
+
+			// return new type information
+			return type_info_utils::createInfo(namedType);
+		}
+
+
 		const TypeInfo* handleType(ConversionContext& context, const TypePtr& type) {
 
 			// intercept tuple types (use hpx types instead)
@@ -89,6 +105,11 @@ namespace backend {
 			// intercept the treeture type
 			if (lang::isTreeture(type)) {
 				return handleTreetureType(context,lang::TreetureType(type));
+			}
+
+			// intercept the dependencies type
+			if (lang::isDependencies(type)) {
+				return handleDependenciesType(context,type);
 			}
 
 			// it is not a special runtime type => let somebody else try

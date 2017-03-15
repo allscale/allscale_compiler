@@ -269,9 +269,9 @@ namespace backend {
 					}
 
 					if (core::analysis::isCallOf(call,ext.getTreetureCombine())) {
-						auto arg0 = removeTreetures(call->getArgument(0)).as<core::ExpressionPtr>();
-						auto arg1 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
-						return builder.callExpr(call->getArgument(2),arg0,arg1);
+						auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
+						auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+						return builder.callExpr(call->getArgument(3),arg0,arg1);
 					}
 
 					// not of interest either

@@ -173,7 +173,7 @@ namespace backend {
 						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-							return treeture_combine(step(i-1),step(i-2),add,true);
+							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
 						} ]
 					)))
 				)"
@@ -200,7 +200,7 @@ namespace backend {
 						[ (i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-							return treeture_combine(step(i-1),step(i-2),add,true);
+							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
 						} ]
 					)))
 				)"

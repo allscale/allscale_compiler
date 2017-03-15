@@ -145,17 +145,19 @@ namespace backend {
 			table[ext.getTreetureCombine()] = OP_CONVERTER {
 				core::IRBuilder builder(call->getNodeManager());
 
+				// TODO: integrate support for dependencies!!
+
 				// add dependency to argument types
-				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
+				context.addDependency(GET_TYPE_INFO(call->getArgument(3)->getType()).definition);
 
 				// add dependency to result type
 				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
 
 				// create a wrapper for the operator part
-				auto paramType0 = lang::TreetureType(ARG(0)).getValueType();
-				auto paramType1 = lang::TreetureType(ARG(1)).getValueType();
+				auto paramType0 = lang::TreetureType(ARG(1)).getValueType();
+				auto paramType1 = lang::TreetureType(ARG(2)).getValueType();
 				auto resType = lang::TreetureType(call->getType()).getValueType();
 
 				auto funType = builder.functionType({ paramType0, paramType1 }, resType );
@@ -165,7 +167,7 @@ namespace backend {
 				auto body = builder.compoundStmt(
 						builder.returnStmt(
 								builder.callExpr(
-										ARG(2),
+										ARG(3),
 										builder.deref(param0),
 										builder.deref(param1)
 								)
@@ -180,8 +182,8 @@ namespace backend {
 				// create a call to treeture_combine
 				return c_ast::call(
 						C_NODE_MANAGER->create("allscale::runtime::treeture_combine"),
-						CONVERT_ARG(0),
 						CONVERT_ARG(1),
+						CONVERT_ARG(2),
 						c_ast::ref(info.function->name)
 				);
 			};
