@@ -32,7 +32,7 @@ using namespace allscale::api::core;
 		}
 	};)"
 
-#define SIMPLE_FUN_IR R"( var ref<recfun<int<4>,int<4>>,f,f,plain> simpleFun = )"
+#define SIMPLE_FUN_IR R"( var ref<precfun<int<4>,int<4>>,f,f,plain> simpleFun = )"
 
 #define SIMPLE_PREC_CALL R"(
 	prec(
@@ -64,7 +64,7 @@ int main() {
 	// -------- primitives
 
 	// direct call of prec result
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{ treeture_run(recfun_to_fun(", SIMPLE_PREC_CALL, R"(
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{ treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
 			)(14));
 		}
 	)")
@@ -81,7 +81,7 @@ int main() {
 	}
 
 	// direct call of prec result with a variable
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(recfun_to_fun(", SIMPLE_PREC_CALL, R"(
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
 			)(*v0));
 		}
 	)")
@@ -147,7 +147,7 @@ int main() {
 		};
 		{
 			treeture_run(
-					recfun_to_fun(
+					precfun_to_fun(
 							prec(
 									(build_recfun(
 											cpp_lambda_to_closure(
@@ -234,7 +234,7 @@ int main() {
 		};
 		{
 			treeture_run(
-					recfun_to_fun(
+					precfun_to_fun(
 							prec(
 									(build_recfun(
 											cpp_lambda_to_closure(

@@ -32,7 +32,7 @@ using namespace allscale::api::core;
 		}
 	};)"
 
-#define SIMPLE_FUN_IR R"( var ref<recfun<int<4>,int<4>>,f,f,plain> simpleFun = )"
+#define SIMPLE_FUN_IR R"( var ref<precfun<int<4>,int<4>>,f,f,plain> simpleFun = )"
 
 #define SIMPLE_PREC_CALL R"(
 	prec(
@@ -80,7 +80,7 @@ int main() {
 	; // this is required because of the clang compound source location bug
 
 	// direct call of prec result
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{ treeture_run(recfun_to_fun(", SIMPLE_PREC_CALL, R"(
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{ treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
 			)(14));
 		}
 	)")
@@ -99,7 +99,7 @@ int main() {
 	// result of call to prec
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
 			;
-			treeture_run(recfun_to_fun(*simpleFun)(10));
+			treeture_run(precfun_to_fun(*simpleFun)(10));
 		}
 	)")
 	{
@@ -119,7 +119,7 @@ int main() {
 	// result type of call to prec assigned to a variable
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
 			;
-			var ref<treeture<int<4>,t>,f,f,plain> res = treeture_run(recfun_to_fun(*simpleFun)(11));
+			var ref<treeture<int<4>,t>,f,f,plain> res = treeture_run(precfun_to_fun(*simpleFun)(11));
 		}
 	)")
 	{
@@ -139,7 +139,7 @@ int main() {
 	// result type of call to prec assigned to a variable - also calling get on the result
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
 			;
-			var ref<treeture<int<4>,t>,f,f,plain> res = treeture_run(recfun_to_fun(*simpleFun)(12));
+			var ref<treeture<int<4>,t>,f,f,plain> res = treeture_run(precfun_to_fun(*simpleFun)(12));
 			treeture_get(*res);
 		}
 	)")
@@ -161,7 +161,7 @@ int main() {
 	// result type of call to prec assigned to a variable - also calling get on the result and directly assigning the result
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
 			;
-			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(recfun_to_fun(*simpleFun)(13)));
+			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(precfun_to_fun(*simpleFun)(13)));
 		}
 	)")
 	{
@@ -179,7 +179,7 @@ int main() {
 	}
 
 	// direct call of prec result - using a variable not a value
-	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(recfun_to_fun(", SIMPLE_PREC_CALL, R"(
+	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
 			)(*v0));
 		}
 	)")
@@ -198,12 +198,12 @@ int main() {
 
 	// call to result of function returning prec
 	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
-		def IMP_testFunReturnPrec = function () -> recfun<int<4>,int<4>> {
+		def IMP_testFunReturnPrec = function () -> precfun<int<4>,int<4>> {
 			return
 	)", SIMPLE_PREC_CALL, R"(;
 		};
 		{
-			var ref<treeture<int<4>,t>,f,f,plain> v0 = treeture_run(recfun_to_fun(IMP_testFunReturnPrec())(4));
+			var ref<treeture<int<4>,t>,f,f,plain> v0 = treeture_run(precfun_to_fun(IMP_testFunReturnPrec())(4));
 		}
 	)")
 	{
@@ -213,7 +213,7 @@ int main() {
 	// call to function returning the result of prec
 	#pragma test expect_ir(SIMPLE_PREC_IR, R"(
 		def IMP_testFunReturnPrecCallResult = function (i : ref<int<4>,f,f,plain>) -> treeture<int<4>,t> {
-			return treeture_run(recfun_to_fun(
+			return treeture_run(precfun_to_fun(
 	)", SIMPLE_PREC_CALL, R"( )(*i));
 		};
 		{

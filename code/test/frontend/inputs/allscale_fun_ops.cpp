@@ -49,8 +49,8 @@ int main() {
 							type_lit((int<4>, (recfun<int<4>,real<8>>)) => treeture<real<8>,f>)
 					)]
 			);
-			var ref<recfun<int<4>,real<8>>,f,f,plain> v770 = prec((*v628));
-			treeture_run(recfun_to_fun(*v770)(1));
+			var ref<precfun<int<4>,real<8>>,f,f,plain> v770 = prec((*v628));
+			treeture_run(precfun_to_fun(*v770)(1));
 		}
 	)")
 	{
