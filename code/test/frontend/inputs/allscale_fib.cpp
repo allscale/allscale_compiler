@@ -43,7 +43,7 @@ int main() {
 			}
 		};
 		{
-			var ref<recfun<int<4>,int<4>>,f,f,plain> fibEager = prec(
+			var ref<precfun<int<4>,int<4>>,f,f,plain> fibEager = prec(
 					(build_recfun(
 							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
@@ -59,7 +59,7 @@ int main() {
 							)]
 					))
 			);
-			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(recfun_to_fun(*fibEager)(12)));
+			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(precfun_to_fun(*fibEager)(12)));
 		}
 	)")
 	{
@@ -125,7 +125,7 @@ int main() {
 			);
 		};
 		{
-			var ref<recfun<int<4>,int<4>>,f,f,plain> v0 = prec(
+			var ref<precfun<int<4>,int<4>>,f,f,plain> v0 = prec(
 					(build_recfun(
 							cpp_lambda_to_closure(
 									<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
@@ -141,7 +141,7 @@ int main() {
 							)]
 					))
 			);
-			var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(recfun_to_fun(*v0)(4));
+			var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(precfun_to_fun(*v0)(4));
 		}
 	)")
 	{
