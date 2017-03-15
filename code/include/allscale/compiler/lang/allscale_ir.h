@@ -248,6 +248,12 @@ namespace lang {
 
 	bool isRecFun(const core::NodePtr& node);
 
+	bool isRecFunToFunCall(const core::NodePtr&);
+
+	bool isRecFunToDepFunCall(const core::NodePtr&);
+
+	bool isRecFunUnwrapperCall(const core::NodePtr&);
+
 	bool isTreeture(const core::NodePtr& node);
 
 	bool isCompletedTask(const core::NodePtr& node);

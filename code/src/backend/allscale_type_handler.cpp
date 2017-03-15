@@ -82,7 +82,6 @@ namespace backend {
 		const TypeInfo* handleDependenciesType(ConversionContext& context, const insieme::core::TypePtr&) {
 			auto& converter = context.getConverter();
 			auto& mgr = converter.getCNodeManager();
-			auto& fragmentManager = converter.getFragmentManager();
 
 			// convert the type
 			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::dependencies"));

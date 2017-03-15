@@ -111,7 +111,7 @@ namespace backend {
 
 		auto fib = parse(mgr,
 				R"(
-					prec((build_recfun(
+					recfun_to_fun(prec((build_recfun(
 						  (i : int<4>) -> bool { return i < 2; },
 						[ (i : int<4>) -> int<4> { return i; } ],
 						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
@@ -120,7 +120,7 @@ namespace backend {
 							auto b = treeture_run(step(i-2));
 							return treeture_done(treeture_get(a) + treeture_get(b));
 						} ]
-					)))
+					))))
 				)"
 		);
 		ASSERT_TRUE(fib);
@@ -139,7 +139,7 @@ namespace backend {
 
 		auto fib = parse(mgr,
 				R"(
-					prec((build_recfun(
+					recfun_to_fun(prec((build_recfun(
 						  (i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; },
 						[ (i : cpp_ref<int<4>,t,f>) -> int<4> { return i; } ],
 						[ (i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
@@ -148,7 +148,7 @@ namespace backend {
 							auto b = treeture_run(step(i-2));
 							return treeture_done(treeture_get(a) + treeture_get(b));
 						} ]
-					)))
+					))))
 				)"
 		);
 		ASSERT_TRUE(fib);
@@ -167,7 +167,7 @@ namespace backend {
 
 		auto fib = parse(mgr,
 				R"(
-					prec((build_recfun(
+					recfun_to_fun(prec((build_recfun(
 						  (i : int<4>) -> bool { return i < 2; },
 						[ (i : int<4>) -> int<4> { return i; } ],
 						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
@@ -175,7 +175,7 @@ namespace backend {
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
 							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
 						} ]
-					)))
+					))))
 				)"
 		);
 		ASSERT_TRUE(fib);
@@ -194,7 +194,7 @@ namespace backend {
 
 		auto fib = parse(mgr,
 				R"(
-					prec((build_recfun(
+					recfun_to_fun(prec((build_recfun(
 						  (i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; },
 						[ (i : cpp_ref<int<4>,t,f>) -> int<4> { return i; } ],
 						[ (i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
@@ -202,7 +202,7 @@ namespace backend {
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
 							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
 						} ]
-					)))
+					))))
 				)"
 		);
 		ASSERT_TRUE(fib);
@@ -249,7 +249,7 @@ namespace backend {
 					};
 
 					{
-						var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = prec(
+						var ref<(int<4>) => treeture<int<4>,f>,f,f,plain> fibEager = recfun_to_fun(prec(
 								(build_recfun(
 										cpp_lambda_to_closure(
 												<ref<__wi__cutoff,f,f,plain>>(ref_temp(type_lit(__wi__cutoff))) {},
@@ -264,7 +264,7 @@ namespace backend {
 												type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 										)]
 								))
-						);
+						));
 						var ref<int<4>,f,f,plain> i = treeture_get(*(*fibEager)(12) materialize );
 					}
 				)"
@@ -290,14 +290,14 @@ namespace backend {
 					{
 						var ref<int<4>> a;
 						var ref<int<4>> b;
-						prec((build_recfun(
+						recfun_to_fun(prec((build_recfun(
 							  ( i : int<4> ) => i < *a,
 							[ ( i : int<4> ) => i + *b ],
 							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 								let step = recfun_to_fun(steps.0);
 								return step(i-1);
 							} ]
-						)))(12);
+						))))(12);
 					}
 				)"
 		);
@@ -318,7 +318,7 @@ namespace backend {
 				R"(
 					{
 						var ref<array<int<4>,12>> a = <ref<array<int<4>,12>>>(ref_decl(type_lit(ref<array<int<4>,12>>))){};
-						prec((build_recfun(
+						recfun_to_fun(prec((build_recfun(
 							  ( r : (int<4>,int<4>) ) => r.0 >= r.1,
 							[
 							  ( r : (int<4>,int<4>) ) => {
@@ -338,7 +338,7 @@ namespace backend {
 								return treeture_done(true);
 							  }
 							]
-						)))((0,12));
+						))))((0,12));
 					}
 				)"
 		);
@@ -362,7 +362,7 @@ namespace backend {
 					int<4> main() {
 						var ref<int<4>> p;
 						scan("%d",p);
-						auto r = treeture_get(prec((build_recfun(
+						auto r = treeture_get(recfun_to_fun(prec((build_recfun(
 							  (i : int<4>) -> bool { return i < 2; },
 							[ (i : int<4>) -> int<4> { return i; } ],
 							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
@@ -371,7 +371,7 @@ namespace backend {
 								auto b = treeture_run(step(i-2));
 								return treeture_done(treeture_get(a) + treeture_get(b));
 							} ]
-						)))(*p));
+						))))(*p));
 						print("fib(%d)=%d\n",*p,r);
 						return 0;
 					}
@@ -399,15 +399,15 @@ namespace backend {
 					int<4> main() {
 						var ref<int<4>> p;
 						scan("%d",p);
-						auto r = treeture_get(prec((build_recfun(
+						auto r = treeture_get(recfun_to_fun(prec((build_recfun(
 							  (i : int<4>) -> bool { return i < 2; },
 							[ (i : int<4>) -> int<4> { return i; } ],
 							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 								let step = recfun_to_fun(steps.0);
 								let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-								return treeture_combine(step(i-1),step(i-2),add,true);
+								return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
 							} ]
-						)))(*p));
+						))))(*p));
 						print("fib(%d)=%d\n",*p,r);
 						return 0;
 					}

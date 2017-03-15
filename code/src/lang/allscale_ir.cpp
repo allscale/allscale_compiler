@@ -63,6 +63,23 @@ namespace lang {
 		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "recfun";
 	}
 
+	bool isRecFunToFunCall(const core::NodePtr& node) {
+		if (!node) return false;
+		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
+		return ext.isCallOfRecfunToFun(node);
+	}
+
+	bool isRecFunToDepFunCall(const core::NodePtr& node) {
+		if (!node) return false;
+		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
+		return ext.isCallOfRecfunToDepFun(node);
+	}
+
+	bool isRecFunUnwrapperCall(const core::NodePtr& node) {
+		return isRecFunToFunCall(node) || isRecFunToDepFunCall(node);
+	}
+
+
 	/////////////////////////////// Treeture
 
 	TreetureType::TreetureType(const core::TypePtr& valueType, bool released) : valueType(valueType) {

@@ -948,18 +948,27 @@ namespace backend {
 		// replace all prec calls with actual lambdas
 		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur){
 
+			// interested in recfun_to_fun call enclosing a prec operator
+			if (!lang::isRecFunUnwrapperCall(cur)) return cur;
+
+			// convert to a call expression
+			auto call = cur.as<core::CallExprPtr>();
+			assert_false(call.empty()) << "Invalid IR composition - there has to be one argument!";
+
+			// extract the first argument
+			auto arg = cur.as<core::CallExprPtr>()->getArgument(0);
+
 			// only interested in prec operators
-			if (!lang::PrecOperation::isPrecOperation(cur)) return cur;
+			if (!lang::PrecOperation::isPrecOperation(arg)) return cur;
 
 			// trigger conversion
-			return convertPrecOperator(converter,cur);
+			return convertPrecOperator(converter,arg);
 
 		}, core::transform::globalReplacement);
 
 		// check that the result is properly typed
 		assert_true(core::checks::check(res).empty())
-			<< dumpPretty(res) << "\n"
-			<< core::checks::check(res);
+			<< core::printer::dumpErrors(core::checks::check(res));
 
 		// return result
 		return res;
