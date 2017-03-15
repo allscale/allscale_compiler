@@ -998,7 +998,10 @@ namespace backend {
 
 		insieme::core::LambdaExprPtr getCallOperatorImpl(const insieme::core::ExpressionPtr& lambda) {
 
-			auto cppLambdaType = core::lang::ReferenceType(lambda->getType()).getElementType();
+			auto cppLambdaType = lambda->getType();
+			if (core::lang::isReference(cppLambdaType)) {
+				cppLambdaType = core::lang::ReferenceType(cppLambdaType).getElementType();
+			}
 			assert_true(cppLambdaType.isa<core::TagTypePtr>()) << cppLambdaType;
 
 			// get call operator member

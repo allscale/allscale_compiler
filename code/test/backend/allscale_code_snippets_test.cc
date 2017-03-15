@@ -129,8 +129,6 @@ namespace backend {
 		auto code = convert(fib);
 		ASSERT_TRUE(code);
 
-		std::cout << *code << "\n";
-
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
 	}
@@ -551,7 +549,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppFibLazy) {
+	TEST(CodeSnippet, CppFibLazy) {
 		NodeManager mgr;
 
 		auto code = R"(
