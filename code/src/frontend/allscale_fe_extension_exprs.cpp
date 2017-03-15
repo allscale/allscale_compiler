@@ -44,7 +44,7 @@ namespace detail {
 		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
 		{"allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add")},
 		// recfun operations
-		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", RecFunCallMapper()},
+		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", PrecFunCallMapper()},
 		{R"(allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable::operator\(\))", RecFunCallMapper()},
 		// fun
 		{"allscale::api::core::fun", FunConstructionMapper()},
@@ -308,15 +308,15 @@ namespace detail {
 	}
 
 
-	// RecFunCallMapper
-	core::ExpressionPtr RecFunCallMapper::generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
+	// RecOrPrecFunCallMapper
+	core::ExpressionPtr RecOrPrecFunCallMapper::generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) {
 		auto opCall = llvm::dyn_cast<clang::CXXOperatorCallExpr>(call);
 		assert_true(opCall);
 		auto recfunArg = converter.convertExpr(opCall->getArg(0));
 		assert_true(recfunArg);
-		return lang::buildRecfunToFun(derefOrDematerialize(recfunArg));
+		return buildWrapper(derefOrDematerialize(recfunArg));
 	}
-	core::ExpressionList RecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
+	core::ExpressionList RecOrPrecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
 	                                                               insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
 		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
@@ -326,7 +326,7 @@ namespace detail {
 		}
 		return newArgs;
 	}
-	core::ExpressionPtr RecFunCallMapper::postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
+	core::ExpressionPtr RecOrPrecFunCallMapper::postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
 	                                                      insieme::frontend::conversion::Converter& converter) {
 		auto callType = converter.convertType(call->getType());
 
@@ -338,6 +338,14 @@ namespace detail {
 			return lang::buildTreetureRun(translatedCall);
 		}
 		return translatedCall;
+	}
+
+	core::ExpressionPtr RecFunCallMapper::buildWrapper(const core::ExpressionPtr& expr) {
+		return lang::buildRecfunToFun(expr);
+	}
+
+	core::ExpressionPtr PrecFunCallMapper::buildWrapper(const core::ExpressionPtr& expr) {
+		return lang::buildPrecfunToFun(expr);
 	}
 
 

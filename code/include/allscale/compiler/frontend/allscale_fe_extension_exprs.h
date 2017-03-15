@@ -74,8 +74,8 @@ namespace frontend {
 				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
 		};
 
-		/// Utility to map the call operator call of recfun objects
-		class RecFunCallMapper : public SimpleCallMapper {
+		/// Utility to map the call operator call of recfun and precfun objects
+		class RecOrPrecFunCallMapper : public SimpleCallMapper {
 		  protected:
 			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) override;
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
@@ -83,9 +83,30 @@ namespace frontend {
 			virtual core::ExpressionPtr postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
 			                                            insieme::frontend::conversion::Converter& converter) override;
 
+			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) = 0;
+
 		  public:
-			RecFunCallMapper() : SimpleCallMapper("") { }
+			RecOrPrecFunCallMapper() : SimpleCallMapper("") { }
+			virtual ~RecOrPrecFunCallMapper() {}
 		};
+
+
+		/// Utility to map the call operator call of recfun objects
+		class RecFunCallMapper : public RecOrPrecFunCallMapper {
+		  public:
+			RecFunCallMapper() : RecOrPrecFunCallMapper() { }
+		  protected:
+			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) override;
+		};
+
+		/// Utility to map the call operator call of precfun objects
+		class PrecFunCallMapper : public RecOrPrecFunCallMapper {
+		  public:
+			PrecFunCallMapper() : RecOrPrecFunCallMapper() { }
+		  protected:
+			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) override;
+		};
+
 
 		/// Utility to map the call to fun
 		class FunConstructionMapper {

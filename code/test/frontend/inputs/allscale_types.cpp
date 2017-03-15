@@ -39,7 +39,7 @@ int main() {
 	using TestPrecOperationType = allscale::api::core::detail::prec_operation<0, int, double, TestRecDefsType>;
 
 	#pragma test expect_ir(R"({
-		var ref<ptr<recfun<int<4>,real<8>>>,f,f,plain> v0;
+		var ref<ptr<precfun<int<4>,real<8>>>,f,f,plain> v0;
 	})")
 	{
 		TestPrecOperationType* myPrecOp;

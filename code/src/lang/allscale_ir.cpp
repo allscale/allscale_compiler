@@ -27,11 +27,11 @@ namespace lang {
 
 	/////////////////////////////// RecFun
 
-	RecFunType::RecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) {
+	RecOrPrecFunType::RecOrPrecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) {
 		assert_true(!core::lang::isReference(param) || core::lang::isConstCppReference(param));
 	}
 
-	RecFunType::RecFunType(const core::NodePtr& node) {
+	RecOrPrecFunType::RecOrPrecFunType(const core::NodePtr& node) {
 		assert_true(node) << "Given node is null!";
 
 		// support expressions as input
@@ -41,15 +41,25 @@ namespace lang {
 		// check given node type
 		assert_true(isRecFun(type)) << "Given node " << *node << " is not a RecFun type!\nType: " << *type;
 
-		*this = RecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
+		*this = RecOrPrecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
 	}
 
 	core::GenericTypePtr RecFunType::toIRType() const {
-		core::IRBuilder builder(param->getNodeManager());
-		return builder.genericType("recfun", toVector(param, ret));
+		core::IRBuilder builder(getParamType()->getNodeManager());
+		return builder.genericType("recfun", toVector(getParamType(), getReturnType()));
 	}
 
 	RecFunType::operator core::GenericTypePtr() const {
+		return toIRType();
+	}
+
+
+	core::GenericTypePtr PrecFunType::toIRType() const {
+		core::IRBuilder builder(getParamType()->getNodeManager());
+		return builder.genericType("precfun", toVector(getParamType(), getReturnType()));
+	}
+
+	PrecFunType::operator core::GenericTypePtr() const {
 		return toIRType();
 	}
 
@@ -433,9 +443,9 @@ namespace lang {
 		auto& firstRecFun = recFuns.front();
 		auto& mgr = firstRecFun->getNodeManager();
 		core::IRBuilder builder(mgr);
-		auto firstRecfunType = RecFunType(firstRecFun);
+		auto precfunType = PrecFunType(firstRecFun);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(firstRecfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
+		return builder.callExpr(precfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
 	}
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
@@ -504,9 +514,16 @@ namespace lang {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
 		core::IRBuilder builder(mgr);
-		RecFunType recFun(param);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getRecfunToFun(), param);
+	}
+
+	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getPrecfunToFun(), param);
 	}
 
 	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {

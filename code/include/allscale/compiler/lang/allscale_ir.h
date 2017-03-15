@@ -30,7 +30,7 @@ namespace lang {
 		 */
 		LANG_EXT_LITERAL(BuildRecfun, "build_recfun" , "(('a) => bool, list<('a) => 'b>, list<('a, (recfun<'a,'b>, 'c...)) => treeture<'b,f>>) -> recfun<'a,'b>")
 
-		LANG_EXT_LITERAL(Prec, "prec", "( (recfun<'a,'b>, 'c...) ) -> recfun<'a,'b>")
+		LANG_EXT_LITERAL(Prec, "prec", "( (recfun<'a,'b>, 'c...) ) -> precfun<'a,'b>")
 
 		// dependencies
 
@@ -59,16 +59,19 @@ namespace lang {
 		LANG_EXT_LITERAL(RecfunToFun, "recfun_to_fun", "(recfun<'a,'b>) -> ('a) -> treeture<'b,f>")
 		LANG_EXT_LITERAL(RecfunToDepFun, "recfun_to_dep_fun", "(recfun<'a,'b>) -> (dependencies, 'a) -> treeture<'b,f>")
 
+		LANG_EXT_LITERAL(PrecfunToFun, "precfun_to_fun", "(precfun<'a,'b>) -> ('a) -> treeture<'b,f>")
+		LANG_EXT_LITERAL(PrecfunToDepFun, "precfun_to_dep_fun", "(precfun<'a,'b>) -> (dependencies, 'a) -> treeture<'b,f>")
+
 		LANG_EXT_LITERAL(CppLambdaToClosure, "cpp_lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
 		LANG_EXT_LITERAL(CppLambdaToLambda,  "cpp_lambda_to_lambda",  "('l, type<('a...) -> 'b>) -> ('a...) -> 'b")
 	};
 
-	class RecFunType {
+	class RecOrPrecFunType {
 		core::TypePtr param, ret;
 
 	  public:
-		RecFunType(const core::TypePtr& param, const core::TypePtr& ret);
-		RecFunType(const core::NodePtr& node);
+		RecOrPrecFunType(const core::TypePtr& param, const core::TypePtr& ret);
+		RecOrPrecFunType(const core::NodePtr& node);
 
 		core::TypePtr getParamType() const {
 			return param;
@@ -86,14 +89,35 @@ namespace lang {
 			ret = type;
 		}
 
+		RecOrPrecFunType(const RecOrPrecFunType&) = default;
+		RecOrPrecFunType(RecOrPrecFunType&&) = default;
+		RecOrPrecFunType& operator=(const RecOrPrecFunType&) = default;
+		RecOrPrecFunType& operator=(RecOrPrecFunType&&) = default;
+	};
+
+
+	class RecFunType : public RecOrPrecFunType {
+
+	  public:
+
+		using RecOrPrecFunType::RecOrPrecFunType;
+
 		core::GenericTypePtr toIRType() const;
 
 		operator core::GenericTypePtr() const;
 
-		RecFunType(const RecFunType&) = default;
-		RecFunType(RecFunType&&) = default;
-		RecFunType& operator=(const RecFunType&) = default;
-		RecFunType& operator=(RecFunType&&) = default;
+	};
+
+	class PrecFunType : public RecOrPrecFunType {
+
+	  public:
+
+		using RecOrPrecFunType::RecOrPrecFunType;
+
+		core::GenericTypePtr toIRType() const;
+
+		operator core::GenericTypePtr() const;
+
 	};
 
 	class TreetureType {
@@ -278,6 +302,8 @@ namespace lang {
 	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr);
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
+
+	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param);
 
 	// lambda utils
 
