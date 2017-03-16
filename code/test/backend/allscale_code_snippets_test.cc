@@ -631,7 +631,7 @@ namespace backend {
 
 	}
 
-	TEST(DISABLED_CodeSnippet, CppRange) {
+	TEST(CodeSnippet, CppRange) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -646,6 +646,9 @@ namespace backend {
 						int end;
 					};
 			
+					range full;
+					full.start = 0;
+					full.end = 1000;
 					prec(fun(
 						[](range r) { return r.start+ 1 >= r.end; },
 						[](range r) {
@@ -662,7 +665,7 @@ namespace backend {
 							b.get();
 							return done(true);
 						} 
-					))(range{0,1000}).get();
+					))(full).get();
 
 					return 0;
 				}
@@ -685,7 +688,7 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, CppRangeReference) {
+	TEST(CodeSnippet, CppRangeReference) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -696,21 +699,21 @@ namespace backend {
 				int main(int argc, char** argv) {
 					
 					struct range {
-						int begin;
+						int start;
 						int end;
 					};
 			
 					prec(fun(
-						[](const range& r) { return r.begin + 1 >= r.end; },
+						[](const range& r) { return r.start + 1 >= r.end; },
 						[](const range& r) {
-							for(int i=r.begin; i<r.end; i++) {
+							for(int i=r.start; i<r.end; i++) {
 								// nothing
 							}
 							return true;
 						},
 						[](const range& r, const auto& f) {
-							int m = r.begin + (r.begin + r.end) / 2;
-							auto a = run(f(range{r.begin,m}));
+							int m = r.start + (r.start + r.end) / 2;
+							auto a = run(f(range{r.start,m}));
 							auto b = run(f(range{m,r.end}));
 							a.get();
 							b.get();
