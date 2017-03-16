@@ -225,11 +225,15 @@ namespace backend {
 				context.addDependency(info.prototype);
 				context.addRequirement(info.definition);
 
+				// create target for implicit std::move call
+				context.addInclude("utility");
+				auto std_move = C_NODE_MANAGER->create("std::move");
+
 				// create a call to treeture_combine
 				return c_ast::call(
 						C_NODE_MANAGER->create("allscale::runtime::treeture_combine"),
-						CONVERT_ARG(1),
-						CONVERT_ARG(2),
+						c_ast::call(std_move, CONVERT_ARG(1)),
+						c_ast::call(std_move, CONVERT_ARG(2)),
 						c_ast::ref(info.function->name)
 				);
 			};
