@@ -35,21 +35,6 @@ int main() {
 		a.getRight();
 	}
 
-	// methods on unreleased treetures
-
-	#pragma test expect_ir(R"({
-		var ref<treeture<real<4>,f>,f,f,plain> a =  treeture_done(1.0E+0f);
-		treeture_wait(*a);
-		treeture_left(*a);
-		treeture_right(*a);
-	})")
-	{
-		impl::reference::unreleased_treeture<float> a = done(1.0f);
-		a.wait();
-		a.getLeft();
-		a.getRight();
-	}
-
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS ////
 
 	// treeture combination operations
@@ -159,7 +144,7 @@ int main() {
 	{ // this code is not actually correct, but it is sufficient for testing
 		auto a = done(1);
 		auto b = done(2);
-		dependencies dep = after();
+		auto dep = after();
 		sequential(dep, std::move(a), std::move(b));
 		parallel(dep, std::move(a), std::move(b));
 		combine(dep, std::move(a), std::move(b), [](int m, int n) { return m + n; });

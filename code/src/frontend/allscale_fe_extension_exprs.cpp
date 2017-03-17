@@ -42,7 +42,8 @@ namespace detail {
 		{"allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true)},
 		// dependencies
 		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
-		{"allscale::api::core::dependencies::add", AggregationCallMapper("dependency_add")},
+		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
+		{"allscale::api::core::no_dependencies::operator dependencies", NoopCallMapper()},
 		// recfun operations
 		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", PrecFunCallMapper()},
 		{R"(allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable::operator\(\))", RecFunCallMapper()},

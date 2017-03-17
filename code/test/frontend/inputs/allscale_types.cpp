@@ -131,9 +131,15 @@ int main() {
 
 	#pragma test expect_ir(R"({
 		var ref<ptr<dependencies>,f,f,plain> v0;
+		var ref<ptr<dependencies>,f,f,plain> v1;
+		var ref<ptr<dependencies>,f,f,plain> v2;
+		var ref<ptr<dependencies>,f,f,plain> v3;
 	})")
 	{
-		dependencies* x;
+		no_dependencies* x0;
+		impl::sequential::dependencies* x1;
+		impl::reference::dependencies<impl::reference::fixed_sized<0>>* x2;
+		impl::reference::dependencies<impl::reference::dynamic_sized>* x3;
 	}
 
 	return 0;

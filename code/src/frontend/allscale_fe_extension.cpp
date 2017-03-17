@@ -81,7 +81,7 @@ namespace frontend {
 																			std::function<const clang::Expr*(const ClangTypeToSkip*)> childExtractor) {
 			if(auto clangTypedExpr = llvm::dyn_cast<ClangTypeToSkip>(expr)) {
 				auto retType = converter.convertType(expr->getType());
-				if(lang::isTreeture(retType) || lang::isRecFun(retType)) {
+				if(lang::isTreeture(retType) || lang::isRecFun(retType) || lang::isDependencies(retType)) {
 					return converter.convertExpr(childExtractor(clangTypedExpr));
 				}
 			}

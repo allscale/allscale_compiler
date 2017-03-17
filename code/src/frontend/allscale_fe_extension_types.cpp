@@ -29,7 +29,7 @@ namespace detail {
 		{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
 		{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
 		// dependencies
-		{ "allscale::api::core::dependencies", "dependencies" },
+		{ "allscale::api::core::.*dependencies", "dependencies" },
 	};
 
 
