@@ -30,6 +30,8 @@ namespace frontend {
 	namespace {
 		/// Name of placeholder generic type generated for dependent types for temporary translation
 		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
+
+		static bool debug = false;
 	}
 
 	detail::TypeMapper& AllscaleExtension::getTypeMapper(insieme::frontend::conversion::Converter& converter) {
@@ -43,7 +45,7 @@ namespace frontend {
 		// Apply the type mapping specification table to record types
 		auto mappedType = getTypeMapper(converter).apply(type);
 		if(mappedType) {
-			std::cout << "Mapped type to : " << *mappedType << std::endl;
+			if(debug) std::cout << "Mapped type to : " << *mappedType << std::endl;
 			return mappedType;
 		}
 
@@ -53,11 +55,13 @@ namespace frontend {
 			if(autoType->isDependentType()) { return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER); }
 		}
 		if(auto builtinType = llvm::dyn_cast<clang::BuiltinType>(type)) {
-			std::cout << "Builtin: ";
-			builtinType->dump();
-			std::cout << std::endl;
+			if(debug) {
+				std::cout << "Builtin: ";
+				builtinType->dump();
+				std::cout << std::endl;
+			}
 			if(builtinType->isDependentType()) {
-				std::cout << "Dependent Builtin" << std::endl;
+				if(debug) std::cout << "Dependent Builtin" << std::endl;
 				return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER);
 			}
 		}
@@ -86,7 +90,7 @@ namespace frontend {
 	}
 
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
-		expr->dumpColor();
+		if(debug) expr->dumpColor();
 
 		// we don't need special handling for CXXConstructExpr, MaterializeTemporaryExpr, ExprWithCleanups and VisitCXXBindTemporaryExpr on our AllScale types
 		// these nodes are skipped and we only handle their respective child
@@ -105,13 +109,13 @@ namespace frontend {
 
 		auto& allscaleExt = irExpr->getNodeManager().getLangExtension<lang::AllscaleModule>();
 
-		std::cout << "!!\n";
+		if(debug) std::cout << "!!\n";
 		if(castExpr->getCastKind() == clang::CK_UncheckedDerivedToBase) {
-			std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
+			if(debug) std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
 			auto irSourceType = irExpr->getType();
 			if(core::analysis::isRefType(irExpr)) irSourceType = core::analysis::getReferencedType(irSourceType);
 			if(lang::isTreeture(irSourceType)) {
-				std::cout << "!! Casting treeture\n";
+				if(debug) std::cout << "!! Casting treeture\n";
 				return irExpr;
 			}
 		}
@@ -133,7 +137,7 @@ namespace frontend {
 		core::IRBuilder builder(prog->getNodeManager());
 
 		// temporarily dump the generated IR in a readable format
-		dumpReadable(prog);
+		if(debug) dumpReadable(prog);
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
 		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);

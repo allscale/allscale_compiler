@@ -52,18 +52,20 @@ namespace detail {
 		{"allscale::api::core::prec", PrecMapper()},
 	};
 
+	static bool debug = false;
+
 	core::ExpressionPtr mapExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
 		// we handle certain calls specially, which we differentiate by their callee's name
 		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
 			auto decl = call->getCalleeDecl();
 			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 				auto name = funDecl->getQualifiedNameAsString();
-				std::cout << "N: " << name << std::endl;
+				if(debug) std::cout << "N: " << name << std::endl;
 
 				for(const auto& mapping : callMap) {
 					std::regex pattern(mapping.first);
 					if(std::regex_match(name, pattern)) {
-						std::cout << "Matched " << mapping.first << std::endl;
+						if(debug) std::cout << "Matched " << mapping.first << std::endl;
 						return mapping.second(call, converter);
 					}
 				}
