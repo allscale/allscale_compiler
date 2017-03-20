@@ -94,7 +94,6 @@ namespace frontend {
 
 		// we don't need special handling for CXXConstructExpr, MaterializeTemporaryExpr, ExprWithCleanups and VisitCXXBindTemporaryExpr on our AllScale types
 		// these nodes are skipped and we only handle their respective child
-		if(auto s = skipClangExpr<clang::CXXConstructExpr>(expr, converter,         [](const auto sE) { return sE->getArg(0); }))          { return s; }
 		if(auto s = skipClangExpr<clang::MaterializeTemporaryExpr>(expr, converter, [](const auto sE) { return sE->GetTemporaryExpr(); })) { return s; }
 		if(auto s = skipClangExpr<clang::ExprWithCleanups>(expr, converter,         [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 		if(auto s = skipClangExpr<clang::CXXBindTemporaryExpr>(expr, converter,     [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
