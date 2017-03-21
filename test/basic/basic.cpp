@@ -1,4 +1,4 @@
-#include "../../api/code/include/allscale/api/core/prec.h"
+#include "allscale/api/core/prec.h"
 
 using namespace allscale::api::core;
 
