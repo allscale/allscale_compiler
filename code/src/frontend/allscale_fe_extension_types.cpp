@@ -15,7 +15,6 @@ namespace frontend {
 namespace detail {
 
 	/// Mapping specification from C++ to IR types used during type translation
-	/// Note, that all forms of reference will be stripped when matching, as the generated Types have special semantics in AllScale
 	const static std::map<std::string, std::string> typeMap = {
 		// callables
 		{ "allscale::api::core::fun_def", "recfun<TEMPLATE_T_1,TEMPLATE_T_0>" },
