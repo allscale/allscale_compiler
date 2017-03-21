@@ -255,6 +255,8 @@ namespace detail {
 		if(auto thisArg = exprInfo.implicitObjectArgument) {
 			return exprInfo.converter.convertExpr(thisArg);
 		}
+		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
+				<< " has " << exprInfo.numArgs << " arguments";
 		return exprInfo.converter.convertExpr(exprInfo.args[0]);
 	}
 

@@ -27,7 +27,7 @@ namespace frontend {
 		auto isConstructorCall = llvm::isa<clang::CXXConstructExpr>(expr);
 		auto locStart = expr->getLocStart();
 
-		return {numArgs, args, clangType, implicitObjectArgument, isMemberCall, isOperatorCall, isConstructorCall, locStart, converter};
+		return {expr, numArgs, args, clangType, implicitObjectArgument, isMemberCall, isOperatorCall, isConstructorCall, locStart, converter};
 	}
 
 }
