@@ -12,9 +12,9 @@ int main() {
 	#pragma test expect_ir(R"({
 		var ref<dependencies,f,f,plain> v0 = dependency_after();
 		var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(treeture_done(1));
-		var ref<dependencies,f,f,plain> v2 = dependency_after(*v1);
+		var ref<dependencies,f,f,plain> v2 = dependency_after(treeture_to_task_ref(*v1));
 		var ref<treeture<int<4>,t>,f,f,plain> v3 = treeture_run(treeture_done(1));
-		var ref<dependencies,f,f,plain> v4 = dependency_after(*v1, *v3);
+		var ref<dependencies,f,f,plain> v4 = dependency_after(treeture_to_task_ref(*v1), treeture_to_task_ref(*v3));
 	})")
 	{
 		auto dep1 = after();
@@ -29,11 +29,13 @@ int main() {
 	#pragma test expect_ir(R"({
 		var ref<dependencies,f,f,plain> v0 = dependency_after();
 		var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(treeture_done(1));
-		dependency_add(*v0, *v1);
+		dependency_add(*v0, treeture_to_task_ref(*v1));
+		dependency_add(*v0, treeture_to_task_ref(*v1));
 	})")
 	{
 		impl::reference::dependencies<impl::reference::dynamic_sized> dep1 = allscale::api::core::after();
 		treeture<int> a = done(1);
+		dep1.add(a);
 		dep1.add(a.getTaskReference());
 	}
 

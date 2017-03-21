@@ -27,6 +27,8 @@ namespace detail {
 		// treetures
 		{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
 		{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+		// task_refs
+		{ "allscale::api::core::impl::.*::task_reference", "task_ref" },
 		// dependencies
 		{ "allscale::api::core::.*dependencies", "dependencies" },
 	};

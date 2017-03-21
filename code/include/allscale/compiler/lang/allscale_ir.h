@@ -36,7 +36,7 @@ namespace lang {
 
 		LANG_EXT_TYPE(DependenciesType,"dependencies")
 		LANG_EXT_LITERAL(DependencyAfter, "dependency_after", "('a...) -> dependencies")
-		LANG_EXT_LITERAL(DependencyAdd, "dependency_add", "(dependencies, treeture<'a, 'r>) -> dependencies")
+		LANG_EXT_LITERAL(DependencyAdd, "dependency_add", "(dependencies, task_ref) -> dependencies")
 
 		// treetures
 
@@ -44,8 +44,8 @@ namespace lang {
 		LANG_EXT_LITERAL(TreetureRun, "treeture_run", "(treeture<'a, f>) -> treeture<'a, t>")
 
 		LANG_EXT_LITERAL(TreetureGet, "treeture_get", "(treeture<'a,'r>) -> 'a")
-		LANG_EXT_LITERAL(TreetureLeft, "treeture_left", "(treeture<'a,'r>) -> treeture<unit, f>")
-		LANG_EXT_LITERAL(TreetureRight, "treeture_right", "(treeture<'a,'r>) -> treeture<unit, f>")
+		LANG_EXT_DERIVED(TreetureLeft, "(t : treeture<'a,'r>) -> task_ref { return task_ref_left(treeture_to_task_ref(t)); }")
+		LANG_EXT_DERIVED(TreetureRight, "(t : treeture<'a,'r>) -> task_ref { return task_ref_right(treeture_to_task_ref(t)); }")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
 		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
@@ -54,6 +54,14 @@ namespace lang {
 
 		LANG_EXT_LITERAL(TreetureToRef,   "treeture_to_ref",   "(treeture<'a,'r>, type<ref<treeture<'a, 'r>, 'c, 'v, 'k>>) -> ref<treeture<'a,'r>, 'c, 'v, 'k>")
 		LANG_EXT_LITERAL(TreetureFromRef, "treeture_from_ref", "(ref<treeture<'a,'r>, 'c, 'v, 'k>) -> treeture<'a,'r>")
+
+		// task references
+
+		LANG_EXT_LITERAL(TaskRefLeft, "task_ref_left", "(task_ref) -> task_ref")
+		LANG_EXT_LITERAL(TaskRefRight, "task_ref_right", "(task_ref) -> task_ref")
+		LANG_EXT_LITERAL(TaskRefWait, "task_ref_wait", "(task_ref) -> unit")
+
+		LANG_EXT_LITERAL(TreetureToTaskRef, "treeture_to_task_ref", "(treeture<'a,'r>) -> task_ref")
 
 		// recfuns and lambda operations
 

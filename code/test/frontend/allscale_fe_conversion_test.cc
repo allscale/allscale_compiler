@@ -34,6 +34,10 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_treeture_ops.cpp");
 	}
 
+	TEST(AllScaleConversionTest, TaskRefOps) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_task_ref_ops.cpp");
+	}
+
 	TEST(AllScaleConversionTest, DependencyOps) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_dependency_ops.cpp");
 	}
@@ -52,6 +56,10 @@ namespace frontend {
 
 	TEST(AllScaleConversionTest, Fib) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
+	}
+
+	TEST(AllScaleConversionTest, Pfor) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pfor.cpp");
 	}
 
 } // end namespace frontend

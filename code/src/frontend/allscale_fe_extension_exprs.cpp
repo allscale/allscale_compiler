@@ -32,12 +32,13 @@ namespace detail {
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
-		{"allscale::api::core::impl::.*treeture.*::getTaskReference", NoopCallMapper()},
 		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", NoopCallMapper()}, // ctor call
 		// task_reference
-		{"allscale::api::core::impl::.*reference.*::wait", SimpleCallMapper("treeture_wait", true)},
-		{"allscale::api::core::impl::.*reference::getLeft", SimpleCallMapper("treeture_left", true)},
-		{"allscale::api::core::impl::.*reference::getRight", SimpleCallMapper("treeture_right", true)},
+		{"allscale::api::core::impl::.*treeture.*::operator task_reference", SimpleCallMapper("treeture_to_task_ref", true)},
+		{"allscale::api::core::impl::.*treeture.*::getTaskReference", SimpleCallMapper("treeture_to_task_ref", true)},
+		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
+		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
+		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
 		// treeture aggregation
 		{"allscale::api::core::combine", AggregationCallMapper("treeture_combine", true)},
 		{"allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true)},
