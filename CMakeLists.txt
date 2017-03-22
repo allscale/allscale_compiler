@@ -9,8 +9,13 @@ enable_testing()
 add_subdirectory(insieme)
 add_subdirectory(runtime)
 
-add_subdirectory(api/code)
-msvc_file_completion(allscale_api_tests api/code/test inl)
+include(ExternalProject)
+ExternalProject_Add(
+	api
+	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/api
+	BUILD_IN_SOURCE 0
+	INSTALL_COMMAND ""
+)
 
 add_subdirectory(code)
 add_subdirectory(test)
