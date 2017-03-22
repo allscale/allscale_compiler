@@ -975,11 +975,21 @@ namespace backend {
 				assert_fail() << "Unsupported prec-fun wrapper encountered: " << *call->getFunctionExpr();
 			}
 
-			// only interested in prec operators
-			if (!lang::PrecOperation::isPrecOperation(cur)) return cur;
+			// for the rest: only interested in calls producing precfun<'a,'b>
+			auto call = cur.isa<core::CallExprPtr>();
+			if (!call) return cur;
 
-			// trigger conversion
-			return convertPrecOperator(converter,cur);
+			// check the type
+			if (!lang::isPrecFun(call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType())) return cur;
+
+			// first inline call
+			auto res = core::transform::tryInlineToExpr(mgr,cur.as<core::CallExprPtr>());
+
+			// test whether it is a prec operator call
+			if (!lang::PrecOperation::isPrecOperation(res)) return res;
+
+			// convert the prec operator call
+			return convertPrecOperator(converter,res);
 
 		}, core::transform::globalReplacement);
 
