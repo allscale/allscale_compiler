@@ -30,6 +30,9 @@ namespace frontend {
 		/// implements the actual mapping from clang exprs to IR
 		insieme::core::ExpressionPtr mapExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter);
 
+		/// checks whether the given clang decl will is mapped
+		bool isMapped(const clang::Decl* decl);
+
 
 		//////// implementation details ------------------------------------------------------------------------------------------------------------------
 
@@ -40,6 +43,7 @@ namespace frontend {
 		  public:
 			core::ExpressionPtr operator()(const ClangExpressionInfo&);
 		};
+
 
 		/// Utility for the specification of simple call mappings (C++ to IR)
 		class SimpleCallMapper {
@@ -57,6 +61,7 @@ namespace frontend {
 			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
 			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
+
 
 		/// Utility for the specification of treeture/task aggregation (C++ to IR)
 		/// same as SimpleCallMapper, but skips std::move and converts completed_task to treeture as required
@@ -112,6 +117,14 @@ namespace frontend {
 		  public:
 			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
+
+
+		/// Utility for the aggregation of function arguments into a tuple
+		class TupleAggregationMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo&);
+		};
+
 
 		/// Utility to map the call to prec
 		class PrecMapper {

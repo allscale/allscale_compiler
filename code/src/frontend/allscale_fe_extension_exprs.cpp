@@ -21,6 +21,10 @@ namespace detail {
 
 	/// Mapping specification from C++ to IR used during call expression translation
 	const static std::map<std::string, CallMapper> callMap = {
+		// callables
+		{"allscale::api::core::fun_def.*fun_def", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::rec_defs.*rec_defs", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::detail::prec_operation.*prec_operation", NoopCallMapper()}, // ctor call
 		// completed_tasks
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
@@ -56,14 +60,32 @@ namespace detail {
 		{"allscale::api::core::fun", FunConstructionMapper()},
 		{"allscale::api::core::fun_def<.*>::fun_def", NoopCallMapper()}, // ctor call
 		// prec
-		{"allscale::api::core::prec", PrecMapper()},
+		{"allscale::api::core::group", TupleAggregationMapper()},
+		{"allscale::api::core::detail::prec", PrecMapper()},
 	};
 
 	static bool debug = false;
 
+	boost::optional<CallMapper> getMapping(const clang::Decl* decl) {
+		if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
+			auto name = funDecl->getQualifiedNameAsString();
+			if(debug) std::cout << "N: " << name << std::endl;
+
+			for(const auto& mapping : callMap) {
+				std::regex pattern(mapping.first);
+				if(std::regex_match(name, pattern)) {
+					if(debug) std::cout << "Matched " << mapping.first << std::endl;
+					return mapping.second;
+				}
+			}
+		}
+
+		return {};
+	}
+
 	core::ExpressionPtr mapExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
 		// we handle certain calls specially, which we differentiate by their callee's name
-		const clang::Decl* decl;
+		const clang::Decl* decl = nullptr;
 
 		// the entries in our expression mappings apply to calls and constructor calls
 		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
@@ -74,22 +96,16 @@ namespace detail {
 		}
 
 		// if we found a decl, we get it's fully qualified name and do a lookup in our map
-		if(decl) {
-			if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
-				auto name = funDecl->getQualifiedNameAsString();
-				if(debug) std::cout << "N: " << name << std::endl;
-
-				for(const auto& mapping : callMap) {
-					std::regex pattern(mapping.first);
-					if(std::regex_match(name, pattern)) {
-						if(debug) std::cout << "Matched " << mapping.first << std::endl;
-						return mapping.second(ClangExpressionInfo::getClangExpressionInfo(expr, converter));
-					}
-				}
-			}
+		auto mapper = getMapping(decl);
+		if(mapper) {
+			return mapper.get()(ClangExpressionInfo::getClangExpressionInfo(expr, converter));
 		}
 
 		return nullptr;
+	}
+
+	bool isMapped(const clang::Decl* decl) {
+		return getMapping(decl);
 	}
 
 
@@ -461,10 +477,20 @@ namespace detail {
 	}
 
 
+	// TupleAggregationMapper
+	core::ExpressionPtr TupleAggregationMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		core::ExpressionList elements;
+		for(const auto& arg : exprInfo.args) {
+			elements.push_back(derefOrDematerialize(exprInfo.converter.convertExpr(arg)));
+		}
+		return exprInfo.converter.getIRBuilder().tupleExpr(elements);
+	}
+
+
 	// PrecMapper
 	core::ExpressionPtr PrecMapper::operator()(const ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 1) << "prec call only supports 1 argument";
-		return lang::buildPrec(toVector(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0]))));
+		return lang::buildPrec(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0])));
 	}
 
 } // end namespace detail

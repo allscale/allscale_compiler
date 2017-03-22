@@ -303,6 +303,7 @@ namespace lang {
 	                                     const core::ExpressionList& baseBinds,
 	                                     const core::ExpressionList& stepBinds);
 
+	core::ExpressionPtr buildPrec(const core::ExpressionPtr& recFunTuple);
 	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns);
 
 	// dependencies
@@ -310,6 +311,8 @@ namespace lang {
 	core::ExpressionPtr buildNoDependencies(core::NodeManager&);
 
 	// treeture
+
+	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param);
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
 

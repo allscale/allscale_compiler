@@ -17,6 +17,7 @@ namespace frontend {
 		auto apiIncludeDir = insieme::utils::getInsiemeSourceRootDir() + "../../api/code/api/include/";
 		job.addIncludeDirectory(apiIncludeDir);
 		job.addInterceptedHeaderDir(apiIncludeDir + "allscale/api/core/");
+		job.addInterceptionWhitelistEntry("allscale::api::core::prec");
 		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
 		job.registerDefaultExtensions();
 		job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();

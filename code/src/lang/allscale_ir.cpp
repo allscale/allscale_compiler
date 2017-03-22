@@ -34,14 +34,23 @@ namespace lang {
 	RecOrPrecFunType::RecOrPrecFunType(const core::NodePtr& node) {
 		assert_true(node) << "Given node is null!";
 
+		core::TypePtr type = node.isa<core::TypePtr>();
 		// support expressions as input
-		auto type = node.isa<core::GenericTypePtr>();
-		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType();
+
+		assert_true(type) << "Given node " << *node << " is not an expression or a type";
+
+		if(auto tupleType = type.isa<core::TupleTypePtr>()) {
+			*this = RecOrPrecFunType(tupleType->getElement(0));
+			return;
+		}
 
 		// check given node type
-		assert_true(isRecFun(type) || isPrecFun(type)) << "Given node " << *node << " is not a RecFun nor a PrecFun type!\nType: " << *type;
+		auto genType = type.isa<core::GenericTypePtr>();
+		assert_true(genType) << "Given node " << *node << " is not a generic type";
+		assert_true(isRecFun(genType) || isPrecFun(genType)) << "Given node " << *node << " is not a RecFun nor a PrecFun type!\nType: " << *genType;
 
-		*this = RecOrPrecFunType(type->getTypeParameter(0), type->getTypeParameter(1));
+		*this = RecOrPrecFunType(genType->getTypeParameter(0), genType->getTypeParameter(1));
 	}
 
 	core::GenericTypePtr RecFunType::toIRType() const {
@@ -463,6 +472,16 @@ namespace lang {
 		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, stepBinds));
 	}
 
+	core::ExpressionPtr buildPrec(const core::ExpressionPtr& recFunTuple) {
+		assert_true(recFunTuple) << "recFunTuple must not be null";
+		assert_true(recFunTuple->getType().isa<core::TupleTypePtr>()) << "recFunTuple must be of TupleType";
+		auto& mgr = recFunTuple->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto precfunType = PrecFunType(recFunTuple);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(precfunType.toIRType(), allS.getPrec(), recFunTuple);
+	}
+
 	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns) {
 		assert_false(recFuns.empty()) << "recFuns must not be empty";
 		auto& firstRecFun = recFuns.front();
@@ -478,6 +497,16 @@ namespace lang {
 		core::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getDependencyAfter());
+	}
+
+	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto treetureType = TreetureType(param);
+		core::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(returnType, allS.getTreetureDone(), param);
 	}
 
 	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
