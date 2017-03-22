@@ -8,6 +8,8 @@
 #include "insieme/frontend/clang.h"
 #include "insieme/core/ir_node.h"
 
+#include "allscale/compiler/frontend/clang_expression_info.h"
+
 
 namespace insieme {
 namespace frontend {
@@ -31,31 +33,29 @@ namespace frontend {
 
 		//////// implementation details ------------------------------------------------------------------------------------------------------------------
 
-		using CallMapper = std::function<insieme::core::ExpressionPtr(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter)>;
+		using CallMapper = std::function<insieme::core::ExpressionPtr(const ClangExpressionInfo&)>;
 
 		/// Utility for the specification of noop call mappings (C++ to IR)
 		class NoopCallMapper {
 		  public:
-			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
+			core::ExpressionPtr operator()(const ClangExpressionInfo&);
 		};
 
 		/// Utility for the specification of simple call mappings (C++ to IR)
 		class SimpleCallMapper {
 			const string targetIRString;
 			bool derefThisArg;
-			core::ExpressionPtr buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const clang::CallExpr* call,
-			                                                        insieme::frontend::conversion::Converter& converter);
+			core::ExpressionPtr buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const ClangExpressionInfo& exprInfo);
 
 		  protected:
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter);
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter);
-			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
-			virtual core::ExpressionPtr postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
-			                                            insieme::frontend::conversion::Converter& converter);
+			virtual core::ExpressionPtr generateCallee(const ClangExpressionInfo& exprInfo);
+			virtual core::ExpressionPtr postprocessCall(const ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall);
 
 		  public:
 			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
-			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
+			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
 
 		/// Utility for the specification of treeture/task aggregation (C++ to IR)
@@ -77,11 +77,10 @@ namespace frontend {
 		/// Utility to map the call operator call of recfun and precfun objects
 		class RecOrPrecFunCallMapper : public SimpleCallMapper {
 		  protected:
-			virtual core::ExpressionPtr generateCallee(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter) override;
+			virtual core::ExpressionPtr generateCallee(const ClangExpressionInfo& exprInfo) override;
 			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
 			                                                     insieme::frontend::conversion::Converter& converter) override;
-			virtual core::ExpressionPtr postprocessCall(const clang::CallExpr* call, const core::ExpressionPtr& translatedCall,
-			                                            insieme::frontend::conversion::Converter& converter) override;
+			virtual core::ExpressionPtr postprocessCall(const ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) override;
 
 			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) = 0;
 
@@ -111,13 +110,13 @@ namespace frontend {
 		/// Utility to map the call to fun
 		class FunConstructionMapper {
 		  public:
-			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
+			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
 
 		/// Utility to map the call to prec
 		class PrecMapper {
 		  public:
-			core::ExpressionPtr operator()(const clang::CallExpr* call, insieme::frontend::conversion::Converter& converter);
+			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
 	}
 }
