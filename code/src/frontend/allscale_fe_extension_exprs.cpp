@@ -6,6 +6,7 @@
 #include "insieme/frontend/converter.h"
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/core/analysis/type_utils.h"
+#include "insieme/core/lang/list.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/utils/name_mangling.h"
@@ -62,6 +63,8 @@ namespace detail {
 		// prec
 		{"allscale::api::core::group", TupleAggregationMapper()},
 		{"allscale::api::core::detail::prec", PrecMapper()},
+		// pfor
+		{"allscale::api::core::pick", ListAggregationMapper()},
 	};
 
 	static bool debug = false;
@@ -484,6 +487,16 @@ namespace detail {
 			elements.push_back(derefOrDematerialize(exprInfo.converter.convertExpr(arg)));
 		}
 		return exprInfo.converter.getIRBuilder().tupleExpr(elements);
+	}
+
+
+	// ListAggregationMapper
+	core::ExpressionPtr ListAggregationMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		core::ExpressionList elements;
+		for(const auto& arg : exprInfo.args) {
+			elements.push_back(derefOrDematerialize(exprInfo.converter.convertExpr(arg)));
+		}
+		return core::lang::buildListOfExpressions(elements);
 	}
 
 

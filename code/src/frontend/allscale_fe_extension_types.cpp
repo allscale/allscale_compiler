@@ -17,6 +17,7 @@ namespace detail {
 	/// Mapping specification from C++ to IR types used during type translation
 	const static std::map<std::string, std::string> typeMap = {
 		// callables
+		{ "allscale::api::core::fun_variants", "list<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
 		{ "allscale::api::core::fun_def", "recfun<TEMPLATE_T_1,TEMPLATE_T_0>" },
 		{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
 		{ "allscale::api::core::detail::prec_operation", "precfun<TEMPLATE_T_0,TEMPLATE_T_1>" },

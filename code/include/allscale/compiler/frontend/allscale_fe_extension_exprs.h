@@ -126,6 +126,13 @@ namespace frontend {
 		};
 
 
+		/// Utility for the aggregation of arguments into a list
+		class ListAggregationMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo&);
+		};
+
+
 		/// Utility to map the call to prec
 		class PrecMapper {
 		  public:

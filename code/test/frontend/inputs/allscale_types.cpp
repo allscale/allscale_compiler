@@ -9,13 +9,21 @@ int main() {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CALLABLES //////
 
+	// fun variants
+	#pragma test expect_ir(R"({
+		var ref<ptr<list<IMP_std_colon__colon_function<ref<(int<4>) -> real<8>,f,f,qualified>>>>,f,f,plain> v0 = ref_decl(type_lit(ref<ptr<list<IMP_std_colon__colon_function<ref<(int<4>) -> real<8>,f,f,qualified>>>>,f,f,plain>));
+	})")
+	{
+		fun_variants<std::function<double(int)>, std::function<double(int)>>* myFunVariants;
+	}
+
 	// test type: (input) int -> (output) double
 
 	// fun def
 	using TestFunDefType = fun_def<double, int,
 		std::function<bool(int)>,                   // base test
-		std::tuple<std::function<double(int)>>,     // base case
-		std::tuple<std::function<double(int)>>      // step case -- incorrect type, but irrelevant
+		fun_variants<std::function<double(int)>>,     // base case
+		fun_variants<std::function<double(int)>>      // step case -- incorrect type, but irrelevant
 	>;
 
 	#pragma test expect_ir(R"({
@@ -71,8 +79,8 @@ int main() {
 	// fun def with references
 	using TestFunDefTypeReferences = fun_def<double, const int&,
 		std::function<bool(const int&)>,                   // base test
-		std::tuple<std::function<double(const int&)>>,     // base case
-		std::tuple<std::function<double(const int&)>>      // step case -- incorrect type, but irrelevant
+		fun_variants<std::function<double(const int&)>>,     // base case
+		fun_variants<std::function<double(const int&)>>      // step case -- incorrect type, but irrelevant
 	>;
 
 	#pragma test expect_ir(R"({
