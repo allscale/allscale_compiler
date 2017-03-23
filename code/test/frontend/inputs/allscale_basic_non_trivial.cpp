@@ -13,6 +13,8 @@ using namespace allscale::api::core;
 	decl IMP__operator_call_:const __any_string__step::(ref<int<4>,t,f,cpp_ref>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) -> treeture<int<4>,f>;
 	decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen_:const __any_string__cutoff::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> bool,t,f>;
 	decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen_:const __any_string__base::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> int<4>,t,f>;
+	decl __any_string__outer : (ref<recfun<ref<int<4>,t,f,cpp_ref>,int<4>>,t,f,cpp_ref>) -> precfun<ref<int<4>,t,f,cpp_ref>,int<4>>;
+	decl __any_string__middle : (ref<(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>),t,f,cpp_ref>) -> precfun<ref<int<4>,t,f,cpp_ref>,int<4>>;
 	def struct __any_string__cutoff {
 		const function IMP__operator_call_ = (v35 : ref<int<4>,t,f,cpp_ref>) -> bool {
 			return *v35<2;
@@ -30,13 +32,19 @@ using namespace allscale::api::core;
 			)(*v133-1);
 			return treeture_done(1);
 		}
+	};
+	def __any_string__outer = function (v95 : ref<recfun<ref<int<4>,t,f,cpp_ref>,int<4>>,t,f,cpp_ref>) -> precfun<ref<int<4>,t,f,cpp_ref>,int<4>> {
+		return __any_string__middle((*v95)) materialize ;
+	};
+	def __any_string__middle = function (v94 : ref<(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>),t,f,cpp_ref>) -> precfun<ref<int<4>,t,f,cpp_ref>,int<4>> {
+		return prec(*v94);
 	};)"
 
 #define SIMPLE_FUN_IR R"( var ref<precfun<int<4>,int<4>>,f,f,plain> simpleFun = )"
 
 #define SIMPLE_PREC_CALL R"(
-	prec(
-			(build_recfun(
+	__any_string__outer(
+			build_recfun(
 					cpp_lambda_to_closure(
 							<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 							type_lit((ref<int<4>,t,f,cpp_ref>) => bool)
@@ -49,7 +57,7 @@ using namespace allscale::api::core;
 							<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 							type_lit((ref<int<4>,t,f,cpp_ref>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) => treeture<int<4>,f>)
 					)]
-			))
+			)
 	))"
 
 struct S {
@@ -116,6 +124,8 @@ int main() {
 		decl dtor:~__any_string__S::();
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_S_rparen_:const __any_string__cutoff::() -> ptr<(__any_string__S) -> bool,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_S_rparen_:const __any_string__base::() -> ptr<(__any_string__S) -> int<4>,t,f>;
+		decl __any_string__outer : (ref<recfun<__any_string__S,int<4>>,t,f,cpp_ref>) -> precfun<__any_string__S,int<4>>;
+		decl __any_string__middle : (ref<(recfun<__any_string__S,int<4>>),t,f,cpp_ref>) -> precfun<__any_string__S,int<4>>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v699 : ref<__any_string__S,f,f,plain>) -> bool {
 				return *v699.i<2;
@@ -136,6 +146,12 @@ int main() {
 				return treeture_done(1);
 			}
 		};
+		def __any_string__outer = function (v95 : ref<recfun<__any_string__S,int<4>>,t,f,cpp_ref>) -> precfun<__any_string__S,int<4>> {
+			return __any_string__middle((*v95)) materialize ;
+		};
+		def __any_string__middle = function (v94 : ref<(recfun<__any_string__S,int<4>>),t,f,cpp_ref>) -> precfun<__any_string__S,int<4>> {
+			return prec(*v94);
+		};
 		def struct __any_string__S {
 			i : int<4>;
 			ctor function (v653 : ref<int<4>,f,f,plain>) {
@@ -148,8 +164,8 @@ int main() {
 		{
 			treeture_run(
 					precfun_to_fun(
-							prec(
-									(build_recfun(
+							__any_string__outer(
+									build_recfun(
 											cpp_lambda_to_closure(
 													<ref<__any_string__cutoff,f,f,plain>>(ref_temp(
 															type_lit(__any_string__cutoff)
@@ -168,7 +184,7 @@ int main() {
 													)) {},
 													type_lit((__any_string__S, (recfun<__any_string__S,int<4>>)) => treeture<int<4>,f>)
 											)]
-									))
+									)
 							)
 					)(ref_cast(__any_string__S::(ref_temp(type_lit(__any_string__S)), 16), type_lit(t), type_lit(f), type_lit(cpp_ref)))
 			);
@@ -203,6 +219,8 @@ int main() {
 		decl dtor:~__any_string__S::();
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_const_space_S_space__ampersand__rparen_:const __any_string__cutoff::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> bool,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_S_space__ampersand__rparen_:const __any_string__base::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> int<4>,t,f>;
+		decl __any_string__outer : (ref<recfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>,t,f,cpp_ref>) -> precfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>;
+		decl __any_string__middle : (ref<(recfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>),t,f,cpp_ref>) -> precfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v699 : ref<__any_string__S,t,f,cpp_ref>) -> bool {
 				return *v699.i<2;
@@ -223,6 +241,12 @@ int main() {
 				return treeture_done(1);
 			}
 		};
+		def __any_string__outer = function (v95 : ref<recfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>,t,f,cpp_ref>) -> precfun<ref<__any_string__S,t,f,cpp_ref>,int<4>> {
+			return __any_string__middle((*v95)) materialize ;
+		};
+		def __any_string__middle = function (v94 : ref<(recfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>),t,f,cpp_ref>) -> precfun<ref<__any_string__S,t,f,cpp_ref>,int<4>> {
+			return prec(*v94);
+		};
 		def struct __any_string__S {
 			i : int<4>;
 			ctor function (v653 : ref<int<4>,f,f,plain>) {
@@ -235,8 +259,8 @@ int main() {
 		{
 			treeture_run(
 					precfun_to_fun(
-							prec(
-									(build_recfun(
+							__any_string__outer(
+									build_recfun(
 											cpp_lambda_to_closure(
 													<ref<__any_string__cutoff,f,f,plain>>(ref_temp(
 															type_lit(__any_string__cutoff)
@@ -255,7 +279,7 @@ int main() {
 													)) {},
 													type_lit((ref<__any_string__S,t,f,cpp_ref>, (recfun<ref<__any_string__S,t,f,cpp_ref>,int<4>>)) => treeture<int<4>,f>)
 											)]
-									))
+									)
 							)
 					)(ref_cast(__any_string__S::(ref_temp(type_lit(__any_string__S)), 17), type_lit(t), type_lit(f), type_lit(cpp_ref)))
 			);

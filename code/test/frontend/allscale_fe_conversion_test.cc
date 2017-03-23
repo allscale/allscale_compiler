@@ -58,7 +58,7 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
 	}
 
-	TEST(AllScaleConversionTest, Pfor) {
+	TEST(AllScaleConversionTest, DISABLED_Pfor) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pfor.cpp");
 	}
 
