@@ -123,6 +123,14 @@ namespace detail {
 			return input;
 		}
 
+		core::ExpressionPtr removeUndesiredDeref(const core::ExpressionPtr& input) {
+			auto& refExt = input->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+			if(refExt.isCallOfRefDeref(input)) {
+				return core::analysis::getArgument(input, 0);
+			}
+			return input;
+		}
+
 		core::ExpressionPtr derefOrDematerialize(const core::ExpressionPtr& argExprIn) {
 			core::IRBuilder builder(argExprIn->getNodeManager());
 
@@ -412,7 +420,7 @@ namespace detail {
 		// simply convert the lambda
 		{
 			// first we translate the lambda
-			auto cutoffIr = converter.convertExpr(exprInfo.args[0]);
+			auto cutoffIr = removeUndesiredDeref(converter.convertExpr(exprInfo.args[0]));
 			// we check for the presence of a call operator
 			checkForCallOperator(cutoffIr);
 
@@ -421,26 +429,37 @@ namespace detail {
 			cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
 		}
 
-		// handle base case
-		core::ExpressionPtr baseBind = nullptr;
+
+		// handle base case(s)
+		core::ExpressionList baseBinds;
+
 		// simply convert the lambda
-		{
-			// first we translate the lambda
-			auto baseIr = converter.convertExpr(exprInfo.args[1]);
+		auto convertForBaseCase = [&](const core::ExpressionPtr& baseIr) {
 			// we check for the presence of a call operator
 			checkForCallOperator(baseIr);
 
 			// finally we create the closure type as well as the CppLambdaToClosure call
 			auto baseClosureType = builder.functionType(funType.getParamType(), funType.getReturnType(), insieme::core::FK_CLOSURE);
-			baseBind = lang::buildCppLambdaToClosure(baseIr, baseClosureType);
+			return lang::buildCppLambdaToClosure(baseIr, baseClosureType);
+		};
+
+		// first we translate the lambda(s)
+		auto inputBaseCase = converter.convertExpr(exprInfo.args[1]);
+		// then handle lists and single lambdas accordingly
+		if(core::lang::isList(inputBaseCase)) {
+			for(const auto& expr : core::lang::parseListOfExpressions(inputBaseCase)) {
+				baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(expr)));
+			}
+		} else {
+			baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(inputBaseCase)));
 		}
 
-		// handle step case
-		core::ExpressionPtr stepBind = nullptr;
+
+		// handle step case(s)
+		core::ExpressionList stepBinds;
+
 		// here we have to do a bit more work. We convert the lambda and afterwards have to modify it a bit
-		{
-			// first we translate the lambda
-			auto stepIr = converter.convertExpr(exprInfo.args[2]);
+		auto convertForStepCase = [&](const core::ExpressionPtr& stepIr) {
 			// we check for the presence of a call operator
 			checkForCallOperator(stepIr);
 
@@ -448,7 +467,7 @@ namespace detail {
 			auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr) funType));
 			core::GenericTypePtr stepReturnType = lang::TreetureType(funType.getReturnType(), false);
 			auto stepClosureType = builder.functionType(toVector<core::TypePtr>(funType.getParamType(), callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
-			stepBind = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
+			auto ret = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
 
 			// we extract the generated struct tag type
 			auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
@@ -473,10 +492,23 @@ namespace detail {
 
 			// finally, we check for the presence of a call operator (the fixed one) again to make sure our conversion didn't lose it
 			checkForCallOperator(stepIr);
+
+			return ret;
+		};
+
+		// first we translate the lambda(s)
+		auto inputStepCase = converter.convertExpr(exprInfo.args[2]);
+		// then handle lists and single lambdas accordingly
+		if(core::lang::isList(inputStepCase)) {
+			for(const auto& expr : core::lang::parseListOfExpressions(inputStepCase)) {
+				stepBinds.push_back(convertForStepCase(removeUndesiredDeref(expr)));
+			}
+		} else {
+			stepBinds.push_back(convertForStepCase(removeUndesiredDeref(inputStepCase)));
 		}
 
 		// now that we have all three ingredients we can finally build the RecFun
-		return lang::buildBuildRecFun(cutoffBind, toVector(baseBind), toVector(stepBind));
+		return lang::buildBuildRecFun(cutoffBind, baseBinds, stepBinds);
 	}
 
 
