@@ -2,8 +2,9 @@
 #pragma once
 
 #include <string>
-#include <map>
 #include <functional>
+#include <regex>
+#include <memory>
 
 #include "insieme/frontend/clang.h"
 #include "insieme/core/ir_node.h"
@@ -37,6 +38,59 @@ namespace frontend {
 		//////// implementation details ------------------------------------------------------------------------------------------------------------------
 
 		using CallMapper = std::function<insieme::core::ExpressionPtr(const ClangExpressionInfo&)>;
+
+		class RegexCallFilter {
+
+		  protected:
+			const std::string patternString;
+
+			const std::regex pattern;
+
+		  public:
+			RegexCallFilter(const std::string& patternString) : patternString(patternString), pattern(std::regex(patternString)) { }
+
+			virtual bool matches(const clang::FunctionDecl* funDecl) const;
+
+			const std::string& getPatternString() const {
+				return patternString;
+			}
+		};
+
+		class NumParamRegexCallFilter : public RegexCallFilter {
+
+			const unsigned numParams;
+
+		  public:
+			NumParamRegexCallFilter(const std::string& patternString, const unsigned numParams) : RegexCallFilter(patternString), numParams(numParams) { }
+
+			virtual bool matches(const clang::FunctionDecl* funDecl) const override;
+		};
+
+		class FilterMapper {
+
+			const std::shared_ptr<RegexCallFilter> filter;
+
+			const CallMapper mapper;
+
+		  public:
+			FilterMapper(const char* filterString, const CallMapper& mapper)
+					: filter(std::make_shared<RegexCallFilter>(filterString)), mapper(mapper) { }
+
+			FilterMapper(const char* filterString, const unsigned numParams, const CallMapper& mapper)
+					: filter(std::make_shared<NumParamRegexCallFilter>(filterString, numParams)), mapper(mapper) { }
+
+			bool matches(const clang::FunctionDecl* funDecl) const {
+				return filter->matches(funDecl);
+			};
+
+			const std::string& getPatternString() const {
+				return filter->getPatternString();
+			}
+
+			const CallMapper& getCallMapper() const {
+				return mapper;
+			}
+		};
 
 		/// Utility for the specification of noop call mappings (C++ to IR)
 		class NoopCallMapper {

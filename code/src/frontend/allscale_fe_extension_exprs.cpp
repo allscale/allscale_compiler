@@ -1,7 +1,7 @@
 
 #include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
 
-#include <regex>
+#include <map>
 
 #include "insieme/frontend/converter.h"
 #include "insieme/frontend/utils/name_manager.h"
@@ -21,7 +21,7 @@ namespace frontend {
 namespace detail {
 
 	/// Mapping specification from C++ to IR used during call expression translation
-	const static std::map<std::string, CallMapper> callMap = {
+	const static std::vector<FilterMapper> callMappings = {
 		// callables
 		{"allscale::api::core::fun_def.*fun_def", NoopCallMapper()}, // ctor call
 		{"allscale::api::core::rec_defs.*rec_defs", NoopCallMapper()}, // ctor call
@@ -62,23 +62,30 @@ namespace detail {
 		{"allscale::api::core::fun_def<.*>::fun_def", NoopCallMapper()}, // ctor call
 		// prec
 		{"allscale::api::core::group", TupleAggregationMapper()},
-		{"allscale::api::core::detail::prec", PrecMapper()},
+		{"allscale::api::core::detail::prec", 1, PrecMapper()},
 		// pfor
 		{"allscale::api::core::pick", ListAggregationMapper()},
 	};
 
 	static bool debug = false;
 
+	bool RegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
+		return std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
+	}
+
+	bool NumParamRegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
+		return funDecl->getNumParams() == numParams && std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
+	}
+
 	boost::optional<CallMapper> getMapping(const clang::Decl* decl) {
 		if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 			auto name = funDecl->getQualifiedNameAsString();
 			if(debug) std::cout << "N: " << name << std::endl;
 
-			for(const auto& mapping : callMap) {
-				std::regex pattern(mapping.first);
-				if(std::regex_match(name, pattern)) {
-					if(debug) std::cout << "Matched " << mapping.first << std::endl;
-					return mapping.second;
+			for(const auto& mapping : callMappings) {
+				if(mapping.matches(funDecl)) {
+					if(debug) std::cout << "  matched: " << mapping.getPatternString() << std::endl;
+					return mapping.getCallMapper();
 				}
 			}
 		}
