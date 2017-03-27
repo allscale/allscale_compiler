@@ -62,7 +62,9 @@ namespace detail {
 		{"allscale::api::core::fun_def<.*>::fun_def", NoopCallMapper()}, // ctor call
 		// prec
 		{"allscale::api::core::group", TupleAggregationMapper()},
-		{"allscale::api::core::detail::prec", 1, PrecMapper()},
+		{"allscale::api::core::prec", 1, PrecRecDefsMapper()},
+		{"allscale::api::core::prec", 2, PrecFunMapper()},
+		{"allscale::api::core::prec", 3, PrecDirectMapper()},
 		// pfor
 		{"allscale::api::core::pick", ListAggregationMapper()},
 	};
@@ -74,13 +76,21 @@ namespace detail {
 	}
 
 	bool NumParamRegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
-		return funDecl->getNumParams() == numParams && std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
+		unsigned clangNumParams = funDecl->getNumParams();
+		auto primaryTemplate = funDecl->getPrimaryTemplate();
+		if(primaryTemplate) {
+			clangNumParams = primaryTemplate->getTemplatedDecl()->getNumParams();
+		}
+		return clangNumParams == numParams && std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
 	}
 
 	boost::optional<CallMapper> getMapping(const clang::Decl* decl) {
 		if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
 			auto name = funDecl->getQualifiedNameAsString();
-			if(debug) std::cout << "N: " << name << std::endl;
+			if(debug) {
+				std::cout << "N: " << name << std::endl;
+				std::cout << "  from line: " << insieme::frontend::utils::location(funDecl->getLocStart(), funDecl->getASTContext().getSourceManager()) << std::endl;
+			}
 
 			for(const auto& mapping : callMappings) {
 				if(mapping.matches(funDecl)) {
@@ -400,122 +410,129 @@ namespace detail {
 	}
 
 
+	namespace {
+		core::ExpressionPtr doFunConstructionMapping(const clang::QualType clangType, const clang::SourceLocation locStart,
+		                                             const clang::Expr* cutoffArg, const clang::Expr* baseCaseArg, const clang::Expr* stepCaseArg,
+		                                             insieme::frontend::conversion::Converter& converter) {
+			auto& builder = converter.getIRBuilder();
+			auto& tMap = converter.getIRTranslationUnit().getTypes();
+
+			// asserts if the structType (i.e. the lambda we are translating) created by the passed expression doesn't have a call operator -
+			// i.e. the prec is never called
+			auto checkForCallOperator = [&](const core::ExpressionPtr& expr) {
+				auto genType = insieme::core::analysis::getReferencedType(expr->getType()).as<insieme::core::GenericTypePtr>();
+				auto structType = tMap.at(genType)->getStruct();
+				if(!utils::hasCallOperator(structType)) {
+					assert_fail() << "Conversion of prec construct around lambda at \""
+							<< insieme::frontend::utils::getLocationAsString(locStart, converter.getSourceManager(), false)
+					<< "\" failed, because the result is never actually called.";
+				}
+			};
+
+			auto funType = lang::RecFunType(converter.convertType(clangType));
+
+			// handle cutoff
+			core::ExpressionPtr cutoffBind = nullptr;
+			// simply convert the lambda
+			{
+				// first we translate the lambda
+				auto cutoffIr = removeUndesiredDeref(converter.convertExpr(cutoffArg));
+				// we check for the presence of a call operator
+				checkForCallOperator(cutoffIr);
+
+				// finally we create the closure type as well as the CppLambdaToClosure call
+				auto cutoffClosureType = builder.functionType(funType.getParamType(), builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
+				cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
+			}
+
+
+			// handle base case(s)
+			core::ExpressionList baseBinds;
+
+			// simply convert the lambda
+			auto convertForBaseCase = [&](const core::ExpressionPtr& baseIr) {
+				// we check for the presence of a call operator
+				checkForCallOperator(baseIr);
+
+				// finally we create the closure type as well as the CppLambdaToClosure call
+				auto baseClosureType = builder.functionType(funType.getParamType(), funType.getReturnType(), insieme::core::FK_CLOSURE);
+				return lang::buildCppLambdaToClosure(baseIr, baseClosureType);
+			};
+
+			// first we translate the lambda(s)
+			auto inputBaseCase = converter.convertExpr(baseCaseArg);
+			// then handle lists and single lambdas accordingly
+			if(core::lang::isList(inputBaseCase)) {
+				for(const auto& expr : core::lang::parseListOfExpressions(inputBaseCase)) {
+					baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(expr)));
+				}
+			} else {
+				baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(inputBaseCase)));
+			}
+
+
+			// handle step case(s)
+			core::ExpressionList stepBinds;
+
+			// here we have to do a bit more work. We convert the lambda and afterwards have to modify it a bit
+			auto convertForStepCase = [&](const core::ExpressionPtr& stepIr) {
+				// we check for the presence of a call operator
+				checkForCallOperator(stepIr);
+
+				// we create the closure type as well as the CppLambdaToClosure call
+				auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr) funType));
+				core::GenericTypePtr stepReturnType = lang::TreetureType(funType.getReturnType(), false);
+				auto stepClosureType = builder.functionType(toVector<core::TypePtr>(funType.getParamType(), callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
+				auto ret = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
+
+				// we extract the generated struct tag type
+				auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
+				auto tagType = tMap.at(genType);
+
+				// and remove the duplicate call operators
+				auto newTagType = removeDuplicateCallOperators(tagType);
+
+				// now we fix the call operator and replace it with a correctly translated one
+				auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
+
+				// only fix the operator if it doesn't have the correct tuple type already
+				if(!oldOperatorLit->getType().as<core::FunctionTypePtr>()->getParameterType(2).isa<core::TupleTypePtr>()) {
+					auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
+					newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
+
+					// finally we communicate the changes to the IR-TU
+					converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
+					converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
+				}
+				converter.getIRTranslationUnit().replaceType(genType, newTagType);
+
+				// finally, we check for the presence of a call operator (the fixed one) again to make sure our conversion didn't lose it
+				checkForCallOperator(stepIr);
+
+				return ret;
+			};
+
+			// first we translate the lambda(s)
+			auto inputStepCase = converter.convertExpr(stepCaseArg);
+			// then handle lists and single lambdas accordingly
+			if(core::lang::isList(inputStepCase)) {
+				for(const auto& expr : core::lang::parseListOfExpressions(inputStepCase)) {
+					stepBinds.push_back(convertForStepCase(removeUndesiredDeref(expr)));
+				}
+			} else {
+				stepBinds.push_back(convertForStepCase(removeUndesiredDeref(inputStepCase)));
+			}
+
+			// now that we have all three ingredients we can finally build the RecFun
+			return lang::buildBuildRecFun(cutoffBind, baseBinds, stepBinds);
+		}
+	}
+
 	// FunConstructionMapper
 	core::ExpressionPtr FunConstructionMapper::operator()(const ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 3) << "handleCoreFunCall expects 3 arguments";
-
-		auto& converter = exprInfo.converter;
-		auto& builder = converter.getIRBuilder();
-		auto& tMap = converter.getIRTranslationUnit().getTypes();
-
-		// asserts if the structType (i.e. the lambda we are translating) created by the passed expression doesn't have a call operator -
-		// i.e. the prec is never called
-		auto checkForCallOperator = [&](const core::ExpressionPtr& expr) {
-			auto genType = insieme::core::analysis::getReferencedType(expr->getType()).as<insieme::core::GenericTypePtr>();
-			auto structType = tMap.at(genType)->getStruct();
-			if(!utils::hasCallOperator(structType)) {
-				assert_fail() << "Conversion of prec construct around lambda at \""
-						<< insieme::frontend::utils::getLocationAsString(exprInfo.locStart, converter.getSourceManager(), false)
-				<< "\" failed, because the result is never actually called.";
-			}
-		};
-
-		auto funType = lang::RecFunType(converter.convertType(exprInfo.clangType));
-
-		// handle cutoff
-		core::ExpressionPtr cutoffBind = nullptr;
-		// simply convert the lambda
-		{
-			// first we translate the lambda
-			auto cutoffIr = removeUndesiredDeref(converter.convertExpr(exprInfo.args[0]));
-			// we check for the presence of a call operator
-			checkForCallOperator(cutoffIr);
-
-			// finally we create the closure type as well as the CppLambdaToClosure call
-			auto cutoffClosureType = builder.functionType(funType.getParamType(), builder.getLangBasic().getBool(), insieme::core::FK_CLOSURE);
-			cutoffBind = lang::buildCppLambdaToClosure(cutoffIr, cutoffClosureType);
-		}
-
-
-		// handle base case(s)
-		core::ExpressionList baseBinds;
-
-		// simply convert the lambda
-		auto convertForBaseCase = [&](const core::ExpressionPtr& baseIr) {
-			// we check for the presence of a call operator
-			checkForCallOperator(baseIr);
-
-			// finally we create the closure type as well as the CppLambdaToClosure call
-			auto baseClosureType = builder.functionType(funType.getParamType(), funType.getReturnType(), insieme::core::FK_CLOSURE);
-			return lang::buildCppLambdaToClosure(baseIr, baseClosureType);
-		};
-
-		// first we translate the lambda(s)
-		auto inputBaseCase = converter.convertExpr(exprInfo.args[1]);
-		// then handle lists and single lambdas accordingly
-		if(core::lang::isList(inputBaseCase)) {
-			for(const auto& expr : core::lang::parseListOfExpressions(inputBaseCase)) {
-				baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(expr)));
-			}
-		} else {
-			baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(inputBaseCase)));
-		}
-
-
-		// handle step case(s)
-		core::ExpressionList stepBinds;
-
-		// here we have to do a bit more work. We convert the lambda and afterwards have to modify it a bit
-		auto convertForStepCase = [&](const core::ExpressionPtr& stepIr) {
-			// we check for the presence of a call operator
-			checkForCallOperator(stepIr);
-
-			// we create the closure type as well as the CppLambdaToClosure call
-			auto callableTupleType = builder.tupleType(toVector<core::TypePtr>((core::GenericTypePtr) funType));
-			core::GenericTypePtr stepReturnType = lang::TreetureType(funType.getReturnType(), false);
-			auto stepClosureType = builder.functionType(toVector<core::TypePtr>(funType.getParamType(), callableTupleType), stepReturnType, insieme::core::FK_CLOSURE);
-			auto ret = lang::buildCppLambdaToClosure(stepIr, stepClosureType);
-
-			// we extract the generated struct tag type
-			auto genType = insieme::core::analysis::getReferencedType(stepIr->getType()).as<insieme::core::GenericTypePtr>();
-			auto tagType = tMap.at(genType);
-
-			// and remove the duplicate call operators
-			auto newTagType = removeDuplicateCallOperators(tagType);
-
-			// now we fix the call operator and replace it with a correctly translated one
-			auto oldOperatorLit = utils::extractCallOperator(newTagType->getStruct())->getImplementation().as<core::LiteralPtr>();
-
-			// only fix the operator if it doesn't have the correct tuple type already
-			if(!oldOperatorLit->getType().as<core::FunctionTypePtr>()->getParameterType(2).isa<core::TupleTypePtr>()) {
-				auto newOperator = fixCallOperator(converter.getIRTranslationUnit()[oldOperatorLit], callableTupleType);
-				newTagType = replaceCallOperator(newTagType, oldOperatorLit, newOperator);
-
-				// finally we communicate the changes to the IR-TU
-				converter.getIRTranslationUnit().removeFunction(oldOperatorLit);
-				converter.getIRTranslationUnit().addFunction(builder.literal(newOperator->getType(), oldOperatorLit->getValue()), newOperator);
-			}
-			converter.getIRTranslationUnit().replaceType(genType, newTagType);
-
-			// finally, we check for the presence of a call operator (the fixed one) again to make sure our conversion didn't lose it
-			checkForCallOperator(stepIr);
-
-			return ret;
-		};
-
-		// first we translate the lambda(s)
-		auto inputStepCase = converter.convertExpr(exprInfo.args[2]);
-		// then handle lists and single lambdas accordingly
-		if(core::lang::isList(inputStepCase)) {
-			for(const auto& expr : core::lang::parseListOfExpressions(inputStepCase)) {
-				stepBinds.push_back(convertForStepCase(removeUndesiredDeref(expr)));
-			}
-		} else {
-			stepBinds.push_back(convertForStepCase(removeUndesiredDeref(inputStepCase)));
-		}
-
-		// now that we have all three ingredients we can finally build the RecFun
-		return lang::buildBuildRecFun(cutoffBind, baseBinds, stepBinds);
+		// the actual work is outlined in a function, as we need it in the PrecFunMapper also
+		return doFunConstructionMapping(exprInfo.clangType, exprInfo.locStart, exprInfo.args[0], exprInfo.args[1], exprInfo.args[2], exprInfo.converter);
 	}
 
 
@@ -539,10 +556,22 @@ namespace detail {
 	}
 
 
-	// PrecMapper
-	core::ExpressionPtr PrecMapper::operator()(const ClangExpressionInfo& exprInfo) {
-		assert_eq(exprInfo.numArgs, 1) << "prec call only supports 1 argument";
+	// PrecRecDefsMapper
+	core::ExpressionPtr PrecRecDefsMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		assert_eq(exprInfo.numArgs, 1) << "prec call with rec_defs only supports 1 argument";
 		return lang::buildPrec(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0])));
+	}
+	// PrecFunMapper
+	core::ExpressionPtr PrecFunMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		assert_eq(exprInfo.numArgs, 1) << "we don't support mutual recursion";
+		return lang::buildPrec(exprInfo.converter.getIRBuilder().tupleExpr(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0]))));
+	}
+	// PrecDirectMapper
+	core::ExpressionPtr PrecDirectMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		assert_eq(exprInfo.numArgs, 3) << "direct prec call only supports 3 arguments";
+		// here we 'emulate' a fun in between
+		auto funRes = doFunConstructionMapping(exprInfo.clangType, exprInfo.locStart, exprInfo.args[0], exprInfo.args[1], exprInfo.args[2], exprInfo.converter);
+		return lang::buildPrec(exprInfo.converter.getIRBuilder().tupleExpr(derefOrDematerialize(funRes)));
 	}
 
 } // end namespace detail

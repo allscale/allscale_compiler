@@ -54,6 +54,10 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic_non_trivial.cpp");
 	}
 
+	TEST(AllScaleConversionTest, PrecVariants) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_variants.cpp");
+	}
+
 	TEST(AllScaleConversionTest, Fib) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
 	}

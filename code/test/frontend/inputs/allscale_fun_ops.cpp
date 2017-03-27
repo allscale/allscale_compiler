@@ -36,12 +36,6 @@ int main() {
 				return recfun_to_fun(tuple_member_access(*v2, 0ul, type_lit(recfun<int<4>,real<8>>)))(*v1-1);
 			}
 		};
-		def __any_string__prec_outer = function (v95 : ref<recfun<int<4>,real<8>>,t,f,cpp_ref>) -> precfun<int<4>,real<8>> {
-			return __any_string__prec_middle((*v95)) materialize ;
-		};
-		def __any_string__prec_middle = function (v94 : ref<(recfun<int<4>,real<8>>),t,f,cpp_ref>) -> precfun<int<4>,real<8>> {
-			return prec(*v94);
-		};
 		{
 			var ref<recfun<int<4>,real<8>>,f,f,plain> v628 = build_recfun(
 					cpp_lambda_to_closure(
@@ -57,7 +51,7 @@ int main() {
 							type_lit((int<4>, (recfun<int<4>,real<8>>)) => treeture<real<8>,f>)
 					)]
 			);
-			var ref<precfun<int<4>,real<8>>,f,f,plain> v770 = __any_string__prec_outer(ref_kind_cast(v628, type_lit(cpp_ref))) materialize ;
+			var ref<precfun<int<4>,real<8>>,f,f,plain> v770 = prec((*v628));
 			treeture_run(precfun_to_fun(*v770)(1));
 		}
 	)")

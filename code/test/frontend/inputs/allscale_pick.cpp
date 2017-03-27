@@ -31,8 +31,6 @@ int main() {
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base1::() -> ptr<(int<4>) -> int<4>,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base2::() -> ptr<(int<4>) -> int<4>,t,f>;
-		decl __any_string__outer : (ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> precfun<int<4>,int<4>>;
-		decl __any_string__middle : (ref<(recfun<int<4>,int<4>>),t,f,cpp_ref>) -> precfun<int<4>,int<4>>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v126 : ref<int<4>,f,f,plain>) -> bool {
 				return *v126<2;
@@ -56,17 +54,11 @@ int main() {
 				return treeture_done(1);
 			}
 		};
-		def __any_string__outer = function (v95 : ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> precfun<int<4>,int<4>> {
-			return __any_string__middle((*v95)) materialize ;
-		};
-		def __any_string__middle = function (v94 : ref<(recfun<int<4>,int<4>>),t,f,cpp_ref>) -> precfun<int<4>,int<4>> {
-			return prec(*v94);
-		};
 		{
 			treeture_run(
 					precfun_to_fun(
-							__any_string__outer(
-									build_recfun(
+							prec(
+									(build_recfun(
 											cpp_lambda_to_closure(
 													<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 													type_lit((int<4>) => bool)
@@ -82,7 +74,7 @@ int main() {
 													<ref<__any_string__step,f,f,plain>>(ref_temp(type_lit(__any_string__step))) {},
 													type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 											)]
-									)
+									))
 							)
 					)(10)
 			);
@@ -116,8 +108,6 @@ int main() {
 		decl IMP__operator_call_:const __any_string__step2::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
 		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
-		decl __any_string__outer : (ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> precfun<int<4>,int<4>>;
-		decl __any_string__middle : (ref<(recfun<int<4>,int<4>>),t,f,cpp_ref>) -> precfun<int<4>,int<4>>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v126 : ref<int<4>,f,f,plain>) -> bool {
 				return *v126<2;
@@ -144,17 +134,11 @@ int main() {
 				return treeture_done(2);
 			}
 		};
-		def __any_string__outer = function (v95 : ref<recfun<int<4>,int<4>>,t,f,cpp_ref>) -> precfun<int<4>,int<4>> {
-			return __any_string__middle((*v95)) materialize ;
-		};
-		def __any_string__middle = function (v94 : ref<(recfun<int<4>,int<4>>),t,f,cpp_ref>) -> precfun<int<4>,int<4>> {
-			return prec(*v94);
-		};
 		{
 			treeture_run(
 					precfun_to_fun(
-							__any_string__outer(
-									build_recfun(
+							prec(
+									(build_recfun(
 											cpp_lambda_to_closure(
 													<ref<__any_string__cutoff,f,f,plain>>(ref_temp(type_lit(__any_string__cutoff))) {},
 													type_lit((int<4>) => bool)
@@ -170,7 +154,7 @@ int main() {
 													<ref<__any_string__step2,f,f,plain>>(ref_temp(type_lit(__any_string__step2))) {},
 													type_lit((int<4>, (recfun<int<4>,int<4>>)) => treeture<int<4>,f>)
 											)]
-									)
+									))
 							)
 					)(11)
 			);

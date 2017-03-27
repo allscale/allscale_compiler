@@ -187,8 +187,17 @@ namespace frontend {
 		};
 
 
-		/// Utility to map the call to prec
-		class PrecMapper {
+		/// Utilities to map the call to prec
+		class PrecRecDefsMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
+		};
+		class PrecFunMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
+		};
+		/// Utility to map the call to prec while passing the three lambdas directly - without a fun call
+		class PrecDirectMapper {
 		  public:
 			core::ExpressionPtr operator()(const ClangExpressionInfo& exprInfo);
 		};
