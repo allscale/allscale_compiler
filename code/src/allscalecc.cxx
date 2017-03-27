@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 	commonOptions.addFlagsAndParameters(parser);
 
 	// register allscalecc specific flags and parameters
-	parser.addParameter("O",       opt_level,     0u,              "optimization level");
+	parser.addParameter(",O",       opt_level,     0u,              "optimization level");
 	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
 	auto options = parser.parse(argc, argv);
 
@@ -65,6 +65,12 @@ int main(int argc, char** argv) {
 
 	// configure for AllScale
 	allscale::compiler::frontend::configureConversionJob(options.job);
+
+	// add appropriate macros depending on optimization level 
+	// TODO: invoke backend compiler and retrieve macro definitions?
+	if(opt_level != 0) {
+		options.job.setDefinition("__OPTIMIZE__", "1");
+	}
 
 	// update file name extension of building a lib file
 	bool createSharedObject = boost::filesystem::extension(commonOptions.outFile) == ".so";
