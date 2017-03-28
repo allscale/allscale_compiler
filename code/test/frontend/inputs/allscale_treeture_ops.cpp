@@ -11,9 +11,11 @@ int main() {
 
 	#pragma test expect_ir(R"({
 		var ref<treeture<int<4>, f>,f,f,plain> a = treeture_done(1);
+		var ref<treeture<unit, f>,f,f,plain> b = treeture_done(unit);
 	})")
 	{
 		auto a = done(1);
+		auto b = done();
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// METHODS ////

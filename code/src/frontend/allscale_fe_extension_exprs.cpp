@@ -27,6 +27,7 @@ namespace detail {
 		{"allscale::api::core::rec_defs.*rec_defs", NoopCallMapper()}, // ctor call
 		{"allscale::api::core::detail::prec_operation.*prec_operation", NoopCallMapper()}, // ctor call
 		// completed_tasks
+		{"allscale::api::core::done", 0, DoneCallMapper()},
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
@@ -65,7 +66,6 @@ namespace detail {
 		{"allscale::api::core::prec", 1, PrecRecDefsMapper()},
 		{"allscale::api::core::prec", 2, PrecFunMapper()},
 		{"allscale::api::core::prec", 3, PrecDirectMapper()},
-		// pfor
 		{"allscale::api::core::pick", ListAggregationMapper()},
 	};
 
@@ -310,6 +310,12 @@ namespace detail {
 		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
 				<< " has " << exprInfo.numArgs << " arguments";
 		return exprInfo.converter.convertExpr(exprInfo.args[0]);
+	}
+
+
+	// DoneCallMapper
+	core::ExpressionPtr DoneCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		return lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant());
 	}
 
 

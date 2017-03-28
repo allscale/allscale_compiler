@@ -503,8 +503,7 @@ namespace lang {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
 		core::IRBuilder builder(mgr);
-		auto treetureType = TreetureType(param);
-		core::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
+		core::GenericTypePtr returnType = TreetureType(param->getType(), false);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureDone(), param);
 	}

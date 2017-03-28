@@ -100,8 +100,16 @@ namespace frontend {
 			}
 		};
 
+
 		/// Utility for the specification of noop call mappings (C++ to IR)
 		class NoopCallMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo&);
+		};
+
+
+		/// Utility for the mapping of the call to done without arguments
+		class DoneCallMapper {
 		  public:
 			core::ExpressionPtr operator()(const ClangExpressionInfo&);
 		};
