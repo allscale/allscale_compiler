@@ -39,6 +39,7 @@ namespace frontend {
 
 		using CallMapper = std::function<insieme::core::ExpressionPtr(const ClangExpressionInfo&)>;
 
+		/// A filter matching the qualified name of the passed FunctionDecl against a regex
 		class RegexCallFilter {
 
 		  protected:
@@ -51,11 +52,10 @@ namespace frontend {
 
 			virtual bool matches(const clang::FunctionDecl* funDecl) const;
 
-			const std::string& getPatternString() const {
-				return patternString;
-			}
+			virtual const std::string getFilterRepresentation() const;
 		};
 
+		/// A filter matching the qualified name of the passed FunctionDecl against a regex and also comparing the number of parameters
 		class NumParamRegexCallFilter : public RegexCallFilter {
 
 			const unsigned numParams;
@@ -64,8 +64,11 @@ namespace frontend {
 			NumParamRegexCallFilter(const std::string& patternString, const unsigned numParams) : RegexCallFilter(patternString), numParams(numParams) { }
 
 			virtual bool matches(const clang::FunctionDecl* funDecl) const override;
+
+			virtual const std::string getFilterRepresentation() const override;
 		};
 
+		/// The mapper which combines a filter and the corresponding CallMapper
 		class FilterMapper {
 
 			const std::shared_ptr<RegexCallFilter> filter;
@@ -73,20 +76,25 @@ namespace frontend {
 			const CallMapper mapper;
 
 		  public:
+			/// Constructs a FilterMapper with the given regexp
 			FilterMapper(const char* filterString, const CallMapper& mapper)
 					: filter(std::make_shared<RegexCallFilter>(filterString)), mapper(mapper) { }
 
+			/// Constructs a FilterMapper with the given regexp and the number of parameters
 			FilterMapper(const char* filterString, const unsigned numParams, const CallMapper& mapper)
 					: filter(std::make_shared<NumParamRegexCallFilter>(filterString, numParams)), mapper(mapper) { }
 
+			/// Checks whether this filter matches the given FunctionDecl
 			bool matches(const clang::FunctionDecl* funDecl) const {
 				return filter->matches(funDecl);
 			};
 
-			const std::string& getPatternString() const {
-				return filter->getPatternString();
+			/// Returns the representation of the used pattern
+			const std::string getFilterRepresentation() const {
+				return filter->getFilterRepresentation();
 			}
 
+			/// Returns the CallMapper used for this Filter
 			const CallMapper& getCallMapper() const {
 				return mapper;
 			}

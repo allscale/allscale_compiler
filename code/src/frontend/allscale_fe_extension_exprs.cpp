@@ -75,6 +75,10 @@ namespace detail {
 		return std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
 	}
 
+	const std::string RegexCallFilter::getFilterRepresentation() const {
+		return patternString;
+	}
+
 	bool NumParamRegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
 		unsigned clangNumParams = funDecl->getNumParams();
 		auto primaryTemplate = funDecl->getPrimaryTemplate();
@@ -82,6 +86,10 @@ namespace detail {
 			clangNumParams = primaryTemplate->getTemplatedDecl()->getNumParams();
 		}
 		return clangNumParams == numParams && std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
+	}
+
+	const std::string NumParamRegexCallFilter::getFilterRepresentation() const {
+		return patternString + " [" + toString(numParams) + " params version]";
 	}
 
 	boost::optional<CallMapper> getMapping(const clang::Decl* decl) {
@@ -94,7 +102,7 @@ namespace detail {
 
 			for(const auto& mapping : callMappings) {
 				if(mapping.matches(funDecl)) {
-					if(debug) std::cout << "  matched: " << mapping.getPatternString() << std::endl;
+					if(debug) std::cout << "  matched: " << mapping.getFilterRepresentation() << std::endl;
 					return mapping.getCallMapper();
 				}
 			}
