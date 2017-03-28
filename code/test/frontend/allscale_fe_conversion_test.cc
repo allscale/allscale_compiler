@@ -30,6 +30,10 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_types.cpp");
 	}
 
+	TEST(AllScaleConversionTest, Members) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_members.cpp");
+	}
+
 	TEST(AllScaleConversionTest, TreetureOps) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_treeture_ops.cpp");
 	}

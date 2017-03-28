@@ -163,9 +163,12 @@ namespace detail {
 			auto argExpr = removeUndesiredRefCasts(argExprIn);
 
 			if(auto call = argExpr.isa<core::CallExprPtr>()) {
-				if(core::lang::isPlainReference(call->getType())) {
-					auto rawCallType = core::analysis::getReferencedType(call->getType());
-					return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+				// we don't dematerialize builtins
+				if(!core::lang::isBuiltIn(call->getFunctionExpr())) {
+					if(core::lang::isPlainReference(call->getType())) {
+						auto rawCallType = core::analysis::getReferencedType(call->getType());
+						return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+					}
 				}
 			}
 			auto exprType = argExpr->getType();
