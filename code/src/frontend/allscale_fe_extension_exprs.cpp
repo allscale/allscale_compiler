@@ -11,8 +11,9 @@
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/utils/name_mangling.h"
 
-#include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/allscale_utils.h"
+#include "allscale/compiler/frontend/allscale_fe_utils.h"
+#include "allscale/compiler/lang/allscale_ir.h"
 
 
 namespace allscale {
@@ -279,7 +280,9 @@ namespace detail {
 
 			auto functionType = builder.functionType(funTypeParamTypes, oldFunType->getReturnType(), core::FK_MEMBER_FUNCTION);
 			auto ret = builder.lambdaExpr(functionType, params, body, oldOperator->getReference()->getNameAsString());
-			return ret;
+
+			// we need some special treatment for step cases with unit return type
+			return fixTreetureUnitLambda(ret);
 		}
 
 		/**

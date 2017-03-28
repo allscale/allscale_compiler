@@ -58,7 +58,7 @@ using namespace allscale::api::core;
 int main() {
 	; // this is required because of the clang compound source location bug
 
-	// here we ensure that all prec variants are translated to the sme IR
+	// here we ensure that all prec variants are translated to the same IR
 
 	// call prec with a rec_defs param
 	#pragma test expect_ir(PREC_IR)
