@@ -36,7 +36,7 @@ namespace frontend {
 			});
 			// finally, if the last statement in the body isn't a return, we need to add one
 			core::StatementList bodyStmts(body->getStatements());
-			if(!bodyStmts.empty() && !bodyStmts.back().isa<core::ReturnStmtPtr>()) {
+			if(bodyStmts.empty() || !bodyStmts.back().isa<core::ReturnStmtPtr>()) {
 				bodyStmts.push_back(unitReturn);
 				body = builder.compoundStmt(bodyStmts);
 			}

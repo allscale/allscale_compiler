@@ -431,6 +431,23 @@ namespace detail {
 
 
 	namespace {
+		bool checkSameLambdaReturnType(const core::ExpressionList& exprs,
+		                               const insieme::utils::map::PointerMap<core::GenericTypePtr, core::TagTypePtr>& tMap) {
+			assert_false(exprs.empty());
+			// get the return type from the call operator of the lambda referenced by the passed expression
+			auto extractType = [&tMap](const core::ExpressionPtr& node) {
+				auto genType = core::analysis::getReferencedType(node->getType()).as<core::GenericTypePtr>();
+				assert_true(genType);
+				assert_true(tMap.find(genType) != tMap.end());
+				auto extractedNode = tMap.at(genType);
+				return utils::extractCallOperatorType(extractedNode)->getReturnType();
+			};
+
+			// compare all types with the first one
+			auto targetType = extractType(exprs.front());
+			return all(exprs, [&targetType, &extractType](const auto& expr) { return extractType(expr) == targetType; });
+		}
+
 		core::ExpressionPtr doFunConstructionMapping(const clang::QualType clangType, const clang::SourceLocation locStart,
 		                                             const clang::Expr* cutoffArg, const clang::Expr* baseCaseArg, const clang::Expr* stepCaseArg,
 		                                             insieme::frontend::conversion::Converter& converter) {
@@ -480,14 +497,25 @@ namespace detail {
 			};
 
 			// first we translate the lambda(s)
+			core::ExpressionList originalInputBaseCases;
 			auto inputBaseCase = converter.convertExpr(baseCaseArg);
 			// then handle lists and single lambdas accordingly
 			if(core::lang::isList(inputBaseCase)) {
 				for(const auto& expr : core::lang::parseListOfExpressions(inputBaseCase)) {
-					baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(expr)));
+					auto arg = removeUndesiredDeref(expr);
+					originalInputBaseCases.push_back(arg);
+					baseBinds.push_back(convertForBaseCase(arg));
 				}
 			} else {
-				baseBinds.push_back(convertForBaseCase(removeUndesiredDeref(inputBaseCase)));
+				auto arg = removeUndesiredDeref(inputBaseCase);
+				originalInputBaseCases.push_back(arg);
+				baseBinds.push_back(convertForBaseCase(arg));
+			}
+			// ensure all elements in the list have the same type
+			if(!checkSameLambdaReturnType(originalInputBaseCases, tMap)) {
+				assert_fail() << "Conversion of prec construct around lambda at \""
+						<< insieme::frontend::utils::getLocationAsString(locStart, converter.getSourceManager(), false)
+						<< "\" failed, because not all the base case implementations return the same type";
 			}
 
 
@@ -533,14 +561,25 @@ namespace detail {
 			};
 
 			// first we translate the lambda(s)
+			core::ExpressionList originalInputStepCases;
 			auto inputStepCase = converter.convertExpr(stepCaseArg);
 			// then handle lists and single lambdas accordingly
 			if(core::lang::isList(inputStepCase)) {
 				for(const auto& expr : core::lang::parseListOfExpressions(inputStepCase)) {
-					stepBinds.push_back(convertForStepCase(removeUndesiredDeref(expr)));
+					auto arg = removeUndesiredDeref(expr);
+					originalInputStepCases.push_back(arg);
+					stepBinds.push_back(convertForStepCase(arg));
 				}
 			} else {
-				stepBinds.push_back(convertForStepCase(removeUndesiredDeref(inputStepCase)));
+				auto arg = removeUndesiredDeref(inputStepCase);
+				originalInputStepCases.push_back(arg);
+				stepBinds.push_back(convertForStepCase(arg));
+			}
+			// ensure all elements in the list have the same type
+			if(!checkSameLambdaReturnType(originalInputStepCases, tMap)) {
+				assert_fail() << "Conversion of prec construct around lambda at \""
+						<< insieme::frontend::utils::getLocationAsString(locStart, converter.getSourceManager(), false)
+						<< "\" failed, because not all the step case implementations return the same type";
 			}
 
 			// now that we have all three ingredients we can finally build the RecFun
