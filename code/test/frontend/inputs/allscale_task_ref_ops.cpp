@@ -10,12 +10,14 @@ int main() {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CREATION/CONVERSION ////
 	#pragma test expect_ir(R"({
 		var ref<task_ref,f,f,plain> v0 = task_ref_done();
+		v0;
 		var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(treeture_done(1));
 		var ref<task_ref,f,f,plain> v2 = treeture_to_task_ref(*v1);
 		var ref<task_ref,f,f,plain> v3 = treeture_to_task_ref(*v1);
 	})")
 	{
 		impl::reference::task_reference tr0;
+		impl::reference::task_reference((const impl::reference::task_reference&)tr0);
 		impl::reference::treeture<int> t = done(1);
 		impl::reference::task_reference tr1 = t;
 		impl::reference::task_reference tr2 = t.getTaskReference();
