@@ -57,6 +57,7 @@ namespace lang {
 
 		// task references
 
+		LANG_EXT_LITERAL(TaskRefDone, "task_ref_done", "() -> task_ref")
 		LANG_EXT_LITERAL(TaskRefLeft, "task_ref_left", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefRight, "task_ref_right", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefWait, "task_ref_wait", "(task_ref) -> unit")

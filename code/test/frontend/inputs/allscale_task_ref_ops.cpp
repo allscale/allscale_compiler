@@ -9,7 +9,7 @@ int main() {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// CREATION/CONVERSION ////
 	#pragma test expect_ir(R"({
-		var ref<task_ref,f,f,plain> v0 = lit("task_ref::ctor" : task_ref::())(ref_decl(type_lit(ref<task_ref,f,f,plain>)));
+		var ref<task_ref,f,f,plain> v0 = task_ref_done();
 		var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(treeture_done(1));
 		var ref<task_ref,f,f,plain> v2 = treeture_to_task_ref(*v1);
 		var ref<task_ref,f,f,plain> v3 = treeture_to_task_ref(*v1);
@@ -24,7 +24,7 @@ int main() {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// METHODS ////
 	#pragma test expect_ir(R"({
-		var ref<task_ref,f,f,plain> v0 = lit("task_ref::ctor" : task_ref::())(ref_decl(type_lit(ref<task_ref,f,f,plain>)));
+		var ref<task_ref,f,f,plain> v0 = task_ref_done();
 		task_ref_left(*v0);
 		task_ref_right(*v0);
 		task_ref_wait(*v0);
