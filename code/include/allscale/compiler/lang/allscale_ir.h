@@ -48,8 +48,8 @@ namespace lang {
 		LANG_EXT_DERIVED(TreetureRight, "(t : treeture<'a,'r>) -> task_ref { return task_ref_right(treeture_to_task_ref(t)); }")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
-		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
-		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<'c, f>")
+		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<unit, f>")
+		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<unit, f>")
 		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(dependencies, treeture<'a, f>, treeture<'b, f>, ('a,'b) -> 'c, bool) -> treeture<'c, f>")
 
 		LANG_EXT_LITERAL(TreetureToRef,   "treeture_to_ref",   "(treeture<'a,'r>, type<ref<treeture<'a, 'r>, 'c, 'v, 'k>>) -> ref<treeture<'a,'r>, 'c, 'v, 'k>")
@@ -57,6 +57,7 @@ namespace lang {
 
 		// task references
 
+		LANG_EXT_LITERAL(TaskRefDone, "task_ref_done", "() -> task_ref")
 		LANG_EXT_LITERAL(TaskRefLeft, "task_ref_left", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefRight, "task_ref_right", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefWait, "task_ref_wait", "(task_ref) -> unit")
@@ -296,6 +297,8 @@ namespace lang {
 	bool isPrecFunUnwrapperCall(const core::NodePtr&);
 
 	bool isTreeture(const core::NodePtr& node);
+
+	bool isTaskReference(const core::NodePtr& node);
 
 	bool isCompletedTask(const core::NodePtr& node);
 

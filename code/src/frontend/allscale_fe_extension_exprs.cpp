@@ -46,6 +46,8 @@ namespace detail {
 		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
+		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, TaskRefDoneCallMapper()}, // default ctor call - special mapping
+		{"allscale::api::core::impl::.*::task_reference::task_reference", NoopCallMapper()}, // ctor call
 		// treeture aggregation
 		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
 		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
@@ -373,6 +375,13 @@ namespace detail {
 		auto callee = generateCallee(exprInfo);
 		auto translatedCall = buildCallWithDefaultParamConversion(callee, exprInfo);
 		return postprocessCall(exprInfo, translatedCall);
+	}
+
+
+	// TaskRefDoneCallMapper
+	core::ExpressionPtr TaskRefDoneCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+		auto& allS = exprInfo.converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
+		return exprInfo.converter.getIRBuilder().callExpr(allS.getTaskRefDone(), core::ExpressionList());
 	}
 
 

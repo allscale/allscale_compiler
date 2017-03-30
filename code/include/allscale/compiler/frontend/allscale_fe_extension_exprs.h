@@ -133,6 +133,13 @@ namespace frontend {
 		};
 
 
+		/// Utility for the specification of task_reference constructor calls
+		class TaskRefDoneCallMapper {
+		  public:
+			core::ExpressionPtr operator()(const ClangExpressionInfo&);
+		};
+
+
 		/// Utility for the specification of treeture/task aggregation (C++ to IR)
 		/// same as SimpleCallMapper, but skips std::move and converts completed_task to treeture as required
 		/// also postprocesses argument list in order to generate empty dependencies list if none is available

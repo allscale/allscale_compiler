@@ -742,6 +742,83 @@ namespace backend {
 	}
 
 
+
+	TEST(DISABLED_CodeSnippet, CppPforEmpty) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+				#include "allscale/api/user/operator/pfor.h"
+
+				using namespace allscale::api::core;
+				using namespace allscale::api::user;
+				
+				int main(int argc, char** argv) {
+					
+					pfor(0,10,[](int){
+						// nothing to do
+					});
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
+
+	TEST(DISABLED_CodeSnippet, CppPforArray) {
+			NodeManager mgr;
+
+			auto code = R"(
+					#include "allscale/api/core/prec.h"
+					#include "allscale/api/user/operator/pfor.h"
+
+					using namespace allscale::api::core;
+					using namespace allscale::api::user;
+					
+					int main(int argc, char** argv) {
+						
+						int A[10];
+
+						pfor(0,10,[&](int x){
+							A[x] = 10;
+						});
+
+						return 0;
+					}
+				)";
+
+			auto prog = frontend::parseCode(mgr,code);
+			ASSERT_TRUE(prog);
+
+			// check for semantic errors
+			ASSERT_TRUE(core::checks::check(prog).empty())
+				<< core::printer::dumpErrors(core::checks::check(prog));
+
+			// convert with allscale backend
+			auto trg = convert(prog);
+			ASSERT_TRUE(trg);
+
+			// check that the resulting source is compiling
+			EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+		}
+
+
 } // end namespace backend
 } // end namespace compiler
 } // end namespace allscale

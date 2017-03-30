@@ -15,6 +15,7 @@ namespace backend {
 	using namespace insieme::core;
 	using namespace insieme::backend;
 
+
 	OperatorConverterTable& addRuntimeSpecificOps(NodeManager& manager, OperatorConverterTable& table) {
 
 		#include "insieme/backend/operator_converter_begin.inc"
@@ -188,6 +189,54 @@ namespace backend {
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
 			};
 
+
+
+			table[ext.getTreetureParallel()] = OP_CONVERTER {
+
+				// TODO: integrate support for dependencies!!
+
+				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
+				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
+
+				// add dependency to result type
+				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
+
+				// create target for implicit std::move call
+				context.addInclude("utility");
+				auto std_move = C_NODE_MANAGER->create("std::move");
+
+				// create a call to treeture_combine
+				return c_ast::call(
+						C_NODE_MANAGER->create("allscale::runtime::treeture_parallel"),
+						c_ast::call(std_move, CONVERT_ARG(1)),
+						c_ast::call(std_move, CONVERT_ARG(2))
+				);
+			};
+
+			table[ext.getTreetureSequential()] = OP_CONVERTER {
+
+				// TODO: integrate support for dependencies!!
+
+				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
+				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
+
+				// add dependency to result type
+				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
+
+				// create target for implicit std::move call
+				context.addInclude("utility");
+				auto std_move = C_NODE_MANAGER->create("std::move");
+
+				// create a call to treeture_combine
+				return c_ast::call(
+						C_NODE_MANAGER->create("allscale::runtime::treeture_sequential"),
+						c_ast::call(std_move, CONVERT_ARG(1)),
+						c_ast::call(std_move, CONVERT_ARG(2))
+				);
+			};
+
 			table[ext.getTreetureCombine()] = OP_CONVERTER {
 				core::IRBuilder builder(call->getNodeManager());
 
@@ -240,6 +289,66 @@ namespace backend {
 
 			table[ext.getTreetureFromRef()] = OP_CONVERTER {
 				return CONVERT_ARG(0);
+			};
+
+			table[ext.getTreetureToRef()] = OP_CONVERTER {
+				return CONVERT_ARG(0);
+			};
+
+			table[ext.getTreetureToTaskRef()] = OP_CONVERTER {
+				return CONVERT_ARG(0);
+			};
+
+			table[ext.getTaskRefLeft()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_left_child"), {});
+			};
+
+			table[ext.getTaskRefRight()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_right_child"), {});
+			};
+
+			table[ext.getTaskRefWait()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("wait"), {});
+			};
+
+
+			table[ext.getDependencyAfter()] = OP_CONVERTER {
+
+				// TODO: integrate support for dependencies!!
+
+				// convert arguments and add dependency to argument types
+				std::vector<c_ast::NodePtr> args;
+				for(const auto& arg : call->getArgumentList()) {
+					context.addDependency(GET_TYPE_INFO(arg->getType()).definition);
+					args.push_back(CONVERT_EXPR(arg));
+				}
+
+				// add dependency to result type
+				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
+
+				// create a call to treeture_combine
+				return c_ast::call(
+						C_NODE_MANAGER->create("allscale::runtime::after"),
+						args
+				);
 			};
 		}
 
@@ -312,8 +421,6 @@ namespace backend {
 			};
 
 		}
-
-
 
 		#include "insieme/backend/operator_converter_end.inc"
 

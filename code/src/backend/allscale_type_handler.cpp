@@ -83,6 +83,26 @@ namespace backend {
 			return type_info_utils::createInfo(namedType, def);
 		}
 
+		const TypeInfo* handleTaskReferenceType(ConversionContext& context, const TypePtr& type) {
+			assert_pred1(lang::isTaskReference,type);
+
+			auto& converter = context.getConverter();
+			auto& fragmentManager = converter.getFragmentManager();
+
+			// map this to the unit treeture
+			auto unitTreeture = lang::TreetureType(type.getNodeManager().getLangBasic().getUnit(),true).toIRType();
+
+			// resolve the unit treeture
+			const auto& unitTreetureInfo = context.getConverter().getTypeManager().getTypeInfo(context,unitTreeture);
+
+			// create a dummy definition
+			auto def = fragmentManager->create<backend::c_ast::DummyFragment>();
+			def->addDependency(unitTreetureInfo.definition);
+
+			// resolve the task reference as the unit treeture
+			return type_info_utils::createInfo(unitTreetureInfo.lValueType, def);
+		}
+
 		const TypeInfo* handlePrecFunType(ConversionContext& context, const lang::PrecFunType& type) {
 			auto& converter = context.getConverter();
 			auto& mgr = converter.getCNodeManager();
@@ -116,6 +136,11 @@ namespace backend {
 			// intercept the treeture type
 			if (lang::isTreeture(type)) {
 				return handleTreetureType(context,lang::TreetureType(type));
+			}
+
+			// intercept the task_ref type
+			if (lang::isTaskReference(type)) {
+				return handleTaskReferenceType(context,type);
 			}
 
 			// intercept the dependencies type

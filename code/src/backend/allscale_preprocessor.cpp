@@ -218,8 +218,23 @@ namespace backend {
 
 					// otherwise unpack the argument type
 					core::ExpressionList args;
+					const auto& refDeref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
 					for(const auto& cur : call->getArgument(0).as<core::TupleExprPtr>()->getExpressions()) {
-						args.push_back(cur);
+						// remove unnecessary ref-deref calls
+						auto arg = cur;
+						if (!core::lang::isReference(arg) && core::analysis::isCallOf(arg,refDeref)) {
+							arg = cur.as<core::CallExprPtr>()->getArgument(0);
+						}
+
+						if(core::lang::isCppReference(arg)) {
+							core::lang::ReferenceType refType(arg);
+							if (!refType.isConst()) {
+								refType.setConst(true);
+								arg = core::lang::buildRefCast(arg,refType.toType());
+							}
+						}
+
+						args.push_back(arg);
 					}
 
 					// create new call
@@ -250,9 +265,24 @@ namespace backend {
 				};
 
 				// get body, replace treeture operations and recFun calls
+				auto treetureConnector = builder.parseExpr("lit(\"connect\":('a,'b)->unit)");
+				assert_true(treetureConnector);
 				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
 
-					// only interested in calls
+					// check whether it is a return of a former treeture combinator
+					if (auto ret = node.isa<core::ReturnStmtPtr>()) {
+						if (core::analysis::isCallOf(ret->getReturnExpr(),treetureConnector)) {
+							// replace this one by a list of statements
+							auto connectorCall = ret->getReturnExpr().as<core::CallExprPtr>();
+							return builder.compoundStmt(
+								connectorCall->getArgument(0),
+								connectorCall->getArgument(1),
+								builder.returnStmt()
+							);
+						}
+					}
+
+					// for the rest: only interested in calls
 					auto call = node.isa<core::CallExprPtr>();
 					if (!call) return node;
 
@@ -272,6 +302,12 @@ namespace backend {
 						auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
 						auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
 						return builder.callExpr(call->getArgument(3),arg0,arg1);
+					}
+
+					if (core::analysis::isCallOf(call,ext.getTreetureParallel()) || core::analysis::isCallOf(call,ext.getTreetureSequential())) {
+						auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
+						auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+						return builder.callExpr(treetureConnector,arg0,arg1);
 					}
 
 					// not of interest either
@@ -418,7 +454,7 @@ namespace backend {
 					)
 				);
 
-			// create the resultig function type
+			// create the resulting function type
 			auto funType = builder.functionType(
 				lambda->getFunctionType()->getParameterType(0),
 				lang::TreetureType(lambda->getFunctionType()->getReturnType(),false).toIRType()
