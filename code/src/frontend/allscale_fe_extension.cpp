@@ -1,12 +1,16 @@
 
 #include "allscale/compiler/frontend/allscale_fe_extension.h"
 
+#include <boost/algorithm/string.hpp>
+
+#include "insieme/annotations/c/include.h"
 #include "insieme/frontend/clang.h"
 #include "insieme/frontend/converter.h"
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/utils/iterator_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/config.h"
 
 namespace iu = insieme::utils;
 
@@ -140,6 +144,17 @@ namespace frontend {
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
 		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
+
+		// also make sure that the output doesn't contain any node which has any header from the core attached. if that happens we should have intercepted it
+		assert_decl({
+			core::visitDepthFirstOnce(prog, [](const core::NodePtr& node) {
+				if(insieme::annotations::c::hasIncludeAttached(node)) {
+					auto include = insieme::annotations::c::getAttachedInclude(node);
+					assert_false(boost::starts_with(include, getAllscaleAPIInterceptionIncludePath()))
+							<< "Found attached include of core API to \"" << include << "\"";
+				}
+			});
+		});
 
 		return prog;
 	}

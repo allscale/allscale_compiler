@@ -165,6 +165,7 @@ namespace frontend {
 			virtual core::ExpressionPtr postprocessCall(const ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) override;
 
 			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) = 0;
+			virtual core::ExpressionPtr buildDepWrapper(const core::ExpressionPtr&) = 0;
 
 		  public:
 			RecOrPrecFunCallMapper() : SimpleCallMapper("") { }
@@ -178,6 +179,7 @@ namespace frontend {
 			RecFunCallMapper() : RecOrPrecFunCallMapper() { }
 		  protected:
 			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) override;
+			virtual core::ExpressionPtr buildDepWrapper(const core::ExpressionPtr&) override;
 		};
 
 		/// Utility to map the call operator call of precfun objects
@@ -186,6 +188,7 @@ namespace frontend {
 			PrecFunCallMapper() : RecOrPrecFunCallMapper() { }
 		  protected:
 			virtual core::ExpressionPtr buildWrapper(const core::ExpressionPtr&) override;
+			virtual core::ExpressionPtr buildDepWrapper(const core::ExpressionPtr&) override;
 		};
 
 

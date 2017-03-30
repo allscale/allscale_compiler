@@ -589,6 +589,13 @@ namespace lang {
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getRecfunToFun(), param);
 	}
+	core::ExpressionPtr buildRecfunToDepFun(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getRecfunToDepFun(), param);
+	}
 
 	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
@@ -596,6 +603,13 @@ namespace lang {
 		core::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getPrecfunToFun(), param);
+	}
+	core::ExpressionPtr buildPrecfunToDepFun(const core::ExpressionPtr& param) {
+		assert_true(param) << "Given node is null!";
+		auto& mgr = param->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& allS = mgr.getLangExtension<AllscaleModule>();
+		return builder.callExpr(allS.getPrecfunToDepFun(), param);
 	}
 
 	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
@@ -618,6 +632,10 @@ namespace lang {
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getCppLambdaToLambda(), lambdaExpr, builder.getTypeLiteral(closureType));
+	}
+
+	bool isAllscaleType(const core::NodePtr& node) {
+		return isTreeture(node) || isDependencies(node) || isRecFun(node) || isPrecFun(node);
 	}
 
 } // end namespace lang
