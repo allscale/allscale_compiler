@@ -65,6 +65,18 @@ int main() {
 				true
 			);
 
+			treeture_sequential(dependency_after(), *a, *b);
+			treeture_parallel(dependency_after(), *a, *b);
+			treeture_combine(
+				dependency_after(),
+				*a,
+				*b,
+				cpp_lambda_to_lambda(
+					*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {},
+					type_lit((int<4>, int<4>) -> int<4>)
+				),
+				true
+			);
 		}
 	)")
 	{ // this code is not actually correct, but it is sufficient for testing
@@ -73,6 +85,11 @@ int main() {
 		sequential(std::move(a), std::move(b));
 		parallel(std::move(a), std::move(b));
 		combine(std::move(a), std::move(b), [](int m, int n) { return m + n; });
+
+		impl::reference::sequential(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
+		impl::reference::parallel(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
+		impl::reference::combine(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b),
+		                         [](int m, int n) { return m + n; });
 	}
 
 	// user combination operations
