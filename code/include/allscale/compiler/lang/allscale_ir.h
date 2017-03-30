@@ -302,6 +302,8 @@ namespace lang {
 
 	bool isCompletedTask(const core::NodePtr& node);
 
+	bool isAllscaleType(const core::NodePtr& node);
+
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
 	                                     const core::ExpressionList& baseBinds,
 	                                     const core::ExpressionList& stepBinds);
@@ -339,8 +341,6 @@ namespace lang {
 	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
 
 	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
-
-	bool isAllscaleType(const core::NodePtr& node);
 }
 }
 }
