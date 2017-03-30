@@ -47,9 +47,9 @@ namespace detail {
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
 		// treeture aggregation
-		{"allscale::api::core::combine", AggregationCallMapper("treeture_combine", true)},
-		{"allscale::api::core::sequential", AggregationCallMapper("treeture_sequential", true)},
-		{"allscale::api::core::parallel", AggregationCallMapper("treeture_parallel", true)},
+		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
+		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
+		{"allscale::api::core::.*parallel", AggregationCallMapper("treeture_parallel", true)},
 		// dependencies
 		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
