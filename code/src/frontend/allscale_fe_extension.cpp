@@ -117,8 +117,8 @@ namespace frontend {
 			if(debug) std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
 			auto irSourceType = irExpr->getType();
 			if(core::analysis::isRefType(irExpr)) irSourceType = core::analysis::getReferencedType(irSourceType);
-			if(lang::isTreeture(irSourceType)) {
-				if(debug) std::cout << "!! Casting treeture\n";
+			if(lang::isAllscaleType(irSourceType)) {
+				if(debug) std::cout << "!! Casting Allscale type\n";
 				return irExpr;
 			}
 		}
