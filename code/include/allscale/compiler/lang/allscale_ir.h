@@ -326,8 +326,10 @@ namespace lang {
 	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr);
 
 	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
+	core::ExpressionPtr buildRecfunToDepFun(const core::ExpressionPtr& param);
 
 	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param);
+	core::ExpressionPtr buildPrecfunToDepFun(const core::ExpressionPtr& param);
 
 	// lambda utils
 
@@ -335,6 +337,7 @@ namespace lang {
 
 	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
 
+	bool isAllscaleType(const core::NodePtr& node);
 }
 }
 }

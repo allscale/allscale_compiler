@@ -222,6 +222,19 @@ namespace detail {
 			return converter.getIRBuilder().callExpr(allscaleExt.getDependencyAfter());
 		}
 
+		const clang::Expr* skipStdMoveOnAllscaleTypes(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter) {
+			if(auto clangCall = llvm::dyn_cast<clang::CallExpr>(clangExpr)) {
+				if(auto namedDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(clangCall->getCalleeDecl())) {
+					if(namedDecl->getQualifiedNameAsString() == "std::move") {
+						if(lang::isAllscaleType(converter.convertType(clangExpr->getType()))) {
+							return clangCall->getArg(0);
+						}
+					}
+				}
+			}
+			return clangExpr;
+		}
+
 		/**
 		 * Removes all duplicate call operators in the passed type
 		 */
@@ -343,7 +356,7 @@ namespace detail {
 	}
 
 	core::ExpressionPtr SimpleCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
-		return converter.convertExpr(clangArg);
+		return converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter));
 	}
 	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
 		return args;
@@ -365,14 +378,7 @@ namespace detail {
 
 	// AggregationCallMapper
 	core::ExpressionPtr AggregationCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
-		auto ret = converter.convertExpr(clangArg);
-		if(auto clangCall = llvm::dyn_cast<clang::CallExpr>(clangArg)) {
-			if(auto namedDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(clangCall->getCalleeDecl())) {
-				if(namedDecl->getQualifiedNameAsString() == "std::move") {
-					ret = converter.convertExpr(clangCall->getArg(0));
-				}
-			}
-		}
+		auto ret = SimpleCallMapper::convertArgument(clangArg, converter);
 		ret = derefOrDematerialize(ret);
 		if(auto lambdaType = extractLambdaOperationType(clangArg, converter, true)) {
 			ret = lang::buildCppLambdaToLambda(ret, lambdaType);
@@ -396,12 +402,23 @@ namespace detail {
 		assert_true(exprInfo.isOperatorCall);
 		auto recfunArg = exprInfo.converter.convertExpr(exprInfo.args[0]);
 		assert_true(recfunArg);
-		return buildWrapper(derefOrDematerialize(recfunArg));
+		// 2 arguments (this and parameters) means no dependencies
+		if(exprInfo.numArgs == 2) {
+			return buildWrapper(derefOrDematerialize(recfunArg));
+		}
+		// 3 arguments means we have dependencies
+		else {
+			return buildDepWrapper(derefOrDematerialize(recfunArg));
+		}
 	}
 	core::ExpressionList RecOrPrecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
 	                                                                     insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
 		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
+		// if we are generating a call with dependencies, we need to deref the dependency argument
+		if(newArgs.size() == 2) {
+			newArgs.front() = derefOrDematerialize(newArgs.front());
+		}
 		// we need to correctly handle the argument passing here, as the C++ method always takes a const cpp_ref
 		if(!newArgs.empty() && core::lang::isPlainReference(newArgs.back())) {
 			newArgs.back() = derefOrCopy(newArgs.back(), converter);
@@ -424,9 +441,15 @@ namespace detail {
 	core::ExpressionPtr RecFunCallMapper::buildWrapper(const core::ExpressionPtr& expr) {
 		return lang::buildRecfunToFun(expr);
 	}
+	core::ExpressionPtr RecFunCallMapper::buildDepWrapper(const core::ExpressionPtr& expr) {
+		return lang::buildRecfunToDepFun(expr);
+	}
 
 	core::ExpressionPtr PrecFunCallMapper::buildWrapper(const core::ExpressionPtr& expr) {
 		return lang::buildPrecfunToFun(expr);
+	}
+	core::ExpressionPtr PrecFunCallMapper::buildDepWrapper(const core::ExpressionPtr& expr) {
+		return lang::buildPrecfunToDepFun(expr);
 	}
 
 
