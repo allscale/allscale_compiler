@@ -179,6 +179,18 @@ namespace lang {
 		return isValidReleased;
 	}
 
+	bool isTaskReference(const core::NodePtr& node) {
+		// support expressions
+		if(auto expr = node.isa<core::ExpressionPtr>()) return isTaskReference(expr->getType());
+
+		// check that it is a generic type
+		auto type = node.isa<core::GenericTypePtr>();
+		if (!type) return false;
+
+		// check properties
+		return type->getFamilyName() == "task_ref" && type->getParents().empty() && type->getTypeParameterList().empty();
+	}
+
 	/////////////////////////////// Completed Task
 
 	bool isCompletedTask(const core::NodePtr& node) {

@@ -298,6 +298,8 @@ namespace lang {
 
 	bool isTreeture(const core::NodePtr& node);
 
+	bool isTaskReference(const core::NodePtr& node);
+
 	bool isCompletedTask(const core::NodePtr& node);
 
 	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
