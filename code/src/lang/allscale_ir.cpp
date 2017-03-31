@@ -191,6 +191,10 @@ namespace lang {
 		return type->getFamilyName() == "task_ref" && type->getParents().empty() && type->getTypeParameterList().empty();
 	}
 
+	bool isAllscaleType(const core::NodePtr& node) {
+		return isTreeture(node) || isDependencies(node) || isRecFun(node) || isPrecFun(node) || isTaskReference(node);
+	}
+
 	/////////////////////////////// Completed Task
 
 	bool isCompletedTask(const core::NodePtr& node) {
@@ -632,10 +636,6 @@ namespace lang {
 		core::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getCppLambdaToLambda(), lambdaExpr, builder.getTypeLiteral(closureType));
-	}
-
-	bool isAllscaleType(const core::NodePtr& node) {
-		return isTreeture(node) || isDependencies(node) || isRecFun(node) || isPrecFun(node);
 	}
 
 } // end namespace lang

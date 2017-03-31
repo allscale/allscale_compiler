@@ -78,14 +78,14 @@ namespace frontend {
 
 	namespace {
 		/**
-		 * Skips the given node if it is of type ClangTypeToSkip, and converts it's shild node instead, which is determined by calling the passed childExtractor
+		 * Skips the given node if it is of type ClangTypeToSkip, and converts it's child node instead, which is determined by calling the passed childExtractor
 		 */
 		template<typename ClangTypeToSkip>
 		core::ExpressionPtr skipClangExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter,
 																			std::function<const clang::Expr*(const ClangTypeToSkip*)> childExtractor) {
 			if(auto clangTypedExpr = llvm::dyn_cast<ClangTypeToSkip>(expr)) {
 				auto retType = converter.convertType(expr->getType());
-				if(lang::isTreeture(retType) || lang::isRecFun(retType) || lang::isDependencies(retType)) {
+				if(lang::isAllscaleType(retType)) {
 					return converter.convertExpr(childExtractor(clangTypedExpr));
 				}
 			}
@@ -96,7 +96,7 @@ namespace frontend {
 	core::ExpressionPtr AllscaleExtension::Visit(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
 		if(debug) expr->dumpColor();
 
-		// we don't need special handling for CXXConstructExpr, MaterializeTemporaryExpr, ExprWithCleanups and VisitCXXBindTemporaryExpr on our AllScale types
+		// we don't need special handling for MaterializeTemporaryExpr, ExprWithCleanups and VisitCXXBindTemporaryExpr on our AllScale types
 		// these nodes are skipped and we only handle their respective child
 		if(auto s = skipClangExpr<clang::MaterializeTemporaryExpr>(expr, converter, [](const auto sE) { return sE->GetTemporaryExpr(); })) { return s; }
 		if(auto s = skipClangExpr<clang::ExprWithCleanups>(expr, converter,         [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
@@ -117,8 +117,8 @@ namespace frontend {
 			if(debug) std::cout << "!! Casting CK_UncheckedDerivedToBase " << dumpColor(irExpr->getType());
 			auto irSourceType = irExpr->getType();
 			if(core::analysis::isRefType(irExpr)) irSourceType = core::analysis::getReferencedType(irSourceType);
-			if(lang::isTreeture(irSourceType)) {
-				if(debug) std::cout << "!! Casting treeture\n";
+			if(lang::isAllscaleType(irSourceType)) {
+				if(debug) std::cout << "!! Casting Allscale type\n";
 				return irExpr;
 			}
 		}
