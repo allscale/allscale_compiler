@@ -741,6 +741,78 @@ namespace backend {
 
 	}
 
+	TEST(CodeSnippet, IntTreeture) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+				
+				int main(int argc, char** argv) {
+					
+					prec(fun(
+						[](int)->bool { return true; },
+						[](int) { return 10; },
+						[](int,const auto& f) { return done(12); }
+					))(1).wait();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
+
+
+	TEST(DISABLED_CodeSnippet, VoidTreeture) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+				
+				int main(int argc, char** argv) {
+					
+					prec(fun(
+						[](int)->bool { return true; },
+						[](int) {},
+						[](int,const auto& f) { return done(); }
+					))(1).wait();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+
+	}
 
 
 	TEST(DISABLED_CodeSnippet, CppPforEmpty) {

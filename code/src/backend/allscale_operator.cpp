@@ -159,8 +159,21 @@ namespace backend {
 			table[ext.getTreetureDone()] = OP_CONVERTER {
 
 				// add dependency to result type
-				auto& resTypeInfo = GET_TYPE_INFO(call->getType());
+				auto resType = call->getType();
+				auto& resTypeInfo = GET_TYPE_INFO(resType);
 				context.addDependency(resTypeInfo.definition);
+
+				// special handling of unit treetures
+				auto valueType = lang::TreetureType(resType).getValueType();
+				if (NODE_MANAGER.getLangBasic().isUnit(valueType)) {
+					// a void can not be passed => use the comma operator
+					return c_ast::comma(
+							// trigger the computation
+							CONVERT_ARG(0),
+							// create resulting void-treeture
+							c_ast::call(resTypeInfo.rValueType)
+					);
+				}
 
 				// create result value via constructor call
 				return c_ast::call(
@@ -189,6 +202,15 @@ namespace backend {
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
 			};
 
+			table[ext.getTreetureWait()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("wait"), {});
+			};
 
 
 			table[ext.getTreetureParallel()] = OP_CONVERTER {
