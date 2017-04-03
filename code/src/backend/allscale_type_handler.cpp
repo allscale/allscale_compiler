@@ -76,8 +76,13 @@ namespace backend {
 			);
 
 			// wrap up definition into code fragment
-			auto def = fragmentManager->create<backend::c_ast::CCodeFragment>(mgr,init);
+			backend::c_ast::CodeFragmentPtr def = fragmentManager->create<backend::c_ast::CCodeFragment>(mgr,init);
 			def->addDependency(elementTypeInfo.definition);
+
+			// however, do not register unit treeture types
+			if (type.getValueType()->getNodeManager().getLangBasic().isUnit(type.getValueType())) {
+				def = fragmentManager->create<backend::c_ast::DummyFragment>();
+			}
 
 			// create resulting code fragment
 			return type_info_utils::createInfo(namedType, def);

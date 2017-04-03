@@ -778,7 +778,7 @@ namespace backend {
 	}
 
 
-	TEST(DISABLED_CodeSnippet, VoidTreeture) {
+	TEST(CodeSnippet, VoidTreeture) {
 		NodeManager mgr;
 
 		auto code = R"(
