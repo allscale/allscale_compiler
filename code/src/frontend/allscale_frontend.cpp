@@ -12,8 +12,6 @@ namespace compiler {
 namespace frontend {
 
 	void configureConversionJob(insieme::frontend::ConversionJob& job) {
-		job.addIncludeDirectory(getAllscaleAPIUtilsIncludeDir());
-		job.addIncludeDirectory(getAllscaleAPICoreIncludeDir());
 		job.addInterceptedHeaderDir(getAllscaleAPICoreIncludeDir() + getAllscaleAPIInterceptionIncludePath());
 		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
 		job.registerDefaultExtensions();

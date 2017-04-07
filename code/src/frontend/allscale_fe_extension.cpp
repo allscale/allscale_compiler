@@ -159,6 +159,12 @@ namespace frontend {
 		return prog;
 	}
 
+
+
+	AllscaleExtension::AllscaleExtension() : insieme::frontend::extensions::FrontendExtension() {
+		includeDirs.push_back(getAllscaleAPICoreIncludeDir());
+		includeDirs.push_back(getAllscaleAPIUtilsIncludeDir());
+	}
 }
 }
 }

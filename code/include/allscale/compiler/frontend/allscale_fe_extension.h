@@ -38,6 +38,10 @@ namespace frontend {
 		// TU and Program
 
 		virtual insieme::core::ProgramPtr IRVisit(insieme::core::ProgramPtr& prog) override;
+
+
+	  public:
+		AllscaleExtension();
 	};
 }
 }
