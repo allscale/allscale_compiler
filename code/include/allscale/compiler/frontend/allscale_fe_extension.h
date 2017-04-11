@@ -8,8 +8,6 @@
 
 #include <boost/optional.hpp>
 
-#include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
-
 namespace allscale {
 namespace compiler {
 namespace frontend {
@@ -31,6 +29,8 @@ namespace frontend {
 
 		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr, insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
 		                                           insieme::frontend::conversion::Converter& converter) override;
+
+		virtual std::vector<insieme::frontend::extensions::detail::FilterMapper> getExprMappings() override;
 
 		// TU and Program
 

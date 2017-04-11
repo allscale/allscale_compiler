@@ -9,8 +9,9 @@
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/utils/iterator_utils.h"
 
-#include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/config.h"
+#include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
 
 namespace iu = insieme::utils;
 
@@ -42,6 +43,10 @@ namespace frontend {
 			// dependencies
 			{ "allscale::api::core::.*dependencies", "dependencies" },
 		};
+	}
+
+	std::vector<insieme::frontend::extensions::detail::FilterMapper> AllscaleExtension::getExprMappings() {
+		return detail::exprMappings;
 	}
 
 
@@ -119,8 +124,8 @@ namespace frontend {
 		if(auto s = skipClangExpr<clang::ExprWithCleanups>(expr, converter,         [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 		if(auto s = skipClangExpr<clang::CXXBindTemporaryExpr>(expr, converter,     [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 
-		// the actual mapping is done externally
-		return detail::mapExpr(expr, converter);
+		// the actual mapping is done via the mapping functionality in the parent class
+		return MappingFrontendExtension::Visit(expr, converter);
 	}
 
 	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CastExpr* castExpr,
