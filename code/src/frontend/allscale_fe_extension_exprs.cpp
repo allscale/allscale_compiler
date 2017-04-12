@@ -21,33 +21,35 @@ namespace compiler {
 namespace frontend {
 namespace detail {
 
+	namespace fed = insieme::frontend::extensions::detail;
+
 	/// Mapping specification from C++ to IR used during call expression translation
-	const static std::vector<FilterMapper> callMappings = {
+	const std::vector<fed::FilterMapper> exprMappings = {
 		// callables
-		{"allscale::api::core::fun_def.*fun_def", NoopCallMapper()}, // ctor call
-		{"allscale::api::core::rec_defs.*rec_defs", NoopCallMapper()}, // ctor call
-		{"allscale::api::core::detail::prec_operation.*prec_operation", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::fun_def.*fun_def", mapToFirstArgument},                       // copy|move ctor call
+		{"allscale::api::core::rec_defs.*rec_defs", mapToFirstArgument},                     // copy|move ctor call
+		{"allscale::api::core::detail::prec_operation.*prec_operation", mapToFirstArgument}, // copy|move ctor call
 		// completed_tasks
-		{"allscale::api::core::done", 0, DoneCallMapper()},
+		{"allscale::api::core::done", 0, mapDoneCall},
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
-		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", NoopCallMapper()},
-		{"allscale::api::core::.*::completed_task<.*>::completed_task", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", mapToFirstArgument}, // conversion operator
+		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapToFirstArgument},               // copy|move ctor call
 		// treeture
 		{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
-		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapToFirstArgument}, // copy|move ctor call
 		// task_reference
 		{"allscale::api::core::impl::.*treeture.*::operator task_reference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*treeture.*::getTaskReference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
-		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, TaskRefDoneCallMapper()}, // default ctor call - special mapping
-		{"allscale::api::core::impl::.*::task_reference::task_reference", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone}, // default ctor call - special mapping
+		{"allscale::api::core::impl::.*::task_reference::task_reference", mapToFirstArgument},  // copy|move ctor call
 		// treeture aggregation
 		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
 		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
@@ -55,89 +57,22 @@ namespace detail {
 		// dependencies
 		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
-		{"allscale::api::core::no_dependencies::operator dependencies", NoopCallMapper()},
-		{"allscale::api::core::.*::dependencies<.*>::dependencies", NoopCallMapper()}, // ctor call
-		{"allscale::api::core::no_dependencies::no_dependencies", NoopCallMapper()},   // ctor call
+		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument}, // conversion operator
+		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapToFirstArgument},     // copy|move ctor call
+		{"allscale::api::core::no_dependencies::no_dependencies", mapToFirstArgument},       // copy|move ctor call
 		// recfun operations
 		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", PrecFunCallMapper()},
 		{R"(allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable::operator\(\))", RecFunCallMapper()},
 		// fun
-		{"allscale::api::core::fun", FunConstructionMapper()},
-		{"allscale::api::core::fun_def<.*>::fun_def", NoopCallMapper()}, // ctor call
+		{"allscale::api::core::fun", mapToBuildRecFun},
+		{"allscale::api::core::fun_def<.*>::fun_def", mapToFirstArgument}, // copy|move ctor call
 		// prec
-		{"allscale::api::core::group", TupleAggregationMapper()},
-		{"allscale::api::core::prec", 1, PrecRecDefsMapper()},
-		{"allscale::api::core::prec", 2, PrecFunMapper()},
-		{"allscale::api::core::prec", 3, PrecDirectMapper()},
-		{"allscale::api::core::pick", ListAggregationMapper()},
+		{"allscale::api::core::group", aggregateArgumentsToTuple},
+		{"allscale::api::core::pick", aggregateArgumentsToList},
+		{"allscale::api::core::prec", 1, mapPrecRecDefs},
+		{"allscale::api::core::prec", 2, mapPrecFun},
+		{"allscale::api::core::prec", 3, mapPrecDirect},
 	};
-
-	static bool debug = false;
-
-	bool RegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
-		return std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
-	}
-
-	const std::string RegexCallFilter::getFilterRepresentation() const {
-		return patternString;
-	}
-
-	bool NumParamRegexCallFilter::matches(const clang::FunctionDecl* funDecl) const {
-		unsigned clangNumParams = funDecl->getNumParams();
-		auto primaryTemplate = funDecl->getPrimaryTemplate();
-		if(primaryTemplate) {
-			clangNumParams = primaryTemplate->getTemplatedDecl()->getNumParams();
-		}
-		return clangNumParams == numParams && std::regex_match(funDecl->getQualifiedNameAsString(), pattern);
-	}
-
-	const std::string NumParamRegexCallFilter::getFilterRepresentation() const {
-		return patternString + " [" + toString(numParams) + " params version]";
-	}
-
-	boost::optional<CallMapper> getMapping(const clang::Decl* decl) {
-		if(auto funDecl = llvm::dyn_cast_or_null<clang::FunctionDecl>(decl)) {
-			auto name = funDecl->getQualifiedNameAsString();
-			if(debug) {
-				std::cout << "N: " << name << std::endl;
-				std::cout << "  from line: " << insieme::frontend::utils::location(funDecl->getLocStart(), funDecl->getASTContext().getSourceManager()) << std::endl;
-			}
-
-			for(const auto& mapping : callMappings) {
-				if(mapping.matches(funDecl)) {
-					if(debug) std::cout << "  matched: " << mapping.getFilterRepresentation() << std::endl;
-					return mapping.getCallMapper();
-				}
-			}
-		}
-
-		return {};
-	}
-
-	core::ExpressionPtr mapExpr(const clang::Expr* expr, insieme::frontend::conversion::Converter& converter) {
-		// we handle certain calls specially, which we differentiate by their callee's name
-		const clang::Decl* decl = nullptr;
-
-		// the entries in our expression mappings apply to calls and constructor calls
-		if(auto call = llvm::dyn_cast<clang::CallExpr>(expr)) {
-			decl = call->getCalleeDecl();
-		}
-		if(auto constructExpr = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) {
-			decl = constructExpr->getConstructor();
-		}
-
-		// if we found a decl, we get it's fully qualified name and do a lookup in our map
-		auto mapper = getMapping(decl);
-		if(mapper) {
-			return mapper.get()(ClangExpressionInfo::getClangExpressionInfo(expr, converter));
-		}
-
-		return nullptr;
-	}
-
-	bool isMapped(const clang::Decl* decl) {
-		return getMapping(decl);
-	}
 
 
 	//////// implementation details --------------------------------------------------------------------------------------------------------------------
@@ -323,8 +258,11 @@ namespace detail {
 	}
 
 
-	// NoopCallMapper
-	core::ExpressionPtr NoopCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// Mappers
+
+	// mapToFirstArgument
+	core::ExpressionPtr mapToFirstArgument(const fed::ClangExpressionInfo& exprInfo) {
 		if(auto thisArg = exprInfo.implicitObjectArgument) {
 			return exprInfo.converter.convertExpr(thisArg);
 		}
@@ -334,14 +272,14 @@ namespace detail {
 	}
 
 
-	// DoneCallMapper
-	core::ExpressionPtr DoneCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	// mapDoneCall
+	core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo& exprInfo) {
 		return lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant());
 	}
 
 
 	// SimpleCallMapper
-	core::ExpressionPtr SimpleCallMapper::buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr SimpleCallMapper::buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const fed::ClangExpressionInfo& exprInfo) {
 		core::ExpressionList args;
 		auto& converter = exprInfo.converter;
 		// if it was a member call, add the implicit this argument
@@ -363,15 +301,15 @@ namespace detail {
 	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
 		return args;
 	}
-	core::ExpressionPtr SimpleCallMapper::generateCallee(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr SimpleCallMapper::generateCallee(const fed::ClangExpressionInfo& exprInfo) {
 		auto& allscaleExt = exprInfo.converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
 		return exprInfo.converter.getIRBuilder().parseExpr(targetIRString, allscaleExt.getSymbols());
 	}
-	core::ExpressionPtr SimpleCallMapper::postprocessCall(const ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) {
+	core::ExpressionPtr SimpleCallMapper::postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) {
 		return translatedCall;
 	}
 
-	core::ExpressionPtr SimpleCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr SimpleCallMapper::operator()(const fed::ClangExpressionInfo& exprInfo) {
 		auto callee = generateCallee(exprInfo);
 		auto translatedCall = buildCallWithDefaultParamConversion(callee, exprInfo);
 		return postprocessCall(exprInfo, translatedCall);
@@ -379,7 +317,7 @@ namespace detail {
 
 
 	// TaskRefDoneCallMapper
-	core::ExpressionPtr TaskRefDoneCallMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapToTaskRefDone(const fed::ClangExpressionInfo& exprInfo) {
 		auto& allS = exprInfo.converter.getNodeManager().getLangExtension<lang::AllscaleModule>();
 		return exprInfo.converter.getIRBuilder().callExpr(allS.getTaskRefDone(), core::ExpressionList());
 	}
@@ -407,7 +345,7 @@ namespace detail {
 
 
 	// RecOrPrecFunCallMapper
-	core::ExpressionPtr RecOrPrecFunCallMapper::generateCallee(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr RecOrPrecFunCallMapper::generateCallee(const fed::ClangExpressionInfo& exprInfo) {
 		assert_true(exprInfo.isOperatorCall);
 		auto recfunArg = exprInfo.converter.convertExpr(exprInfo.args[0]);
 		assert_true(recfunArg);
@@ -434,7 +372,7 @@ namespace detail {
 		}
 		return newArgs;
 	}
-	core::ExpressionPtr RecOrPrecFunCallMapper::postprocessCall(const ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) {
+	core::ExpressionPtr RecOrPrecFunCallMapper::postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) {
 		auto callType = exprInfo.converter.convertType(exprInfo.clangType);
 
 		lang::TreetureType callTreeture(callType);
@@ -620,7 +558,7 @@ namespace detail {
 	}
 
 	// FunConstructionMapper
-	core::ExpressionPtr FunConstructionMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapToBuildRecFun(const fed::ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 3) << "handleCoreFunCall expects 3 arguments";
 		// the actual work is outlined in a function, as we need it in the PrecFunMapper also
 		return doFunConstructionMapping(exprInfo.clangType, exprInfo.locStart, exprInfo.args[0], exprInfo.args[1], exprInfo.args[2], exprInfo.converter);
@@ -628,7 +566,7 @@ namespace detail {
 
 
 	// TupleAggregationMapper
-	core::ExpressionPtr TupleAggregationMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr aggregateArgumentsToTuple(const fed::ClangExpressionInfo& exprInfo) {
 		core::ExpressionList elements;
 		for(const auto& arg : exprInfo.args) {
 			elements.push_back(derefOrDematerialize(exprInfo.converter.convertExpr(arg)));
@@ -638,7 +576,7 @@ namespace detail {
 
 
 	// ListAggregationMapper
-	core::ExpressionPtr ListAggregationMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr aggregateArgumentsToList(const fed::ClangExpressionInfo& exprInfo) {
 		core::ExpressionList elements;
 		for(const auto& arg : exprInfo.args) {
 			elements.push_back(derefOrDematerialize(exprInfo.converter.convertExpr(arg)));
@@ -648,17 +586,17 @@ namespace detail {
 
 
 	// PrecRecDefsMapper
-	core::ExpressionPtr PrecRecDefsMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapPrecRecDefs(const fed::ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 1) << "prec call with rec_defs only supports 1 argument";
 		return lang::buildPrec(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0])));
 	}
 	// PrecFunMapper
-	core::ExpressionPtr PrecFunMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapPrecFun(const fed::ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 1) << "we don't support mutual recursion";
 		return lang::buildPrec(exprInfo.converter.getIRBuilder().tupleExpr(derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0]))));
 	}
 	// PrecDirectMapper
-	core::ExpressionPtr PrecDirectMapper::operator()(const ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapPrecDirect(const fed::ClangExpressionInfo& exprInfo) {
 		assert_eq(exprInfo.numArgs, 3) << "direct prec call only supports 3 arguments";
 		// here we 'emulate' a fun in between
 		auto funRes = doFunConstructionMapping(exprInfo.clangType, exprInfo.locStart, exprInfo.args[0], exprInfo.args[1], exprInfo.args[2], exprInfo.converter);

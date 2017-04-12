@@ -9,8 +9,9 @@
 #include "insieme/frontend/extensions/interceptor_extension.h"
 #include "insieme/utils/iterator_utils.h"
 
-#include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/config.h"
+#include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
 
 namespace iu = insieme::utils;
 
@@ -19,6 +20,42 @@ namespace compiler {
 namespace frontend {
 
 	namespace core = insieme::core;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// MAPPING OVERLOADS
+
+	/// Mapping specification from C++ to IR types used during type translation
+	std::map<std::string, std::string> AllscaleExtension::getTypeMappings() {
+		return {
+			// callables
+			{ "allscale::api::core::fun_variants", "list<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
+			{ "allscale::api::core::fun_def", "recfun<TEMPLATE_T_1,TEMPLATE_T_0>" },
+			{ "allscale::api::core::rec_defs", "('TEMPLATE_T_0...)" },
+			{ "allscale::api::core::detail::prec_operation", "precfun<TEMPLATE_T_0,TEMPLATE_T_1>" },
+			{ "allscale::api::core::detail::callable", "TUPLE_TYPE_0<TUPLE_TYPE_0<('TEMPLATE_T_0...)>>" },
+			{ "allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable", "TUPLE_TYPE_0<('ENCLOSING_TEMPLATE_T_0...)>" },
+			// completed tasks
+			{ "allscale::api::core::detail::completed_task", "treeture<TEMPLATE_T_0,f>" },
+			// treetures
+			{ "allscale::api::core::impl::.*::treeture", "treeture<TEMPLATE_T_0,t>" },
+			{ "allscale::api::core::impl::.*::.*unreleased_treeture", "treeture<TEMPLATE_T_0,f>" },
+			// task_refs
+			{ "allscale::api::core::impl::.*::task_reference", "task_ref" },
+			// dependencies
+			{ "allscale::api::core::.*dependencies", "dependencies" },
+		};
+	}
+
+	std::vector<insieme::frontend::extensions::detail::FilterMapper> AllscaleExtension::getExprMappings() {
+		return detail::exprMappings;
+	}
+
+
+	namespace {
+		/// Name of placeholder generic type generated for dependent types for temporary translation
+		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
+
+		static bool debug = false;
+	}
 
 	boost::optional<std::string> AllscaleExtension::isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const {
 		if(!setup.hasExtension<insieme::frontend::extensions::InterceptorExtension>()) {
@@ -31,30 +68,15 @@ namespace frontend {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// TYPES
 
-	namespace {
-		/// Name of placeholder generic type generated for dependent types for temporary translation
-		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
-
-		static bool debug = false;
-	}
-
-	detail::TypeMapper& AllscaleExtension::getTypeMapper(insieme::frontend::conversion::Converter& converter) {
-		typeMapper.initializeIfNeeded(converter);
-		return typeMapper;
-	}
-
-	insieme::core::TypePtr AllscaleExtension::Visit(const clang::QualType& typeIn, insieme::frontend::conversion::Converter& converter) {
-		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
-
-		// Apply the type mapping specification table to record types
-		auto mappedType = getTypeMapper(converter).apply(type);
-		if(mappedType) {
-			if(debug) std::cout << "Mapped type to : " << *mappedType << std::endl;
-			return mappedType;
+	core::TypePtr AllscaleExtension::Visit(const clang::QualType& typeIn, insieme::frontend::conversion::Converter& converter) {
+		// let the superclass handle the type mappings
+		if(auto ret = MappingFrontendExtension::Visit(typeIn, converter)) {
+			return ret;
 		}
 
 		// if the passed type is an AutoType or BuiltinType and is dependent, we can't really translate it correctly.
 		// we create a dummy replacement type to move forward in the translation and assert this replacement doesn't survive in the final IR
+		const clang::Type* type = typeIn->getUnqualifiedDesugaredType();
 		if(auto autoType = llvm::dyn_cast<clang::AutoType>(type)) {
 			if(autoType->isDependentType()) { return converter.getIRBuilder().genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER); }
 		}
@@ -102,8 +124,8 @@ namespace frontend {
 		if(auto s = skipClangExpr<clang::ExprWithCleanups>(expr, converter,         [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 		if(auto s = skipClangExpr<clang::CXXBindTemporaryExpr>(expr, converter,     [](const auto sE) { return sE->getSubExpr(); }))       { return s; }
 
-		// the actual mapping is done externally
-		return detail::mapExpr(expr, converter);
+		// the actual mapping is done via the mapping functionality in the parent class
+		return MappingFrontendExtension::Visit(expr, converter);
 	}
 
 	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CastExpr* castExpr,
@@ -159,6 +181,12 @@ namespace frontend {
 		return prog;
 	}
 
+
+
+	AllscaleExtension::AllscaleExtension() : insieme::frontend::extensions::MappingFrontendExtension() {
+		includeDirs.push_back(getAllscaleAPICoreIncludeDir());
+		includeDirs.push_back(getAllscaleAPIUtilsIncludeDir());
+	}
 }
 }
 }
