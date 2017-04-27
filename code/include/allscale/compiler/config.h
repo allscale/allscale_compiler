@@ -40,6 +40,10 @@ namespace compiler {
 		return "allscale/api/core";
 	}
 
+	inline const string getAllscaleAPIDataItemsInterceptionIncludePath() {
+		return "allscale/api/user/data";
+	}
+
 	inline const std::string getVersion() {
 		//TODO implement
 		return "epsilon";

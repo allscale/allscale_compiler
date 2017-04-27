@@ -8,6 +8,7 @@
 
 #include "insieme/utils/compiler/compiler.h"
 
+#include "allscale/compiler/config.h"
 #include "allscale/compiler/backend/allscale_preprocessor.h"
 #include "allscale/compiler/backend/allscale_type_handler.h"
 #include "allscale/compiler/backend/allscale_operator.h"
@@ -85,6 +86,8 @@ namespace backend {
 		if (syntax_only) compiler.addFlag("-fsyntax-only");
 
 		// include directories
+		compiler.addIncludeDir(getAllscaleAPICoreIncludeDir());
+		compiler.addIncludeDir(getAllscaleAPIUtilsIncludeDir());
 		compiler.addIncludeDir(ALLSCALE_RUNTIME_INCLUDE_DIR);
 		compiler.addIncludeDir(HPX_INCLUDE_DIR);
 		compiler.addIncludeDir(HPX_ROOT_DIR);		// contains some configuration files
