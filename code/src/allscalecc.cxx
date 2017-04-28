@@ -4,6 +4,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include "insieme/utils/timer.h"
+
 #include "insieme/core/checks/ir_checks.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
@@ -84,40 +86,67 @@ int main(int argc, char** argv) {
 	}
 
 	// Step 3: load input code
-	std::cout << "Parsing input files ...\n";
+	insieme::utils::Timer timer;
+	std::cout << "Parsing input files ... " << std::flush;
 	auto program = options.job.execute(mgr);
+	std::cout << timer.step() << "s\n";
 
 	// dump IR code
 	if(!commonOptions.dumpIR.empty()) {
-		std::cout << "Dumping intermediate representation ...\n";
+		std::cout << "Dumping intermediate representation ... " << std::flush;
 		std::ofstream out(commonOptions.dumpIR.string());
 		out << core::printer::PrettyPrinter(program, core::printer::PrettyPrinter::PRINT_DEREFS);
+		std::cout << timer.step() << "s\n";
 	}
 
 	// perform semantic checks - also including the AllScale specific checks
 	if(commonOptions.checkSema || commonOptions.checkSemaOnly) {
-		core::checks::MessageList errors;
-		int retval = driver::utils::checkSema(program, errors, allscale::compiler::checks::getFullCheck());
-		if(commonOptions.checkSemaOnly) { return retval; }
+
+		// run semantic checks
+		std::cout << "Running semantic checks ... " << std::flush;
+		auto errors = insieme::core::checks::check(program, allscale::compiler::checks::getFullCheck());
+		std::cout << timer.step() << "s\n";
+
+		// print errors if some have been found
+		if (!errors.empty()) {
+			// print errors
+			for(const auto& cur : errors.getAll()) {
+				std::cout << cur << "\n";
+			}
+			// print summary
+			std::cout << "\n";
+			std::cout << "Total number of errors:   " << errors.getErrors().size() << "\n";
+			std::cout << "Total number of warnings: " << errors.getWarnings().size() << "\n";
+
+			// fail compilation
+			std::cout << "\nErrors encountered, compilation process terminated.\n";
+			return 1;
+		}
+
+		// end program if this is all that is requested
+		if(commonOptions.checkSemaOnly) { return errors.empty() ? 0 : 1; }
 	}
 
 	// Step 4: convert src file to target code
-	std::cout << "Producing target code ... \n";
+	std::cout << "Producing target code ... " << std::flush;
 	auto code = allscale::compiler::backend::convert(program);
+	std::cout << timer.step() << "s\n";
 
 	// dump source file if requested, exit if requested
 	insieme::frontend::path filePath = commonOptions.dumpTRG;
 	if(!commonOptions.dumpTRGOnly.empty()) { filePath = commonOptions.dumpTRGOnly; }
 	if(!filePath.empty()) {
-		std::cout << "Dumping target code ...\n";
+		std::cout << "Dumping target code ... " << std::flush;
 		std::ofstream out(filePath.string());
 		out << *code;
+		std::cout << timer.step() << "s\n";
 		if(!commonOptions.dumpTRGOnly.empty()) { return 0; }
 	}
 
 	// Step 5: built the resulting binary
-	std::cout << "Compiling target code (-O" << opt_level << ") ... \n";
+	std::cout << "Compiling target code (-O" << opt_level << ") ... " << std::flush;
 	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), opt_level);
+	std::cout << timer.step() << "s\n";
 
 	// return result
 	return (ok)?0:1;
