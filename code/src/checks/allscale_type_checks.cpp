@@ -32,7 +32,7 @@ namespace checks {
 		// check lambda
 		auto lambdaType = initType.isa<TagTypePtr>();
 		if(!lambdaType || !lambdaType.isStruct()) {
-			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, format("passed lambda is not a struct, but %s", *lambdaType), Message::ERROR));
+			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, format("passed lambda is not a struct, but %s", *initType), Message::ERROR));
 			return res;
 		}
 
