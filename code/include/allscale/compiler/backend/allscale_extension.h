@@ -50,7 +50,7 @@ namespace backend {
 
 		// --- a primitive to wrap up work item instances not yet spawned ---
 
-		LANG_EXT_LITERAL(PrecFunCreate,    "art_make_precfun",        "((dependencies,'Arg)=>treeture<'Res,f>)->precfun<'Arg,'Res>");
+		LANG_EXT_LITERAL(PrecFunCreate,    "art_make_precfun",        "(('Closure...),(cpp_ref<dependencies,t,f>,cpp_ref<('Arg,'Closure...),t,f>)->treeture<'Res,f>)->precfun<'Arg,'Res>");
 		LANG_EXT_LITERAL(PrecFunToFun,     "art_precfun_to_fun",      "(precfun<'Arg,'Res>)->('Arg)->treeture<'Res,f>");
 		LANG_EXT_LITERAL(PrecFunToDepFun,  "art_precfun_to_dep_fun",  "(precfun<'Arg,'Res>)->(dependencies,'Arg)->treeture<'Res,f>");
 

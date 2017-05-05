@@ -115,7 +115,7 @@ int main() {
 					*<ref<__any_string__adder,f,f,plain>>(ref_temp(
 						type_lit(__any_string__adder)
 					)) {},
-					type_lit((int<4>, int<4>) -> int<4>)
+					type_lit((ref<int<4>,t,f,cpp_ref>, ref<int<4>,t,f,cpp_ref>) -> int<4>)
 				),
 				true
 			);

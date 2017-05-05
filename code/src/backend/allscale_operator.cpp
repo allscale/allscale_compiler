@@ -121,13 +121,8 @@ namespace backend {
 				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::make_prec_operation");
 				trg = c_ast::instantiate(trg,paramTypeInfo.rValueType,returnTypeInfo.rValueType);
 
-				// wrap binding into a lambda wrapper
-				core::BindExprPtr bind = ARG(0).as<core::BindExprPtr>();
-				c_ast::ExpressionPtr bindWrapper = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::make_insieme_lambda_wrapper");
-				c_ast::ExpressionPtr closure = c_ast::call(bindWrapper, CONVERT_ARG(0));
-
 				// just forward parameters -- C++ resolution uses member function
-				return c_ast::call(trg,closure);
+				return c_ast::call(trg,CONVERT_ARG(0),CONVERT_ARG(1));
 
 			};
 

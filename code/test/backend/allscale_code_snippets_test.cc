@@ -282,77 +282,6 @@ namespace backend {
 	}
 
 
-	TEST(CodeSnippet, CapturedState) {
-		NodeManager mgr;
-
-		auto fib = parse(mgr,
-				R"(
-					{
-						var ref<int<4>> a;
-						var ref<int<4>> b;
-						precfun_to_fun(prec((build_recfun(
-							  ( i : int<4> ) => i < *a,
-							[ ( i : int<4> ) => i + *b ],
-							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
-								let step = recfun_to_fun(steps.0);
-								return step(i-1);
-							} ]
-						))))(12);
-					}
-				)"
-		);
-		ASSERT_TRUE(fib);
-
-		// convert with allscale backend
-		auto code = convert(fib);
-		ASSERT_TRUE(code);
-
-		// check that the resulting source is compiling
-		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
-	}
-
-	TEST(CodeSnippet, CapturedArray) {
-		NodeManager mgr;
-
-		auto fib = parse(mgr,
-				R"(
-					{
-						var ref<array<int<4>,12>> a = <ref<array<int<4>,12>>>(ref_decl(type_lit(ref<array<int<4>,12>>))){};
-						precfun_to_fun(prec((build_recfun(
-							  ( r : (int<4>,int<4>) ) => r.0 >= r.1,
-							[
-							  ( r : (int<4>,int<4>) ) => {
-								for(int<4> i = r.0 .. r.1 ) {
-									a[i] = 12;
-								}
-								return true;
-							  }
-							],[
-							  ( r : (int<4>,int<4>), steps : (recfun<(int<4>,int<4>),bool>) ) => {
-								let step = recfun_to_fun(steps.0);
-								auto m = (r.0 + r.1) / 2 ;
-								auto a = step(( r.0, m ));
-								auto b = step(( m, r.1 ));
-								treeture_get(a);
-								treeture_get(b);
-								return treeture_done(true);
-							  }
-							]
-						))))((0,12));
-					}
-				)"
-		);
-		ASSERT_TRUE(fib);
-
-		// convert with allscale backend
-		auto code = convert(fib);
-		ASSERT_TRUE(code);
-
-		// check that the resulting source is compiling
-		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
-	}
-
-
 	TEST(CodeSnippet, FibEagerFull) {
 
 		NodeManager mgr;
@@ -427,7 +356,7 @@ namespace backend {
 	}
 
 
-	TEST(CodeSnippet, CppInputEmptyMain) {
+	TEST(CodeSnippet, CppEmptyMain) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -457,7 +386,7 @@ namespace backend {
 	}
 
 	// make sure allscale BE does not break standard interception
-	TEST(CodeSnippet, CppInputCout) {
+	TEST(CodeSnippet, CppCout) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -813,6 +742,78 @@ namespace backend {
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 
+	}
+
+    TEST(CodeSnippet, CppCaptureValue) {
+        NodeManager mgr;
+
+        auto code = R"(
+                #include "allscale/api/core/prec.h"
+
+                using namespace allscale::api::core;
+               
+                int main(int argc, char** argv) {
+
+                    int var;
+                    prec(
+                        [](int)->bool { return true; },
+                        [var](int p) { var + p; },
+                        [](int,const auto& f) { return f(12); }
+                    )(1).wait();
+
+                    return 0;
+                }
+            )";
+
+        auto prog = frontend::parseCode(mgr,code);
+        ASSERT_TRUE(prog);
+
+        // check for semantic errors
+        ASSERT_TRUE(core::checks::check(prog).empty())
+            << core::printer::dumpErrors(core::checks::check(prog));
+
+        // convert with allscale backend
+        auto trg = convert(prog);
+        ASSERT_TRUE(trg);
+
+        // check that the resulting source is compiling
+        EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+    }
+
+    TEST(DISABLED_CodeSnippet, CppCaptureReference) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+			   
+				int main(int argc, char** argv) {
+
+					int var;
+					prec(
+						[](int)->bool { return true; },
+						[&var](int p) { var + p; },
+						[](int,const auto& f) { return f(12); }
+					)(1).wait();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
 

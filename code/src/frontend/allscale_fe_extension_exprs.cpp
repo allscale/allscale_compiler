@@ -145,7 +145,7 @@ namespace detail {
 				auto ret = converter.convertType(lambda->getCallOperator()->getType()).as<core::FunctionTypePtr>();
 				if(deref) {
 					auto dereffedParamTypes = ::transform(ret->getParameterTypeList(), [](const core::TypePtr& t) {
-						return core::analysis::isRefType(t) ? core::analysis::getReferencedType(t) : t;
+						return core::analysis::isRefType(t) ? core::transform::dematerialize(t) : t;
 					});
 					ret = converter.getIRBuilder().functionType(dereffedParamTypes, ret->getReturnType(), ret->getKind());
 				}
