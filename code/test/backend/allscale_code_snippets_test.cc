@@ -780,7 +780,7 @@ namespace backend {
         EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
     }
 
-    TEST(DISABLED_CodeSnippet, CppCaptureReference) {
+    TEST(CodeSnippet, CppCaptureReference) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -816,6 +816,77 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
+    TEST(CodeSnippet, CppCapturePointerValue) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+			   
+				int main(int argc, char** argv) {
+					int x;
+					int* var = &x;
+					prec(
+						[](int)->bool { return true; },
+						[var](int p) { *var + p; },
+						[](int,const auto& f) { return f(12); }
+					)(1).wait();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+	}
+
+    TEST(CodeSnippet, CppCapturePointerReference) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+			   
+				int main(int argc, char** argv) {
+					int x;
+					int* var = &x;
+					prec(
+						[](int)->bool { return true; },
+						[&var](int p) { *var + p; },
+						[](int,const auto& f) { return f(12); }
+					)(1).wait();
+
+					return 0;
+				}
+			)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+	}
 
 	TEST(DISABLED_CodeSnippet, CppPforWrapper) {
 		NodeManager mgr;

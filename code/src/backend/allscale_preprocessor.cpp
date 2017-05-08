@@ -8,6 +8,7 @@
 #include "insieme/core/ir.h"
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/lang/reference.h"
+#include "insieme/core/lang/pointer.h"
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
@@ -380,6 +381,10 @@ namespace backend {
 				return values.size();
 			}
 
+			const CapturedValue& operator[](std::size_t index) const {
+				return values[index];
+			}
+
 			auto begin() const {
 				return values.begin();
 			}
@@ -561,7 +566,17 @@ namespace backend {
 
 						// add the captured values
 						for(std::size_t i = 0; i<index.size(); ++i) {
-							closureValues.push_back(builder.refComponent(param,i+1));
+							// get the value from the closure
+							core::ExpressionPtr forward = builder.refComponent(param,i+1);
+
+							// if the captured values is a reference value
+							if (core::lang::isReference(index[i].field->getType())) {
+								// we need to de-ref the captured value
+								forward = builder.deref(forward);
+							}
+
+							// add result to parameter list
+							closureValues.push_back(forward);
 						}
 
 						// build recursive call
@@ -584,7 +599,7 @@ namespace backend {
 						// replace by access to closure element
 						core::ExpressionPtr res = builder.refComponent(param,pos+1);
 
-						// if necessary, cast to required target type
+						// if necessary, cast to required target type (e.g. adding or removing const)
 						if (*call->getType() != *res->getType()) {
 							res = core::lang::buildRefCast(res,call->getType());
 						}
@@ -816,7 +831,17 @@ namespace backend {
 
 			// add captured values
 			for(const auto& cur : capturedValues) {
-				elements.push_back(cur.field->getType());
+				auto type = cur.field->getType();
+
+				// capture C++ references as plain references, thus as pointer
+				if (core::lang::isReference(type)) {
+					core::lang::ReferenceType refType(type);
+					refType.setKind(core::lang::ReferenceType::Kind::Plain);
+					type = refType.toType();
+				}
+
+				// add this element to the capture tuple
+				elements.push_back(type);
 			}
 
 			// and pack types into a single tuple
@@ -933,7 +958,11 @@ namespace backend {
 			// collect the values to be captured for the closure
 			core::ExpressionList closureValues;
 			for(const CapturedValue& cur : capturedValues) {
-				closureValues.push_back(cur.value);
+				auto capture = cur.value;
+				if (core::lang::isCppReference(capture)) {
+					capture = core::lang::buildRefKindCast(cur.value,core::lang::ReferenceType::Kind::Plain);
+				}
+				closureValues.push_back(capture);
 			}
 			auto closure = builder.tupleExpr(closureValues);
 
