@@ -234,8 +234,8 @@ namespace detail {
 			auto functionType = builder.functionType(funTypeParamTypes, oldFunType->getReturnType(), core::FK_MEMBER_FUNCTION);
 			auto ret = builder.lambdaExpr(functionType, params, body, oldOperator->getReference()->getNameAsString());
 
-			// we need some special treatment for step cases with unit return type
-			return fixTreetureUnitLambda(ret);
+			// we need some special treatment for step cases with returns of non-treeture type
+			return fixStepLambdaReturns(ret);
 		}
 
 		/**
