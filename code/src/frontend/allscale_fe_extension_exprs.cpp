@@ -31,7 +31,7 @@ namespace detail {
 		{"allscale::api::core::detail::prec_operation.*prec_operation", mapToFirstArgument}, // copy|move ctor call
 		// completed_tasks
 		{"allscale::api::core::done", 0, mapDoneCall},
-		{"allscale::api::core::done", SimpleCallMapper("treeture_done")},
+		{"allscale::api::core::done", SimpleCallMapper("treeture_done", false, true)},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", mapToFirstArgument}, // conversion operator
@@ -290,7 +290,9 @@ namespace detail {
 		}
 		// add normal arguments
 		for(const auto& arg : exprInfo.args) {
-			args.push_back(convertArgument(arg, converter));
+			auto convertedArg = convertArgument(arg, converter);
+			if(derefOtherArgs) convertedArg = derefOrDematerialize(convertedArg);
+			args.push_back(convertedArg);
 		}
 		return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(args, converter));
 	}

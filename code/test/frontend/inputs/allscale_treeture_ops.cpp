@@ -12,10 +12,18 @@ int main() {
 	#pragma test expect_ir(R"({
 		var ref<treeture<int<4>, f>,f,f,plain> a = treeture_done(1);
 		var ref<treeture<unit, f>,f,f,plain> b = treeture_done(unit);
+		var ref<int<4>,f,f,plain> i = ref_decl(type_lit(ref<int<4>,f,f,plain>));
+		var ref<treeture<int<4>,f>,f,f,plain> c = treeture_done(*i);
+		var ref<int<4>,f,f,cpp_ref> iRef = i;
+		var ref<treeture<int<4>,f>,f,f,plain> d = treeture_done(*iRef);
 	})")
 	{
 		auto a = done(1);
 		auto b = done();
+		int i;
+		auto c = done(i);
+		int& iRef = i;
+		auto d = done(iRef);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// METHODS ////

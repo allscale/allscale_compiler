@@ -45,6 +45,7 @@ namespace frontend {
 		class SimpleCallMapper {
 			const string targetIRString;
 			const bool derefThisArg;
+			const bool derefOtherArgs;
 			core::ExpressionPtr buildCallWithDefaultParamConversion(const core::ExpressionPtr& callee, const fed::ClangExpressionInfo& exprInfo);
 
 		  protected:
@@ -54,7 +55,8 @@ namespace frontend {
 			virtual core::ExpressionPtr postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall);
 
 		  public:
-			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false) : targetIRString(targetIRString), derefThisArg(derefThisArg) {}
+			SimpleCallMapper(const string& targetIRString, bool derefThisArg = false, bool derefOtherArgs = false) :
+				targetIRString(targetIRString), derefThisArg(derefThisArg), derefOtherArgs(derefOtherArgs) {}
 			core::ExpressionPtr operator()(const fed::ClangExpressionInfo& exprInfo);
 		};
 
