@@ -976,10 +976,11 @@ namespace backend {
 			   
 				int main(int argc, char** argv) {
 					auto fun = []() {
+						return 3;
 					};
 					prec(
 						[](int)->bool { return true; },
-						[fun](int p) { fun(); },
+						[fun](int p) { fun() + 4; },
 						[](int,const auto& f) { return f(12); }
 					)(1).wait();
 
@@ -1012,10 +1013,11 @@ namespace backend {
 			   
 				int main(int argc, char** argv) {
 					auto fun = []() {
+						return 3;
 					};
 					prec(
 						[](int)->bool { return true; },
-						[&fun](int p) { fun(); },
+						[&fun](int p) { fun() + 4; },
 						[](int,const auto& f) { return f(12); }
 					)(1).wait();
 

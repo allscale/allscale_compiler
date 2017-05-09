@@ -674,7 +674,7 @@ namespace backend {
 
 									// replace old object with new object
 									auto oldObj = core::CallExprAddress(call)->getArgument(0);
-									return core::transform::replaceAddress(mgr,oldObj,newObj);
+									return core::transform::replaceNode(mgr,oldObj,newObj);
 								}
 
 							}
@@ -851,7 +851,7 @@ namespace backend {
 
 
 		core::NodePtr convertPrecOperator(const be::Converter& converter, const core::NodePtr& code) {
-			const bool debug = true;
+			const bool debug = false;
 
 			// -- Step 1: Preparation --
 
