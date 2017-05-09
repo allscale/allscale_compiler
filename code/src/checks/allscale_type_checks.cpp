@@ -29,6 +29,9 @@ namespace checks {
 		auto initType = analysis::getArgument(address, 0)->getType();
 		if(analysis::isRefType(initType)) initType = analysis::getReferencedType(initType);
 
+		// if the target is a tag-type reference => grant it the benefit of the dough
+		if (initType.isa<TagTypeReferencePtr>()) return res;
+
 		// check lambda
 		auto lambdaType = initType.isa<TagTypePtr>();
 		if(!lambdaType || !lambdaType.isStruct()) {
@@ -87,10 +90,13 @@ namespace checks {
 		auto initType = analysis::getArgument(address, 0)->getType();
 		if(analysis::isRefType(initType)) initType = analysis::getReferencedType(initType);
 
+		// if the target is a tag-type reference => grant it the benefit of the dough
+		if (initType.isa<TagTypeReferencePtr>()) return res;
+
 		// check lambda
 		auto lambdaType = initType.isa<TagTypePtr>();
 		if(!lambdaType || !lambdaType.isStruct()) {
-			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, format("passed lambda is not a struct, but %s", *lambdaType), Message::ERROR));
+			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, format("passed lambda is not a struct, but %s", *initType), Message::ERROR));
 			return res;
 		}
 
