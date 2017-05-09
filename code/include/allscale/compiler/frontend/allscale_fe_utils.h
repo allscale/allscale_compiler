@@ -7,8 +7,8 @@ namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	/// In case the passed lambda has a unit return value, this function will change it to treeture<unit, f> and fix all paths with returns
-	insieme::core::LambdaExprPtr fixTreetureUnitLambda(const insieme::core::LambdaExprPtr& lambdaExpr);
+	/// In case the passed lambda has return statements which don't return a treeture, this function will insert the implicit treeture_done cals on all paths with returns
+	insieme::core::LambdaExprPtr fixStepLambdaReturns(const insieme::core::LambdaExprPtr& lambdaExpr);
 
 }
 }

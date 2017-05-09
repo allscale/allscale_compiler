@@ -9,11 +9,9 @@ using namespace allscale::api;
 int main() {
 	; // this is required because of the clang compound source location bug
 
-	#pragma test expect_ir(R"(
-		{
-			;
-		}
-	)")
+	// Note that we don't perform any IR comparison here, as it would be rather pointless and the given IR might change a lot with small changes in the API.
+	// Nevertheless, the testing framework will run the semantic checks on the generated IR.
+
 	{
 		std::vector<int> v;
 		user::pfor(v, [](const auto& elem) {
