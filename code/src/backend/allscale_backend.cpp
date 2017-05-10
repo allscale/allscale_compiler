@@ -47,7 +47,8 @@ namespace backend {
 				be::getBasicPreProcessorSequence(),
 				be::makePreProcessor<CppLambdaToIRConverter>(),
 				be::makePreProcessor<PrecConverter>(),
-				be::makePreProcessor<EntryPointWrapper>()
+				be::makePreProcessor<EntryPointWrapper>(),
+				be::makePreProcessor<ClosureDefaultConstructorEnforcer>()
 			));
 
 			// register support for additional types

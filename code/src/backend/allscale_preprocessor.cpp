@@ -12,8 +12,10 @@
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
+#include "insieme/core/transform/materialize.h"
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/printer/error_printer.h"
+#include "insieme/core/analysis/type_utils.h"
 
 #include "insieme/backend/preprocessor.h"
 #include "insieme/backend/name_manager.h"
@@ -492,7 +494,6 @@ namespace backend {
 			if (!lambda) {
 
 				// check some pre-conditions
-				auto& asExt = mgr.getLangExtension<lang::AllscaleModule>();
 				assert_pred2(core::analysis::isCallOf,lambdaExpr,asExt.getCppLambdaToClosure());
 
 				// unpack the constructor of the lambda
@@ -1168,6 +1169,130 @@ namespace backend {
 			return node;
 
 		}, core::transform::globalReplacement);
+
+		// check the result
+		assert_correct_ir(res);
+
+		// return result
+		return res;
+	}
+
+
+	insieme::core::NodePtr ClosureDefaultConstructorEnforcer::process(const insieme::backend::Converter&, const insieme::core::NodePtr& code) {
+
+		core::NodeManager& mgr = code.getNodeManager();
+		core::IRBuilder builder(mgr);
+		const auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
+
+		// -- Step 8: extra step: make all (nested) structs in the closure default-constructible
+
+		// search all structs
+		core::NodeMap recordSubstitutes;
+		core::visitDepthFirstOnce(code,[&](const core::CallExprPtr& call){
+
+			// only interested in call to PrecFunCreate operator
+			if (!core::analysis::isCallOf(call,ext.getPrecFunCreate())) return;
+
+			// collect all structs in the closure type
+			core::visitDepthFirstOnce(call->getArgument(0)->getType(),[&](const core::RecordPtr& record){
+
+				// check whether there is a field of a reference type
+				bool hasReferenceField = any(record->getFields(),[](const core::FieldPtr& field) {
+					return core::lang::isReference(field->getType());
+				});
+
+				// only interested if there is a reference field
+				if (!hasReferenceField) return;
+
+				// Step 1: re-write the default to force code generation (it is no longer defaulted)
+
+				// search default constructor
+				core::LambdaExprAddress defaultConstructor;
+				for(const core::ExpressionAddress& cur : core::RecordAddress(record)->getConstructors()) {
+					if (auto lambda = cur.isa<core::LambdaExprAddress>()) {
+						if (lambda->getParameterList().size() == 1) {
+							defaultConstructor = lambda;
+						}
+					}
+				}
+
+				// make sure it has been found
+				assert_true(defaultConstructor)
+					<< "Unable to locate pre-existing default constructor!";
+
+				// replace body of this constructor
+				auto newRecord = core::transform::replaceNode(mgr,defaultConstructor->getBody(),builder.compoundStmt(
+						builder.stringLit("Forced auto-generated default constructor.")
+				)).as<core::RecordPtr>();
+
+
+				// Step 2: add a all-field forward constructor to support initializer expressions
+
+				core::VariablePtr thisVar = defaultConstructor->getParameterList()[0];
+				core::VariableList parameters;
+				core::StatementList initStmts;
+
+				// the this pointer is the first parameter
+				parameters.push_back(thisVar);
+
+				auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
+				for(const core::FieldPtr& field : record->getFields()) {
+
+					// get field type
+					auto fieldType = field->getType();
+
+					// get parameter
+					auto parameter = builder.variable(core::transform::materialize(fieldType));
+
+					// create the field access
+					auto fieldAccess = builder.callExpr(
+							refExt.getRefMemberAccess(),
+							builder.deref(thisVar),
+							builder.getIdentifierLiteral(field->getName()),
+							builder.getTypeLiteral(field->getType())
+					);
+
+					// create the init expression
+					auto initExpr = builder.initExpr(fieldAccess,parameter);
+
+					// TODO: actually call constructor of copied elements if necessary
+					//  - so fare everything is initialized through an init expression
+
+					// add to lists
+					parameters.push_back(parameter);
+					initStmts.push_back(initExpr);
+
+				}
+
+				// build the new constructor
+				auto returnType = defaultConstructor.getAddressedNode()->getFunctionType()->getReturnType();
+				auto ctor = builder.lambdaExpr(returnType,parameters,builder.compoundStmt(initStmts),"_",core::FK_CONSTRUCTOR);
+
+				// insert into resulting record
+				core::ExpressionList constructors = newRecord->getConstructors()->getExpressions();
+				constructors.push_back(ctor);
+				newRecord = core::transform::replaceNode(mgr,
+						core::RecordAddress(newRecord)->getConstructors(),
+						builder.expressions(constructors)
+				).as<core::RecordPtr>();
+
+				// -- Done: register for replacement
+
+				// add replacement to substitution
+				recordSubstitutes[record] = newRecord;
+			});
+		},true);
+
+		// apply replacement
+		auto res = core::transform::replaceAllGen(mgr,code,recordSubstitutes,core::transform::globalReplacement);
+
+
+		auto errors = core::checks::check(res);
+		if (!errors.empty()) {
+			for(const auto& cur : errors.getErrors()) {
+				std::cout << cur << "\n";
+			}
+		}
 
 		// check the result
 		assert_correct_ir(res);

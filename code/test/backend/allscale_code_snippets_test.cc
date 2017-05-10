@@ -1041,7 +1041,7 @@ namespace backend {
 	}
 
 
-    TEST(DISABLED_CodeSnippet, CppCaptureLambdaWithClosureValue) {
+    TEST(CodeSnippet, CppCaptureLambdaWithClosureValue) {
 		NodeManager mgr;
 
 		auto code = R"(
