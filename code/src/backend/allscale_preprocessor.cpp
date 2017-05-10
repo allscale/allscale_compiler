@@ -1215,18 +1215,58 @@ namespace backend {
 				// add replacement to substitution
 				recordSubstitutes[record] = newRecord;
 			});
+
+			// --- Parameter Type ---
+
+			// also: if the recursive parameter type is a struct, make sure it has a default constructor
+			auto funParamType = call->getArgument(1)->getType().as<core::FunctionTypePtr>()->getParameterType(1);
+
+			// remove references
+			if (core::lang::isReference(funParamType)) {
+				funParamType = core::analysis::getReferencedType(funParamType);
+			}
+
+			// take the first parameter in the passed tuple
+			funParamType = funParamType.as<core::TupleTypePtr>()->getElement(0);
+
+			// if this is a tag type, it needs a default constructor
+			if (auto tagType = funParamType.isa<core::TagTypePtr>()) {
+				auto record = tagType->getRecord();
+
+				// search default constructor
+				core::ExpressionAddress defaultConstructor;
+				for(const core::ExpressionAddress& cur : core::RecordAddress(record)->getConstructors()) {
+
+					// check whether this is the default constructor
+					if (cur->getType().as<core::FunctionTypePtr>()->getParameterTypes()->size() == 1) {
+
+						// if it is a lambda, we are done
+						if (cur.isa<core::LambdaExprPtr>()) return;
+
+						// this is the one we need to replace
+						defaultConstructor = cur;
+					}
+				}
+
+				// make sure it has been found
+				assert_true(defaultConstructor)
+					<< "Unable to locate pre-existing default constructor!";
+
+				// build new default constructor
+				auto thisType = defaultConstructor.getAddressedNode()->getType().as<core::FunctionTypePtr>()->getParameterType(0);
+				auto newDefaultCtor = builder.getDefaultConstructor(thisType,core::ParentsPtr(),record->getFields());
+
+				// replace default constructor
+				auto newRecord = core::transform::replaceNode(mgr,defaultConstructor,newDefaultCtor).as<core::RecordPtr>();
+
+				// add to replacements
+				recordSubstitutes[record] = newRecord;
+			}
+
 		},true);
 
 		// apply replacement
 		auto res = core::transform::replaceAllGen(mgr,code,recordSubstitutes,core::transform::globalReplacement);
-
-
-		auto errors = core::checks::check(res);
-		if (!errors.empty()) {
-			for(const auto& cur : errors.getErrors()) {
-				std::cout << cur << "\n";
-			}
-		}
 
 		// check the result
 		assert_correct_ir(res);
