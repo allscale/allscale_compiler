@@ -587,101 +587,35 @@ namespace backend {
 					}
 				}
 
-				// replace accesses to captured references (can only be read)
-				if (isMember) {
+				// replace other accesses to captured values
+				if (isMember && core::analysis::isCallOf(node,refExt.getRefMemberAccess())) {
 
-					// if a captured member is read ...
-					if (core::analysis::isCallOf(node,refExt.getRefDeref())) {
-						auto derefCall = node.as<core::CallExprPtr>();
-						auto target = derefCall->getArgument(0);
-						if (core::analysis::isCallOf(target,refExt.getRefMemberAccess())) {
+					// check that it is accessing this
+					auto call = node.as<core::CallExprPtr>();
+					if (*call->getArgument(0) == *thisValue) {
 
-							// check that it is accessing this
-							auto accessCall = target.as<core::CallExprPtr>();
-							if (*accessCall->getArgument(0) == *thisValue) {
+						// get the index within the closure tuple
+						auto pos = index.getIndex(lambdaType,call->getArgument(1));
 
-								// get the index within the closure tuple
-								auto pos = index.getIndex(lambdaType,accessCall->getArgument(1));
+						// replace by access to closure element
+						core::ExpressionPtr res = builder.refComponent(param,pos+1);
 
-								// replace by access to closure element
-								core::ExpressionPtr res = builder.deref(builder.refComponent(param,pos+1));
+						// if necessary, cast to required target type (e.g. adding or removing const)
+						if (*call->getType() != *res->getType()) {
+							res = core::lang::buildRefCast(res,call->getType());
 
-								// if necessary, cast to required target type (e.g. adding or removing const)
-								if (*derefCall->getType() != *res->getType()) {
-									res = core::lang::buildRefCast(res,derefCall->getType());
-								}
-
-								// check that the original and the replaced type are the same
-								assert_eq(*derefCall->getType(), *res->getType());
-
-								// done
-								return res;
+							// if we are unpacking a captured reference, adapt the type
+							if (core::lang::isReference(core::analysis::getReferencedType(res))) {
+								auto& ext = mgr.getLangExtension<AllScaleBackendModule>();
+								res = builder.callExpr(ext.getRefRefPlainToRefRefCpp(),res);
 							}
 						}
-					}
 
-					// .. or if a field of a member is accessed ..
-					if (core::analysis::isCallOf(node,refExt.getRefMemberAccess())) {
-						auto outerMemberAccess = node.as<core::CallExprPtr>();
-						auto target = outerMemberAccess->getArgument(0);
-						if (core::analysis::isCallOf(target,refExt.getRefMemberAccess())) {
+						// make sure the type of the replacement is the same as of the original
+						assert_eq(*call->getType(),*res->getType());
 
-							// check that it is accessing this
-							auto accessCall = target.as<core::CallExprPtr>();
-							if (*accessCall->getArgument(0) == *thisValue) {
-
-								// get the index within the closure tuple
-								auto pos = index.getIndex(lambdaType,accessCall->getArgument(1));
-
-								// replace by access to closure element
-								auto field = outerMemberAccess->getArgument(1).as<core::LiteralPtr>()->getValue();
-								core::ExpressionPtr res = builder.refMember(builder.refComponent(param,pos+1),field);
-
-								// if necessary, cast to required target type (e.g. adding or removing const)
-								if (*outerMemberAccess->getType() != *res->getType()) {
-									res = core::lang::buildRefCast(res,outerMemberAccess->getType());
-								}
-
-								// check that the original and the replaced type are the same
-								assert_eq(*outerMemberAccess->getType(), *res->getType());
-
-								// done
-								return res;
-							}
-						}
-					}
-
-					// .. or a member function is called
-					if (auto call = node.isa<core::CallExprPtr>()) {
-
-						// check that the target is a member function
-						auto fun = call->getFunctionExpr().isa<core::LambdaExprPtr>();
-						auto funType = (fun) ? fun->getType().as<core::FunctionTypePtr>() : core::FunctionTypePtr();
-						if (funType && funType->isMemberFunction()) {
-
-							// check whether the targeted object is retrieved from a closure
-							auto obj = call->getArgument(0);
-							if (core::analysis::isCallOf(obj,refExt.getRefMemberAccess())) {
-
-								// check that it is accessing this
-								auto accessCall = obj.as<core::CallExprPtr>();
-								if (*accessCall->getArgument(0) == *thisValue) {
-
-									// get the index within the closure tuple
-									auto pos = index.getIndex(lambdaType,accessCall->getArgument(1));
-
-									// create access to closure element
-									auto newObj = builder.refComponent(param,pos+1);
-
-									// replace old object with new object
-									auto oldObj = core::CallExprAddress(call)->getArgument(0);
-									return core::transform::replaceNode(mgr,oldObj,newObj);
-								}
-
-							}
-
-						}
-
+						// done
+						return res;
 					}
 				}
 

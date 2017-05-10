@@ -54,6 +54,12 @@ namespace backend {
 		LANG_EXT_LITERAL(PrecFunToFun,     "art_precfun_to_fun",      "(precfun<'Arg,'Res>)->('Arg)->treeture<'Res,f>");
 		LANG_EXT_LITERAL(PrecFunToDepFun,  "art_precfun_to_dep_fun",  "(precfun<'Arg,'Res>)->(dependencies,'Arg)->treeture<'Res,f>");
 
+
+
+		// --- a primitive for converting captured references from the pointer within the closure struct to a reference ---
+
+		LANG_EXT_LITERAL(RefRefPlainToRefRefCpp,  "art_ref_ref_plain_to_ref_ref_cpp",  "(ref<ref<'a,'c1,'v1,plain>,'c2,'v2,'k>)->ref<ref<'a,'c1,'v1,cpp_ref>,'c2,'v2,'k>");
+
 	};
 
 } // end namespace backend

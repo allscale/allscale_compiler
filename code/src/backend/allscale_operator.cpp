@@ -145,6 +145,13 @@ namespace backend {
 				return CONVERT_ARG(0);
 
 			};
+
+			table[ext.getRefRefPlainToRefRefCpp()] = OP_CONVERTER {
+
+				// simply add a de-ref
+				return c_ast::deref(CONVERT_ARG(0));
+
+			};
 		}
 
 
