@@ -173,7 +173,7 @@ namespace backend {
 							// trigger the computation
 							CONVERT_ARG(0),
 							// create resulting void-treeture
-							c_ast::call(resTypeInfo.rValueType)
+							c_ast::call(C_NODE_MANAGER->create<c_ast::Literal>("allscale::make_ready_treeture"))
 					);
 				}
 
