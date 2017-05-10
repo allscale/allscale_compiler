@@ -6,6 +6,7 @@
 #                    Test cases known to be not yet supported.                     #
 ####################################################################################
 
+empty_loop
 vector_add
 vector_update
 
