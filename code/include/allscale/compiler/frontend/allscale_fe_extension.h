@@ -30,6 +30,10 @@ namespace frontend {
 		virtual insieme::core::ExpressionPtr Visit(const clang::CastExpr* castExpr, insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
 		                                           insieme::frontend::conversion::Converter& converter) override;
 
+		virtual insieme::core::ExpressionPtr Visit(const clang::CXXCtorInitializer* ctorInit, const clang::Expr* initExpr,
+		                                           insieme::core::ExpressionPtr& irInitializedMemLoc,
+		                                           insieme::frontend::conversion::Converter& converter) override;
+
 		virtual std::vector<insieme::frontend::extensions::detail::FilterMapper> getExprMappings() override;
 
 		// TU and Program

@@ -155,6 +155,18 @@ namespace frontend {
 		return nullptr;
 	}
 
+	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CXXCtorInitializer* ctorInit, const clang::Expr* initExpr,
+	                                                      insieme::core::ExpressionPtr& irInitializedMemLoc,
+	                                                      insieme::frontend::conversion::Converter& converter) {
+		// ctor init exprs on AllScale types have special semantics. here we actually generate an init expression in order for the backend to create ctor init exprs again
+		assert_true(core::lang::isReference(irInitializedMemLoc));
+		if(lang::isAllscaleType(core::analysis::getReferencedType(irInitializedMemLoc))) {
+			core::IRBuilder builder(irInitializedMemLoc->getNodeManager());
+			return builder.initExpr(irInitializedMemLoc, converter.convertExpr(initExpr));
+		}
+		return nullptr;
+	}
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// FINAL POSTPROCESSING
 

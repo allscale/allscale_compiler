@@ -26,30 +26,6 @@ namespace frontend {
 		}
 	}
 
-	TEST(AllScaleConversionTest, Types) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_types.cpp");
-	}
-
-	TEST(AllScaleConversionTest, Members) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_members.cpp");
-	}
-
-	TEST(AllScaleConversionTest, TreetureOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_treeture_ops.cpp");
-	}
-
-	TEST(AllScaleConversionTest, TaskRefOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_task_ref_ops.cpp");
-	}
-
-	TEST(AllScaleConversionTest, DependencyOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_dependency_ops.cpp");
-	}
-
-	TEST(AllScaleConversionTest, FunOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fun_ops.cpp");
-	}
-
 	TEST(AllScaleConversionTest, Basic) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
 	}
@@ -58,8 +34,32 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic_non_trivial.cpp");
 	}
 
-	TEST(AllScaleConversionTest, PrecVariants) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_variants.cpp");
+	TEST(AllScaleConversionTest, CtorInitExprs) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_ctor_init_exprs.cpp");
+	}
+
+	TEST(AllScaleConversionTest, DependencyOps) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_dependency_ops.cpp");
+	}
+
+	TEST(AllScaleConversionTest, Fib) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
+	}
+
+	TEST(AllScaleConversionTest, FunOps) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fun_ops.cpp");
+	}
+
+	TEST(AllScaleConversionTest, Members) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_members.cpp");
+	}
+
+	TEST(AllScaleConversionTest, Pfor) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pfor.cpp");
+	}
+
+	TEST(AllScaleConversionTest, Pick) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pick.cpp");
 	}
 
 	TEST(AllScaleConversionTest, PrecDeps) {
@@ -70,20 +70,24 @@ namespace frontend {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_non_treeture_step.cpp");
 	}
 
+	TEST(AllScaleConversionTest, PrecVariants) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_variants.cpp");
+	}
+
 	TEST(AllScaleConversionTest, PrecVoid) {
 		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_void.cpp");
 	}
 
-	TEST(AllScaleConversionTest, Fib) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
+	TEST(AllScaleConversionTest, TaskRefOps) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_task_ref_ops.cpp");
 	}
 
-	TEST(AllScaleConversionTest, Pick) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pick.cpp");
+	TEST(AllScaleConversionTest, TreetureOps) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_treeture_ops.cpp");
 	}
 
-	TEST(AllScaleConversionTest, Pfor) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pfor.cpp");
+	TEST(AllScaleConversionTest, Types) {
+		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_types.cpp");
 	}
 
 } // end namespace frontend
