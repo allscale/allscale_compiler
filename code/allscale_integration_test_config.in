@@ -1,7 +1,7 @@
 # some configuration options 
 compiler[ref_cpp_compile]=@INSIEME_CXX_BACKEND_COMPILER@
-compiler[insiemecc_cpp_sema]=@PROJECT_BINARY_DIR@/code/allscalecc
-compiler[insiemecc_seq_cpp_convert]=@PROJECT_BINARY_DIR@/code/allscalecc
+compiler[insiemecc_cpp_sema]=@PROJECT_BINARY_DIR@/compiler/allscalecc
+compiler[insiemecc_seq_cpp_convert]=@PROJECT_BINARY_DIR@/compiler/allscalecc
 compiler[insiemecc_seq_cpp_compile]=@INSIEME_CXX_BACKEND_COMPILER@
 
 # boost environment
@@ -16,9 +16,6 @@ allscale_root_dir=@allscale_runtime_binary_dir@
 hpx_include=@hpx_source_dir@
 hpx_root_dir=@hpx_binary_dir@
 
-# third party libraries
-third_party_libs_home=@THIRD_PARTY_LIBS_HOME@
-
 # result comparison script
 compareOutputScript=@insieme_root_dir@/test/compareOutput
 
@@ -32,6 +29,6 @@ libPaths="@Boost_LIBRARY_DIRS@","@allscale_runtime_binary_dir@/src","@hpx_binary
 libNames="allscale","hpx_init","hpx","boost_chrono","boost_date_time","boost_filesystem","boost_program_options","boost_regex","boost_system","boost_thread","boost_atomic"
 
 # finally the compiler configuration settings
-compilerConfigurationFile[allscalecc]="@CMAKE_CURRENT_SOURCE_DIR@/../test/compilerConfiguration.allscalecc"
-compilerConfigurationFile[g++]="@CMAKE_CURRENT_SOURCE_DIR@/../insieme/test/compilerConfiguration.g++_and_clang"
-compilerConfigurationFile[clang++]="@CMAKE_CURRENT_SOURCE_DIR@/../insieme/test/compilerConfiguration.g++_and_clang"
+compilerConfigurationFile[allscalecc]="@PROJECT_SOURCE_DIR@/../test/compilerConfiguration.allscalecc"
+compilerConfigurationFile[g++]="@PROJECT_SOURCE_DIR@/../insieme/test/compilerConfiguration.g++_and_clang"
+compilerConfigurationFile[clang++]="@PROJECT_SOURCE_DIR@/../insieme/test/compilerConfiguration.g++_and_clang"

@@ -13,7 +13,7 @@ namespace compiler {
 namespace frontend {
 
 #define ALLSCALE_ROOT_DIR insieme::utils::getInsiemeSourceRootDir() + "../../"
-#define ALLSCALE_FRONTEND_TEST_DIR ALLSCALE_ROOT_DIR + "code/test/frontend/"
+#define ALLSCALE_FRONTEND_TEST_DIR ALLSCALE_ROOT_DIR + "code/compiler/test/frontend/"
 
 	namespace {
 		void runAllscaleTestOn(const string& filename) {

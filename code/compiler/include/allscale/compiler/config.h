@@ -17,7 +17,7 @@ namespace compiler {
 	const boost::filesystem::path up("../");
 
 	inline const string getAllscaleSourceRootDir() {
-		return (boost::filesystem::path(__FILE__).parent_path() / up / up / up).string();
+		return (boost::filesystem::path(__FILE__).parent_path() / up / up / up / up).string();
 	}
 
 	inline const string getAllscaleTestRootDir() {
