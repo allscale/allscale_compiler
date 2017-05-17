@@ -38,5 +38,5 @@ include(allscale_api)
 # -- AllScale Compiler
 add_subdirectory(compiler)
 
-# -- Integration Tests
-#add_subdirectory(../test ${PROJECT_BINARY_DIR}/test)
+# -- Integration Test Files
+add_subdirectory(../test ${PROJECT_BINARY_DIR}/test)

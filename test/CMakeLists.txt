@@ -1,8 +1,5 @@
-project(insieme_integration_test CXX)
-cmake_minimum_required(VERSION 3.2)
-
-msvc_file_completion(allscale_tests . c cpp h)
-
-# create test script
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/perf_counters.dat ${CMAKE_BINARY_DIR}/perf_counters.dat COPYONLY)
-#configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compare_versions.py ${CMAKE_BINARY_DIR}/compare_versions.py @ONLY)
+if(MSVC)
+	file(GLOB_RECURSE allscale_integration_test_files ${CMAKE_CURRENT_SOURCE_DIR} *.c *.cpp *.h)
+	add_custom_target(allscale_integration_test_files SOURCES ${allscale_integration_test_files})
+	msvc_source_group("Files" "${allscale_integration_test_files}")
+endif()
