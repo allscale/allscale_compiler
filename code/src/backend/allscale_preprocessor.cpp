@@ -655,7 +655,7 @@ namespace backend {
 			auto recFun = builder.lambdaReference(funType,"rec");
 
 			// get instantiated step implementation
-			auto stepFun = inlineStep(function.getStepCases()[0],recFun,true);
+			auto stepFun = inlineStep(function.getStepCases().back(),recFun,true);
 
 			// create the body of the lambda
 			auto body = builder.compoundStmt(
