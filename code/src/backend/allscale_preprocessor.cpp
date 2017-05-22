@@ -1265,6 +1265,11 @@ namespace backend {
 
 		},true);
 
+		// apply replacements on substitutes
+		for(auto& cur : recordSubstitutes) {
+			cur.second = core::transform::replaceAllGen(mgr,cur.second,recordSubstitutes,core::transform::globalReplacement);
+		}
+
 		// apply replacement
 		auto res = core::transform::replaceAllGen(mgr,code,recordSubstitutes,core::transform::globalReplacement);
 
