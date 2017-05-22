@@ -6,7 +6,7 @@
 #                    Test cases known to be not yet supported.                     #
 ####################################################################################
 
-
+2d_init
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
