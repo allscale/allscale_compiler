@@ -655,7 +655,7 @@ namespace backend {
 			auto recFun = builder.lambdaReference(funType,"rec");
 
 			// get instantiated step implementation
-			auto stepFun = inlineStep(function.getStepCases()[0],recFun,true);
+			auto stepFun = inlineStep(function.getStepCases().back(),recFun,true);
 
 			// create the body of the lambda
 			auto body = builder.compoundStmt(
@@ -1264,6 +1264,11 @@ namespace backend {
 			}
 
 		},true);
+
+		// apply replacements on substitutes
+		for(auto& cur : recordSubstitutes) {
+			cur.second = core::transform::replaceAllGen(mgr,cur.second,recordSubstitutes,core::transform::globalReplacement);
+		}
 
 		// apply replacement
 		auto res = core::transform::replaceAllGen(mgr,code,recordSubstitutes,core::transform::globalReplacement);
