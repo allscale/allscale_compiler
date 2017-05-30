@@ -18,6 +18,9 @@ include(doxygen)
 include(dependencies/pthread)
 include(dependencies/googletest)
 include(dependencies/boost)
+include(dependencies/gmp)
+include(dependencies/zlib)
+include(dependencies/stack)
 include(dependencies/valgrind)
 
 # -- CMake Modules
@@ -27,6 +30,7 @@ include(msvc_source_group)
 include(nproc)
 
 # -- Insieme
+set(ANALYSIS_HASKELL ON CACHE BOOL "Enable Haskell-based Analysis Toolkit" FORCE)
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
 
 # -- AllScale Runtime
@@ -36,6 +40,7 @@ include(allscale_runtime)
 include(allscale_api)
 
 # -- AllScale Compiler
+add_subdirectory(cba)
 add_subdirectory(compiler)
 
 # -- Integration Test Files

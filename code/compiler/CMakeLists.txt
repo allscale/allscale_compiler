@@ -19,6 +19,9 @@ target_link_libraries(compiler
 	utils
 )
 
+# Allscale CBA Dependency
+target_link_libraries(compiler cba)
+
 # include generated configs
 target_include_directories(compiler PUBLIC ${PROJECT_BINARY_DIR})
 

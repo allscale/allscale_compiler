@@ -76,7 +76,7 @@ install_pkg() {
 }
 
 if [[ $# -eq 0 ]]; then
-	PACKAGES="llvm boost cmake luajit cudd bison flex papi hwloc"
+	PACKAGES="llvm boost cmake luajit cudd bison flex papi hwloc stack"
 else
 	PACKAGES="$@"
 fi
