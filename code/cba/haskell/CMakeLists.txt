@@ -35,6 +35,11 @@ add_custom_target(
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# allscale_hat depends on insieme_hat. Stating this dependency here also
+# prevents both toolkits from being built simultaneously which can cause issues
+# with stack.
+add_dependencies(allscale_hat analysis_haskell)
+
 if(MSVC)
 	set_target_properties(allscale_hat PROPERTIES FOLDER cba)
 endif()
