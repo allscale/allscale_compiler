@@ -1,17 +1,19 @@
 add_module_library(cba)
 
-add_subdirectory(haskell)
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/haskell)
-link_directories(${LIBHSRTS_DIR})
-link_directories(${GMP_ROOT}/lib)
+if(NOT MSVC)
+	add_subdirectory(haskell)
+	link_directories(${CMAKE_CURRENT_BINARY_DIR}/haskell)
+	link_directories(${LIBHSRTS_DIR})
+	link_directories(${GMP_ROOT}/lib)
 
-add_dependencies(cba allscale_hat)
+	add_dependencies(cba allscale_hat)
 
-# Gold linker does not automatically resolve libHSrts depdency from analysis
-# lib, need to specify them explicitly.
-target_link_libraries(cba ${LIBHSRTS})
+	# Gold linker does not automatically resolve libHSrts depdency from analysis
+	# lib, need to specify them explicitly.
+	target_link_libraries(cba ${LIBHSRTS})
 
-target_link_libraries(cba ${allscale_hat})
+	target_link_libraries(cba ${allscale_hat})
+endif()
 
 glob_executables(cba_exes src)
 foreach(exe ${cba_exes})

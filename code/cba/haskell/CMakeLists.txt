@@ -40,10 +40,6 @@ add_custom_target(
 # with stack.
 add_dependencies(allscale_hat analysis_haskell)
 
-if(MSVC)
-	set_target_properties(allscale_hat PROPERTIES FOLDER cba)
-endif()
-
 # runtime library exports
 set(LIBHSRTS_DIR ${stack_data}/programs/x86_64-linux/ghc-7.10.3/lib/ghc-7.10.3/rts PARENT_SCOPE)
 set(LIBHSRTS ${stack_data}/programs/x86_64-linux/ghc-7.10.3/lib/ghc-7.10.3/rts/libHSrts-ghc7.10.3.so PARENT_SCOPE)
