@@ -11,7 +11,8 @@ library
     ghc-options:        -O2
                         -optc-O3
     hs-source-dirs:     src
-    exposed-modules:    Allscale.Analysis.Dummy
+    exposed-modules:    Allscale.Adapter,
+                        Allscale.Analysis.OutOfBounds
     build-depends:      insieme-hat,
                         attoparsec >= 0.13,
                         attoparsec-binary >= 0.2,

@@ -1,5 +1,13 @@
 add_module_library(cba)
 
+# Insieme dependencies
+target_link_libraries(cba
+	analysis
+	core
+	utils
+)
+
+# Haskell dependency
 if(NOT MSVC)
 	add_subdirectory(haskell)
 	link_directories(${CMAKE_CURRENT_BINARY_DIR}/haskell)

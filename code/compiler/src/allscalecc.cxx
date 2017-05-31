@@ -18,15 +18,11 @@
 #include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/backend/allscale_backend.h"
 
-#include "allscale/cba/dummy.h"
-
 namespace driver = insieme::driver;
 namespace core = insieme::core;
 
 int main(int argc, char** argv) {
 	std::cout << "Allscale compiler - Version: " << allscale::compiler::getVersion() << std::endl;
-
-	allscale::cba::foo();	
 
 	// -------------- options ---------------
 
