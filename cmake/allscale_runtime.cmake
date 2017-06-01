@@ -5,9 +5,6 @@ include(ExternalProject)
 if(NOT MSVC)
 	find_package(Hwloc)
 endif()
-#list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../insieme/code/cmake/")
-#insieme_find_package(NAME Boost)
-#insieme_find_package(NAME Hwloc)
 
 # add the external HPX project
 ExternalProject_Add(
@@ -48,12 +45,6 @@ ExternalProject_Add(
 ExternalProject_Get_Property(allscale_runtime source_dir binary_dir)
 set(allscale_runtime_source_dir ${source_dir})
 set(allscale_runtime_binary_dir ${binary_dir})
-
-# export the needed variables to the parent scope
-#set(hpx_source_dir ${hpx_source_dir} PARENT_SCOPE)
-#set(hpx_binary_dir ${hpx_binary_dir} PARENT_SCOPE)
-#set(allscale_runtime_source_dir ${allscale_runtime_source_dir} PARENT_SCOPE)
-#set(allscale_runtime_binary_dir ${allscale_runtime_binary_dir} PARENT_SCOPE)
 
 # export configuration
 configure_file(${PROJECT_SOURCE_DIR}/../runtime/config.inc.in ${PROJECT_BINARY_DIR}/runtime/config.inc)
