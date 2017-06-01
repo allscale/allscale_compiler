@@ -2,6 +2,10 @@ get_filename_component(GMP_LIBRARIES_DIR ${GMP_LIBRARIES} PATH)
 get_filename_component(ZLIB_LIBRARIES_DIR ${ZLIB_LIBRARIES} PATH)
 
 file(GLOB_RECURSE allscale_hat_srcs allscale-hat.cabal src/*.hs)
+file(GLOB_RECURSE insieme_hat_srcs
+	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/insieme-hat.cabal
+	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/src/*.hs
+)
 
 set(stack_data ${STACK_ROOT}/stack-root_$ENV{USER})
 
@@ -34,10 +38,16 @@ add_custom_command(
 	# copy library (package key in name) to binary dir
 	COMMAND ${stack} runhaskell utils/copyLib.hs ${CMAKE_CURRENT_BINARY_DIR}
 
-	# AllScale-HAT depends on Insieme-HAT. Stating this dependency here
-	# also prevents both toolkits from being built simultaneously which can
-	# cause issues with stack.
-	DEPENDS ${allscale_hat_srcs} analysis_haskell
+	# AllScale-HAT depends on Insieme-HAT. Stating this target dependency here
+	# prevents both toolkits from being built simultaneously which can
+	# cause issues with stack. Furthermore, this invokation of stack also
+	# depends on the sources of Insieme-HAT as each HAT has its own
+	# .stack-work directory and Insieme-HAT is located in both of them.
+	#
+	# It is currently not possible to merge these two folders, as one is
+	# not located in a subdirectory of another. See
+	# <https://github.com/commercialhaskell/stack/issues/1731>
+	DEPENDS ${allscale_hat_srcs} ${insieme_hat_srcs} insieme_hat
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	COMMENT "Building AllScale HAT"
