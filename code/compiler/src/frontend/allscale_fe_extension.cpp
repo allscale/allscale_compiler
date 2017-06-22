@@ -185,7 +185,7 @@ namespace frontend {
 				if(insieme::annotations::c::hasIncludeAttached(node)) {
 					auto include = insieme::annotations::c::getAttachedInclude(node);
 					assert_false(boost::starts_with(include, getAllscaleAPIInterceptionIncludePath()))
-							<< "Found attached include of core API to \"" << include << "\"";
+							<< "Found attached include of core API to \"" << include << "\" on node: " << dumpReadable(node);
 				}
 			});
 		});

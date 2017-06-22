@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -ex
+
+if [[ -z "${WORKSPACE+x}" ]]; then
+	cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	source defaults.sh
+fi
+
+cd "$BUILD_DIR"
+
+cmake "$WORKSPACE/code" \
+	-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+	-DCMAKE_CXX_FLAGS="-Werror" \
+	-DHPX_WITH_NETWORKING=OFF \
+	-DBUILD_DOCS=ON \
+	-DBUILD_COVERAGE=ON
+
+make -j "$NPROC"
+
+compiler/allscale_integration_tests --preprocess
+
+insieme/driver/integration_tests --preprocess "$WORKSPACE/test/allscale"

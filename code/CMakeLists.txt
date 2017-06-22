@@ -30,7 +30,8 @@ include(msvc_source_group)
 include(nproc)
 
 # -- Insieme
-set(ANALYSIS_HASKELL ON CACHE BOOL "Enable Haskell-based Analysis Toolkit" FORCE)
+set(ANALYSIS_HASKELL ON CACHE BOOL "Haskell-based Analysis Toolkit Switch" FORCE)
+set(BUILD_RUNTIME OFF CACHE BOOL "Insieme Runtime Switch" FORCE)
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
 
 # -- AllScale Runtime
