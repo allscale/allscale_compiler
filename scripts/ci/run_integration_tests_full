@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -ex
+
+if [[ -z "${WORKSPACE+x}" ]]; then
+	cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	source defaults.sh
+fi
+
+cd "$BUILD_DIR"
+
+# Run AllScale integration tests.
+compiler/allscale_integration_tests -w "$NPROC"
+
+# Run Insieme integration tests with AllScale.
+compiler/allscale_integration_tests --preprocess "$WORKSPACE/insieme/test/seq/cpp"
+compiler/allscale_integration_tests -w "$NPROC" "$WORKSPACE/insieme/test/seq/cpp"
+
+# Cleanup.
+compiler/allscale_integration_tests --postprocessing
+compiler/allscale_integration_tests --postprocessing "$WORKSPACE/insieme/test/seq/cpp"
+insieme/driver/integration_tests --postprocessing "$WORKSPACE/test/allscale"
