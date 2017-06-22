@@ -27,6 +27,7 @@ include(msvc_source_group)
 include(nproc)
 
 # -- Insieme
+set(BUILD_RUNTIME OFF CACHE BOOL "Insieme Runtime Switch" FORCE)
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
 
 # -- AllScale Runtime
