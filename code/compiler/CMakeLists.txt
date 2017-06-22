@@ -40,12 +40,5 @@ endforeach(test)
 # setup integration test config
 configure_file(../allscale_integration_test_config.in ${PROJECT_BINARY_DIR}/allscale_integration_test_config @ONLY IMMEDIATE)
 
-# run integration test preprocessing
-add_custom_command(
-	TARGET compiler_allscale_integration_tests
-	POST_BUILD
-	COMMAND $<TARGET_FILE:compiler_allscale_integration_tests> --preprocess
-	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	COMMENT "Run preprocessing for allscale integration tests"
-)
+# integration test driver requires allscalecc
 add_dependencies(compiler_allscale_integration_tests compiler_allscalecc)
