@@ -26,31 +26,31 @@ namespace detail {
 	/// Mapping specification from C++ to IR used during call expression translation
 	const std::vector<fed::FilterMapper> exprMappings = {
 		// callables
-		{"allscale::api::core::fun_def.*fun_def", mapToFirstArgument},                       // copy|move ctor call
-		{"allscale::api::core::rec_defs.*rec_defs", mapToFirstArgument},                     // copy|move ctor call
-		{"allscale::api::core::detail::prec_operation.*prec_operation", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::fun_def.*fun_def", mapCopyAndMoveConstructor},                       // copy|move ctor call
+		{"allscale::api::core::rec_defs.*rec_defs", mapCopyAndMoveConstructor},                     // copy|move ctor call
+		{"allscale::api::core::detail::prec_operation.*prec_operation", mapCopyAndMoveConstructor}, // copy|move ctor call
 		// completed_tasks
 		{"allscale::api::core::done", 0, mapDoneCall},
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done", false, true)},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", mapToFirstArgument}, // conversion operator
-		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapToFirstArgument},               // copy|move ctor call
+		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapCopyAndMoveConstructor},        // copy|move ctor call
 		// treeture
 		{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
-		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapToFirstArgument}, // copy|move ctor call
 		{"allscale::api::core::impl::.*treeture<void>::treeture", 0, mapToTreetureVoidCtor},    // default ctor call for void specialization - special mapping
+		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapCopyAndMoveConstructor},   // copy|move ctor call
 		// task_reference
 		{"allscale::api::core::impl::.*treeture.*::operator task_reference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*treeture.*::getTaskReference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
-		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone}, // default ctor call - special mapping
-		{"allscale::api::core::impl::.*::task_reference::task_reference", mapToFirstArgument},  // copy|move ctor call
+		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone},        // default ctor call - special mapping
+		{"allscale::api::core::impl::.*::task_reference::task_reference", mapCopyAndMoveConstructor},  // copy|move ctor call
 		// treeture aggregation
 		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
 		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
@@ -58,15 +58,15 @@ namespace detail {
 		// dependencies
 		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
-		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument}, // conversion operator
-		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapToFirstArgument},     // copy|move ctor call
-		{"allscale::api::core::no_dependencies::no_dependencies", mapToFirstArgument},       // copy|move ctor call
+		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument},        // conversion operator
+		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapCopyAndMoveConstructor},     // copy|move ctor call
+		{"allscale::api::core::no_dependencies::no_dependencies", mapCopyAndMoveConstructor},       // copy|move ctor call
 		// recfun operations
 		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", PrecFunCallMapper()},
 		{R"(allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable::operator\(\))", RecFunCallMapper()},
 		// fun
 		{"allscale::api::core::fun", mapToBuildRecFun},
-		{"allscale::api::core::fun_def<.*>::fun_def", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::fun_def<.*>::fun_def", mapCopyAndMoveConstructor}, // copy|move ctor call
 		// prec
 		{"allscale::api::core::group", aggregateArgumentsToTuple},
 		{"allscale::api::core::pick", aggregateArgumentsToList},
@@ -270,6 +270,14 @@ namespace detail {
 		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
 				<< " has " << exprInfo.numArgs << " arguments";
 		return exprInfo.converter.convertExpr(exprInfo.args[0]);
+	}
+
+
+	// mapCopyAndMoveConstructor
+	core::ExpressionPtr mapCopyAndMoveConstructor(const fed::ClangExpressionInfo& exprInfo) {
+		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
+				<< " has " << exprInfo.numArgs << " arguments";
+		return derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0]));
 	}
 
 

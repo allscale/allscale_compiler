@@ -37,6 +37,10 @@ namespace frontend {
 		core::ExpressionPtr mapToFirstArgument(const fed::ClangExpressionInfo&);
 
 
+		/// Maps the copy and move constructor calls for types which have implicit copy semantics in our IR
+		core::ExpressionPtr mapCopyAndMoveConstructor(const fed::ClangExpressionInfo& exprInfo);
+
+
 		/// Utility for the mapping of the call to done without arguments
 		core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo&);
 
