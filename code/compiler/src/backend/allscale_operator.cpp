@@ -323,6 +323,11 @@ namespace backend {
 				return CONVERT_ARG(0);
 			};
 
+			table[ext.getTaskRefDone()] = OP_CONVERTER {
+				// create a new treeture<void>
+				return c_ast::call(C_NODE_MANAGER->create<c_ast::Literal>("allscale::make_ready_treeture"));
+			};
+
 			table[ext.getTaskRefLeft()] = OP_CONVERTER {
 
 				// add dependency to argument type
