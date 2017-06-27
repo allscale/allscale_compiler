@@ -16,6 +16,7 @@ int main() {
 		var ref<treeture<int<4>,f>,f,f,plain> c = treeture_done(*i);
 		var ref<int<4>,f,f,cpp_ref> iRef = i;
 		var ref<treeture<int<4>,f>,f,f,plain> d = treeture_done(*iRef);
+		var ref<treeture<unit,t>,f,f,plain> t = treeture_run(treeture_done(unit));
 	})")
 	{
 		auto a = done(1);
@@ -24,6 +25,7 @@ int main() {
 		auto c = done(i);
 		int& iRef = i;
 		auto d = done(iRef);
+		impl::reference::treeture<void> t;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// METHODS ////

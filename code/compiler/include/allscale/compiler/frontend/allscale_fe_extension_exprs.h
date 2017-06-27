@@ -41,6 +41,10 @@ namespace frontend {
 		core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo&);
 
 
+		/// Utility for the mapping of the call to the ctor of void treetures
+		core::ExpressionPtr mapToTreetureVoidCtor(const fed::ClangExpressionInfo&);
+
+
 		/// Utility for the specification of simple call mappings (C++ to IR)
 		class SimpleCallMapper {
 			const string targetIRString;

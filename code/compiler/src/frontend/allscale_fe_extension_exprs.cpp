@@ -42,6 +42,7 @@ namespace detail {
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
 		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::impl::.*treeture<void>::treeture", 0, mapToTreetureVoidCtor},    // default ctor call for void specialization - special mapping
 		// task_reference
 		{"allscale::api::core::impl::.*treeture.*::operator task_reference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*treeture.*::getTaskReference", SimpleCallMapper("treeture_to_task_ref", true)},
@@ -275,6 +276,12 @@ namespace detail {
 	// mapDoneCall
 	core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo& exprInfo) {
 		return lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant());
+	}
+
+
+	// mapToTreetureVoidCtor
+	core::ExpressionPtr mapToTreetureVoidCtor(const fed::ClangExpressionInfo& exprInfo) {
+		return lang::buildTreetureRun(lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant()));
 	}
 
 
