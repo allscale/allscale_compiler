@@ -89,6 +89,17 @@ namespace frontend {
 				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
 		};
 
+
+		/// This is a special AggregationCallMapper for mapping calls to core::after. All passed arguments will be converted to task_ref
+		/// (if they are not already of that type) by using their conversion operators.
+		class AfterCallMapper : public AggregationCallMapper {
+		  protected:
+			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) override;
+		  public:
+			using AggregationCallMapper::AggregationCallMapper;
+		};
+
+
 		/// Utility to map the call operator call of recfun and precfun objects
 		class RecOrPrecFunCallMapper : public SimpleCallMapper {
 		  protected:

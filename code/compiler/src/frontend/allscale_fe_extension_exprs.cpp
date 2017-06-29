@@ -4,6 +4,7 @@
 #include <map>
 
 #include "insieme/frontend/converter.h"
+#include "insieme/frontend/utils/conversion_utils.h"
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/core/analysis/type_utils.h"
 #include "insieme/core/lang/list.h"
@@ -56,7 +57,7 @@ namespace detail {
 		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
 		{"allscale::api::core::.*parallel", AggregationCallMapper("treeture_parallel", true)},
 		// dependencies
-		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
+		{"allscale::api::core::after", AfterCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
 		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument},        // conversion operator
 		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapCopyAndMoveConstructor},     // copy|move ctor call
@@ -358,6 +359,34 @@ namespace detail {
 			return ret;
 		}
 		return args;
+	}
+
+
+	// AfterCallMapper
+	core::ExpressionPtr AfterCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
+		auto ret = AggregationCallMapper::convertArgument(clangArg, converter);
+		// the arguments need to be task_ref objects. If they are not, we need to convert them
+		if(!lang::isTaskReference(ret->getType())) {
+			if(auto genType = ret->getType().isa<core::GenericTypePtr>()) {
+				// we have to lookup the record type from the irTU in order to look up the conversion opereators
+				auto tagType = converter.getIRTranslationUnit().getTypes().at(genType);
+				auto memFuns = tagType->getRecord()->getMemberFunctions();
+				core::MemberFunctionPtr conversionOperator;
+				for(const auto& memFun : memFuns) {
+					auto name = memFun->getNameAsString();
+					if(boost::starts_with(name, insieme::utils::getMangledOperatorConversionPrefix())
+							&& lang::isTaskReference(memFun->getImplementation()->getType().as<core::FunctionTypePtr>()->getReturnType())) {
+						conversionOperator = memFun;
+						break;
+					}
+				}
+				assert_true(conversionOperator) << "Could not find conversion operator to task_ref in type " << genType;
+
+				// now that we found the correct conversion operator, we return a call to it
+				ret = converter.getIRBuilder().callExpr(conversionOperator->getImplementation(), insieme::frontend::utils::prepareThisExpr(converter, ret));
+			}
+		}
+		return ret;
 	}
 
 
