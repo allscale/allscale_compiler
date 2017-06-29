@@ -123,18 +123,18 @@ namespace detail {
 			assert_true(core::lang::isReference(exprIn));
 			auto innerType = core::analysis::getReferencedType(exprIn);
 
-			// check whether it is a trivial type. We need to look up the real TagType in the translation unit to do so
+			// check whether it is a trivially copyable type. We need to look up the real TagType in the translation unit to do so
 			auto& typeMap = converter.getIRTranslationUnit().getTypes();
-			bool isTrivial = true;
+			bool isTriviallyCopyable = true;
 			if(const auto& genType = innerType.as<core::GenericTypePtr>()) {
 				auto fullType = typeMap.find(genType);
 				if(fullType != typeMap.end()) {
-					isTrivial = core::analysis::isTrivial(fullType->second);
+					isTriviallyCopyable = core::analysis::isTriviallyCopyable(fullType->second);
 				}
 			}
 
-			// if the given expression is a plain reference and trivial, we need to deref it
-			if(core::lang::isPlainReference(exprIn) && isTrivial) return builder.deref(exprIn);
+			// if the given expression is a plain reference and is trivially copyable, we need to deref it
+			if(core::lang::isPlainReference(exprIn) && isTriviallyCopyable) return builder.deref(exprIn);
 
 			// otherwise we need to cast it to const cpp_ref to encode copy construction
 			return core::lang::buildRefCast(exprIn, core::lang::buildRefType(innerType, true, false, core::lang::ReferenceType::Kind::CppReference));
