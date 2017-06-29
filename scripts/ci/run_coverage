@@ -12,4 +12,4 @@ cd "$BUILD_DIR"
 # Adjust resource restriction.
 ulimit -t 14400
 
-make coverage ARGS="-j $NPROC"
+make allscale_coverage ARGS="-j $NPROC"
