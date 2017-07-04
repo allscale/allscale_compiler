@@ -43,6 +43,8 @@ namespace detail {
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
+		{"allscale::api::core::impl::.*treeture.*::isDone", SimpleCallMapper("treeture_is_done", true)},
+		{"allscale::api::core::impl::.*treeture.*::isValid", SimpleCallMapper("treeture_is_valid", true)},
 		{"allscale::api::core::impl::.*treeture<void>::treeture", 0, mapToTreetureVoidCtor},    // default ctor call for void specialization - special mapping
 		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapCopyAndMoveConstructor},   // copy|move ctor call
 		// task_reference

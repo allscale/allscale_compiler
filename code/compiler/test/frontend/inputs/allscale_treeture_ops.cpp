@@ -38,6 +38,8 @@ int main() {
 		treeture_get(*a);
 		treeture_left(*a);
 		treeture_right(*a);
+		treeture_is_done(*a);
+		treeture_is_valid(*a);
 	})")
 	{
 		impl::reference::treeture<int> a = done(1);
@@ -45,6 +47,8 @@ int main() {
 		a.get();
 		a.getLeft();
 		a.getRight();
+		a.isDone();
+		a.isValid();
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS ////
