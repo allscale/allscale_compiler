@@ -366,8 +366,11 @@ namespace detail {
 	core::ExpressionPtr AfterCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 		auto ret = AggregationCallMapper::convertArgument(clangArg, converter);
 		// the arguments need to be task_ref objects. If they are not, we need to convert them
-		if(!lang::isTaskReference(ret->getType())) {
-			if(auto genType = ret->getType().isa<core::GenericTypePtr>()) {
+		auto retType = ret->getType();
+		if(core::analysis::isRefType(retType)) retType = core::lang::ReferenceType(retType).getElementType();
+		if(!lang::isTaskReference(retType)) {
+			if(auto genType = retType.isa<core::GenericTypePtr>()) {
+				assert_true(converter.getIRTranslationUnit().getTypes().find(genType) != converter.getIRTranslationUnit().getTypes().end()) << "Can't find type " << genType << " in irTU";
 				// we have to lookup the record type from the irTU in order to look up the conversion opereators
 				auto tagType = converter.getIRTranslationUnit().getTypes().at(genType);
 				auto memFuns = tagType->getRecord()->getMemberFunctions();
