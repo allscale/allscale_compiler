@@ -7,6 +7,7 @@
 #include "insieme/frontend/utils/conversion_utils.h"
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/core/analysis/type_utils.h"
+#include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/lang/list.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
@@ -104,9 +105,11 @@ namespace detail {
 			if(auto call = argExpr.isa<core::CallExprPtr>()) {
 				// we don't dematerialize builtins
 				if(!core::lang::isBuiltIn(call->getFunctionExpr())) {
-					if(core::lang::isPlainReference(call->getType())) {
-						auto rawCallType = core::analysis::getReferencedType(call->getType());
-						return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+					// if this call is a materializing call
+					if(core::analysis::isMaterializingCall(call)) {
+						// we dematerialize it by setting the type to the return type of the call's callee
+						auto retType = call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType();
+						return builder.callExpr(retType, call->getFunctionExpr(), call->getArgumentDeclarations());
 					}
 				}
 			}

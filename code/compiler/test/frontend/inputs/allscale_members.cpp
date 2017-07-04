@@ -18,6 +18,12 @@ struct S {
 	}
 };
 
+
+const task_reference& getConstTaskReferenceReference() {
+	task_reference* handle;
+	return *handle;
+}
+
 int main() {
 	; // this is required because of the clang compound source location bug
 
@@ -45,6 +51,21 @@ int main() {
 		S s;
 		s.foo();
 		s.getHandle();
+	}
+
+	// this test will ensure, that we dematerialize correctly
+	// this used to call problems when we have an lvalue and this is copied/moved. In this case the dematerialization didn't work correctly
+	#pragma test expect_ir(R"(
+		def IMP_getConstTaskReferenceReference = function () -> ref<task_ref,t,f,cpp_ref> {
+			var ref<ptr<task_ref>,f,f,plain> v0 = ref_decl(type_lit(ref<ptr<task_ref>,f,f,plain>));
+			return ptr_to_ref(*v0);
+		};
+		{
+			var ref<task_ref,f,f,plain> v0 = IMP_getConstTaskReferenceReference();
+		}
+	)")
+	{
+		auto var = getConstTaskReferenceReference();
 	}
 
 	return 0;
