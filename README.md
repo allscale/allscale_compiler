@@ -16,9 +16,9 @@ Then run the following commands:
     $ git clone --recursive https://github.com/allscale/allscale_compiler
     $ cd allscale_compiler
     $ scripts/dependencies/installer
-    $ scripts/dependencies/third_party_linker
     $ mkdir build
     $ cd build
+    $ ../scripts/dependencies/third_party_linker
     $ cmake ../code
     $ make -j8
     $ ctest -j8
@@ -56,12 +56,11 @@ See its [README](scripts/dependencies/README.md) for additional information.
 The prerequisites for the HPX runtime system are listed [here](https://github.com/STEllAR-GROUP/hpx#build-instructions).
 The AllScale API submodule and the Allscale compiler itself do not require additional dependencies beyond those necessitated by Insieme and the HPX Runtime system.
 
-To setup the dependencies run the following two commands.
+To setup the dependencies run the following command.
 
     $ scripts/dependencies/installer
-    $ scripts/dependencies/third_party_linker
 
-The first line will install the dependencies into `$HOME/third_party_libs`, while the second will create a folder `third_party` containing symbolic links referencing the depdency installation.
+This line will install the dependencies into `$HOME/third_party_libs`.
 
 ### Building the Project
 
@@ -69,11 +68,15 @@ Once the prerequisites are fulfilled, you can build the entire project by callin
 
     $ mkdir build
     $ cd build
+    $ ../scripts/dependencies/third_party_linker
     $ cmake ../code
     $ make -j8
 
 Note that you should use an out-of-source build for this project.
 Adjust the build type and degree of build parallelism (`-j`) as required.
+
+The `third_party_linker` script will create a folder `third_party` containing symlinks to the software installed by the dependency installer.
+This software is considered by CMake.
 
 This will build the AllScale compiler as well as all the required submodules.
 

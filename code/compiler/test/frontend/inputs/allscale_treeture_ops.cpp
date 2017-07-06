@@ -38,6 +38,8 @@ int main() {
 		treeture_get(*a);
 		treeture_left(*a);
 		treeture_right(*a);
+		treeture_is_done(*a);
+		treeture_is_valid(*a);
 	})")
 	{
 		impl::reference::treeture<int> a = done(1);
@@ -45,6 +47,8 @@ int main() {
 		a.get();
 		a.getLeft();
 		a.getRight();
+		a.isDone();
+		a.isValid();
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS ////
@@ -52,9 +56,16 @@ int main() {
 	// treeture combination operations
 
 	#pragma test expect_ir(R"(
-		decl struct __any_string__combine;
-		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
-		def struct __any_string__combine {
+		decl struct __any_string__combine_1;
+		decl struct __any_string__combine_2;
+		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine_1::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
+		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine_2::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
+		def struct __any_string__combine_1 {
+			const function IMP__operator_call_ = (v673 : ref<int<4>,f,f,plain>, v674 : ref<int<4>,f,f,plain>) -> int<4> {
+				return *v673+*v674;
+			}
+		};
+		def struct __any_string__combine_2 {
 			const function IMP__operator_call_ = (v673 : ref<int<4>,f,f,plain>, v674 : ref<int<4>,f,f,plain>) -> int<4> {
 				return *v673+*v674;
 			}
@@ -69,7 +80,7 @@ int main() {
 				*a,
 				*b,
 				cpp_lambda_to_lambda(
-					*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {},
+					*<ref<__any_string__combine_1,f,f,plain>>(ref_temp(type_lit(__any_string__combine_1))) {},
 					type_lit((int<4>, int<4>) -> int<4>)
 				),
 				true
@@ -82,7 +93,7 @@ int main() {
 				*a,
 				*b,
 				cpp_lambda_to_lambda(
-					*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {},
+					*<ref<__any_string__combine_2,f,f,plain>>(ref_temp(type_lit(__any_string__combine_2))) {},
 					type_lit((int<4>, int<4>) -> int<4>)
 				),
 				true

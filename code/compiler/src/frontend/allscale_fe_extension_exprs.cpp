@@ -7,6 +7,7 @@
 #include "insieme/frontend/utils/conversion_utils.h"
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/core/analysis/type_utils.h"
+#include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/lang/list.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
@@ -42,6 +43,8 @@ namespace detail {
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
+		{"allscale::api::core::impl::.*treeture.*::isDone", SimpleCallMapper("treeture_is_done", true)},
+		{"allscale::api::core::impl::.*treeture.*::isValid", SimpleCallMapper("treeture_is_valid", true)},
 		{"allscale::api::core::impl::.*treeture<void>::treeture", 0, mapToTreetureVoidCtor},    // default ctor call for void specialization - special mapping
 		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapCopyAndMoveConstructor},   // copy|move ctor call
 		// task_reference
@@ -104,9 +107,11 @@ namespace detail {
 			if(auto call = argExpr.isa<core::CallExprPtr>()) {
 				// we don't dematerialize builtins
 				if(!core::lang::isBuiltIn(call->getFunctionExpr())) {
-					if(core::lang::isPlainReference(call->getType())) {
-						auto rawCallType = core::analysis::getReferencedType(call->getType());
-						return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+					// if this call is a materializing call
+					if(core::analysis::isMaterializingCall(call)) {
+						// we dematerialize it by setting the type to the return type of the call's callee
+						auto retType = call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType();
+						return builder.callExpr(retType, call->getFunctionExpr(), call->getArgumentDeclarations());
 					}
 				}
 			}
@@ -366,8 +371,11 @@ namespace detail {
 	core::ExpressionPtr AfterCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 		auto ret = AggregationCallMapper::convertArgument(clangArg, converter);
 		// the arguments need to be task_ref objects. If they are not, we need to convert them
-		if(!lang::isTaskReference(ret->getType())) {
-			if(auto genType = ret->getType().isa<core::GenericTypePtr>()) {
+		auto retType = ret->getType();
+		if(core::analysis::isRefType(retType)) retType = core::lang::ReferenceType(retType).getElementType();
+		if(!lang::isTaskReference(retType)) {
+			if(auto genType = retType.isa<core::GenericTypePtr>()) {
+				assert_true(converter.getIRTranslationUnit().getTypes().find(genType) != converter.getIRTranslationUnit().getTypes().end()) << "Can't find type " << genType << " in irTU";
 				// we have to lookup the record type from the irTU in order to look up the conversion opereators
 				auto tagType = converter.getIRTranslationUnit().getTypes().at(genType);
 				auto memFuns = tagType->getRecord()->getMemberFunctions();
