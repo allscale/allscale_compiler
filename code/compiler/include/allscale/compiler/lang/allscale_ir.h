@@ -74,6 +74,11 @@ namespace lang {
 
 		LANG_EXT_LITERAL(CppLambdaToClosure, "cpp_lambda_to_closure", "('l, type<('a...) => 'b>) -> ('a...) => 'b")
 		LANG_EXT_LITERAL(CppLambdaToLambda,  "cpp_lambda_to_lambda",  "('l, type<('a...) -> 'b>) -> ('a...) -> 'b")
+
+
+		// data item accesses
+
+		LANG_EXT_LITERAL(DataItemElementAccess,  "data_item_element_access",  "(ref<'data_item,'c,'v,'k>, 'region, type<'element_type>) -> ref<'element_type,'c,'v,'k>")
 	};
 
 	class RecOrPrecFunType {
