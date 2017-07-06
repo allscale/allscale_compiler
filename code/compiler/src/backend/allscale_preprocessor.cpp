@@ -170,10 +170,109 @@ namespace backend {
 
 	namespace {
 
+		core::NodePtr serializeCode(const core::NodePtr& node) {
+			core::NodeManager& mgr = node.getNodeManager();
+			core::IRBuilder builder(mgr);
+
+			// special case for lambdas (to cross scope limits of transform-bottom-up)
+			if (auto lambda = node.isa<core::LambdaExprPtr>()) {
+				return builder.lambdaExpr(
+					serializeCode(lambda->getReference()).as<core::LambdaReferencePtr>(),
+					serializeCode(lambda->getDefinition()).as<core::LambdaDefinitionPtr>()
+				);
+			}
+
+			auto& basic = mgr.getLangBasic();
+			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+
+			// a utility to remove treeture types
+			auto removeTreetures = [](const core::NodePtr& node) {
+				return core::transform::transformBottomUp(node, [](const core::NodePtr& node)->core::NodePtr {
+
+					// check whether it is a treeture type
+					if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
+						return lang::TreetureType(node).getValueType();
+					}
+
+					// not of interest either
+					return node;
+				}, core::transform::localReplacement);
+			};
+
+			// get body, replace treeture operations and recFun calls
+			auto treetureConnector = builder.parseExpr("lit(\"connect\":('a,'b)->unit)");
+			assert_true(treetureConnector);
+			return removeTreetures(core::transform::transformBottomUp(node, [&](const core::NodePtr& node)->core::NodePtr {
+
+				// check whether it is a return of a former treeture combinator
+				if (auto ret = node.isa<core::ReturnStmtPtr>()) {
+					if (core::analysis::isCallOf(ret->getReturnExpr(),treetureConnector)) {
+						// replace this one by a list of statements
+						auto connectorCall = ret->getReturnExpr().as<core::CallExprPtr>();
+						return builder.compoundStmt(
+							connectorCall->getArgument(0),
+							connectorCall->getArgument(1),
+							builder.returnStmt()
+						);
+					}
+				}
+
+				// for the rest: only interested in calls
+				auto call = node.isa<core::CallExprPtr>();
+				if (!call) return node;
+
+				if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
+					return builder.callExpr(basic.getId(), call->getArgument(0));
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
+					return call->getArgument(0);
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
+					return call->getArgument(0);
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureCombine())) {
+					auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
+					auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+					return builder.callExpr(call->getArgument(3),arg0,arg1);
+				}
+
+				if (core::analysis::isCallOf(call,ext.getTreetureParallel()) || core::analysis::isCallOf(call,ext.getTreetureSequential())) {
+					auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
+					auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+					return builder.callExpr(treetureConnector,arg0,arg1);
+				}
+
+				// if it is a call to a lambda that returns a treeture, serialize this lambda too
+				if (lang::isTreeture(call) && call->getFunctionExpr().isa<core::LambdaExprPtr>()) {
+
+					// get the function
+					auto newFun = serializeCode(call->getFunctionExpr()).as<core::ExpressionPtr>();
+
+					// also create new argument list
+					core::ExpressionList newArgs;
+					for(const auto& cur : call->getArgumentList()) {
+						newArgs.push_back(removeTreetures(cur).as<core::ExpressionPtr>());
+					}
+
+					// return the call to the cleaned code
+					return builder.callExpr(newFun,newArgs);
+
+				}
+
+				// not of interest either
+				return node;
+			}, core::transform::localReplacement));
+		}
+
+
+
+
 		core::ExpressionPtr inlineStep(const core::ExpressionPtr& stepCase, const core::ExpressionPtr& recFun, bool serialize) {
 			auto& mgr = stepCase->getNodeManager();
 			core::IRBuilder builder(stepCase->getNodeManager());
-			auto& basic = mgr.getLangBasic();
 
 			assert_true(stepCase.isa<core::LambdaExprPtr>())
 				<< "Only supported for lambdas so far!\n"
@@ -255,73 +354,8 @@ namespace backend {
 			// if serialization should be applied, do so
 			if (serialize) {
 
-				// a utility to remove treeture types
-				auto removeTreetures = [&](const core::NodePtr& node) {
-					return core::transform::transformBottomUp(node, [&](const core::NodePtr& node)->core::NodePtr {
-
-						// check whether it is a treeture type
-						if (node.isa<core::TypePtr>() && lang::isTreeture(node)) {
-							return lang::TreetureType(node).getValueType();
-						}
-
-						// not of interest either
-						return node;
-					}, core::transform::globalReplacement);
-				};
-
-				// get body, replace treeture operations and recFun calls
-				auto treetureConnector = builder.parseExpr("lit(\"connect\":('a,'b)->unit)");
-				assert_true(treetureConnector);
-				body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
-
-					// check whether it is a return of a former treeture combinator
-					if (auto ret = node.isa<core::ReturnStmtPtr>()) {
-						if (core::analysis::isCallOf(ret->getReturnExpr(),treetureConnector)) {
-							// replace this one by a list of statements
-							auto connectorCall = ret->getReturnExpr().as<core::CallExprPtr>();
-							return builder.compoundStmt(
-								connectorCall->getArgument(0),
-								connectorCall->getArgument(1),
-								builder.returnStmt()
-							);
-						}
-					}
-
-					// for the rest: only interested in calls
-					auto call = node.isa<core::CallExprPtr>();
-					if (!call) return node;
-
-					if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
-						return builder.callExpr(basic.getId(), call->getArgument(0));
-					}
-
-					if (core::analysis::isCallOf(call,ext.getTreetureRun())) {
-						return call->getArgument(0);
-					}
-
-					if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
-						return call->getArgument(0);
-					}
-
-					if (core::analysis::isCallOf(call,ext.getTreetureCombine())) {
-						auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
-						auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
-						return builder.callExpr(call->getArgument(3),arg0,arg1);
-					}
-
-					if (core::analysis::isCallOf(call,ext.getTreetureParallel()) || core::analysis::isCallOf(call,ext.getTreetureSequential())) {
-						auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
-						auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
-						return builder.callExpr(treetureConnector,arg0,arg1);
-					}
-
-					// not of interest either
-					return node;
-				}, core::transform::globalReplacement).as<core::CompoundStmtPtr>();
-
-
-				// replace all treeture types by their value types
-				body = removeTreetures(body).as<core::CompoundStmtPtr>();
+				// serialize the body ...
+				body = serializeCode(body).as<core::CompoundStmtPtr>();
 
 				// also remove the treeture wrapper from the result type
 				resType = lang::TreetureType(resType).getValueType();
@@ -792,6 +826,9 @@ namespace backend {
 
 			// make sure the given code is a prec operator invocation
 			assert_true(lang::PrecOperation::isPrecOperation(code));
+
+			// make sure the input is correct
+			assert_correct_ir(code);
 
 			// print initial state of conversion
 			if (debug) {
