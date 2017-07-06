@@ -36,7 +36,7 @@ rm -rf "$1/coverage" "$1/coverage"{,_initial,_unittests,_total}.info
 	--ignore-errors source \
 	--no-external
 
-run_unit_tests "$1"
+run_unit_tests "$1/compiler"
 
 # capture unit tests results
 "$LCOV" --quiet --capture \

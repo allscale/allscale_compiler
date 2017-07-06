@@ -48,6 +48,9 @@ namespace lang {
 		LANG_EXT_DERIVED(TreetureRight, "(t : treeture<'a,'r>) -> task_ref { return task_ref_right(treeture_to_task_ref(t)); }")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
 
+		LANG_EXT_LITERAL(TreetureIsDone,  "treeture_is_done",  "(treeture<'a,'r>) -> bool")
+		LANG_EXT_LITERAL(TreetureIsValid, "treeture_is_valid", "(treeture<'a,'r>) -> bool")
+
 		LANG_EXT_LITERAL(TreetureSequential, "treeture_sequential", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<unit, f>")
 		LANG_EXT_LITERAL(TreetureParallel, "treeture_parallel", "(dependencies, treeture<'a, f>, treeture<'b, f>) -> treeture<unit, f>")
 		LANG_EXT_LITERAL(TreetureCombine, "treeture_combine", "(dependencies, treeture<'a, f>, treeture<'b, f>, ('av,'bv) -> 'r, bool) -> treeture<'r, f>")

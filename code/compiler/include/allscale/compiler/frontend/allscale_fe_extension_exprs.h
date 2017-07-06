@@ -37,8 +37,16 @@ namespace frontend {
 		core::ExpressionPtr mapToFirstArgument(const fed::ClangExpressionInfo&);
 
 
+		/// Maps the copy and move constructor calls for types which have implicit copy semantics in our IR
+		core::ExpressionPtr mapCopyAndMoveConstructor(const fed::ClangExpressionInfo& exprInfo);
+
+
 		/// Utility for the mapping of the call to done without arguments
 		core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo&);
+
+
+		/// Utility for the mapping of the call to the ctor of void treetures
+		core::ExpressionPtr mapToTreetureVoidCtor(const fed::ClangExpressionInfo&);
 
 
 		/// Utility for the specification of simple call mappings (C++ to IR)
@@ -80,6 +88,17 @@ namespace frontend {
 			AggregationCallMapper(const string& targetIRString, bool requiresDependencies = false)
 				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
 		};
+
+
+		/// This is a special AggregationCallMapper for mapping calls to core::after. All passed arguments will be converted to task_ref
+		/// (if they are not already of that type) by using their conversion operators.
+		class AfterCallMapper : public AggregationCallMapper {
+		  protected:
+			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) override;
+		  public:
+			using AggregationCallMapper::AggregationCallMapper;
+		};
+
 
 		/// Utility to map the call operator call of recfun and precfun objects
 		class RecOrPrecFunCallMapper : public SimpleCallMapper {

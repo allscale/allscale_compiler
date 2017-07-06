@@ -4,8 +4,10 @@
 #include <map>
 
 #include "insieme/frontend/converter.h"
+#include "insieme/frontend/utils/conversion_utils.h"
 #include "insieme/frontend/utils/name_manager.h"
 #include "insieme/core/analysis/type_utils.h"
+#include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/lang/list.h"
 #include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
@@ -26,46 +28,49 @@ namespace detail {
 	/// Mapping specification from C++ to IR used during call expression translation
 	const std::vector<fed::FilterMapper> exprMappings = {
 		// callables
-		{"allscale::api::core::fun_def.*fun_def", mapToFirstArgument},                       // copy|move ctor call
-		{"allscale::api::core::rec_defs.*rec_defs", mapToFirstArgument},                     // copy|move ctor call
-		{"allscale::api::core::detail::prec_operation.*prec_operation", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::fun_def.*fun_def", mapCopyAndMoveConstructor},                       // copy|move ctor call
+		{"allscale::api::core::rec_defs.*rec_defs", mapCopyAndMoveConstructor},                     // copy|move ctor call
+		{"allscale::api::core::detail::prec_operation.*prec_operation", mapCopyAndMoveConstructor}, // copy|move ctor call
 		// completed_tasks
 		{"allscale::api::core::done", 0, mapDoneCall},
 		{"allscale::api::core::done", SimpleCallMapper("treeture_done", false, true)},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", mapToFirstArgument}, // conversion operator
-		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapToFirstArgument},               // copy|move ctor call
+		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapCopyAndMoveConstructor},        // copy|move ctor call
 		// treeture
 		{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
 		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
-		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::impl::.*treeture.*::isDone", SimpleCallMapper("treeture_is_done", true)},
+		{"allscale::api::core::impl::.*treeture.*::isValid", SimpleCallMapper("treeture_is_valid", true)},
+		{"allscale::api::core::impl::.*treeture<void>::treeture", 0, mapToTreetureVoidCtor},    // default ctor call for void specialization - special mapping
+		{"allscale::api::core::impl::.*treeture.*::.*treeture.*", mapCopyAndMoveConstructor},   // copy|move ctor call
 		// task_reference
 		{"allscale::api::core::impl::.*treeture.*::operator task_reference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*treeture.*::getTaskReference", SimpleCallMapper("treeture_to_task_ref", true)},
 		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
-		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone}, // default ctor call - special mapping
-		{"allscale::api::core::impl::.*::task_reference::task_reference", mapToFirstArgument},  // copy|move ctor call
+		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone},        // default ctor call - special mapping
+		{"allscale::api::core::impl::.*::task_reference::task_reference", mapCopyAndMoveConstructor},  // copy|move ctor call
 		// treeture aggregation
 		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
 		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
 		{"allscale::api::core::.*parallel", AggregationCallMapper("treeture_parallel", true)},
 		// dependencies
-		{"allscale::api::core::after", AggregationCallMapper("dependency_after")},
+		{"allscale::api::core::after", AfterCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
-		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument}, // conversion operator
-		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapToFirstArgument},     // copy|move ctor call
-		{"allscale::api::core::no_dependencies::no_dependencies", mapToFirstArgument},       // copy|move ctor call
+		{"allscale::api::core::no_dependencies::operator dependencies", mapToFirstArgument},        // conversion operator
+		{"allscale::api::core::.*::dependencies<.*>::dependencies", mapCopyAndMoveConstructor},     // copy|move ctor call
+		{"allscale::api::core::no_dependencies::no_dependencies", mapCopyAndMoveConstructor},       // copy|move ctor call
 		// recfun operations
 		{R"(allscale::api::core::.*prec_operation<.*>::operator\(\))", PrecFunCallMapper()},
 		{R"(allscale::api::core::detail::callable<.*>::(Sequential|Parallel)Callable::operator\(\))", RecFunCallMapper()},
 		// fun
 		{"allscale::api::core::fun", mapToBuildRecFun},
-		{"allscale::api::core::fun_def<.*>::fun_def", mapToFirstArgument}, // copy|move ctor call
+		{"allscale::api::core::fun_def<.*>::fun_def", mapCopyAndMoveConstructor}, // copy|move ctor call
 		// prec
 		{"allscale::api::core::group", aggregateArgumentsToTuple},
 		{"allscale::api::core::pick", aggregateArgumentsToList},
@@ -102,9 +107,11 @@ namespace detail {
 			if(auto call = argExpr.isa<core::CallExprPtr>()) {
 				// we don't dematerialize builtins
 				if(!core::lang::isBuiltIn(call->getFunctionExpr())) {
-					if(core::lang::isPlainReference(call->getType())) {
-						auto rawCallType = core::analysis::getReferencedType(call->getType());
-						return builder.callExpr(rawCallType, call->getFunctionExpr(), call->getArgumentDeclarations());
+					// if this call is a materializing call
+					if(core::analysis::isMaterializingCall(call)) {
+						// we dematerialize it by setting the type to the return type of the call's callee
+						auto retType = call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType();
+						return builder.callExpr(retType, call->getFunctionExpr(), call->getArgumentDeclarations());
 					}
 				}
 			}
@@ -122,18 +129,18 @@ namespace detail {
 			assert_true(core::lang::isReference(exprIn));
 			auto innerType = core::analysis::getReferencedType(exprIn);
 
-			// check whether it is a trivial type. We need to look up the real TagType in the translation unit to do so
+			// check whether it is a trivially copyable type. We need to look up the real TagType in the translation unit to do so
 			auto& typeMap = converter.getIRTranslationUnit().getTypes();
-			bool isTrivial = true;
+			bool isTriviallyCopyable = true;
 			if(const auto& genType = innerType.as<core::GenericTypePtr>()) {
 				auto fullType = typeMap.find(genType);
 				if(fullType != typeMap.end()) {
-					isTrivial = core::analysis::isTrivial(fullType->second);
+					isTriviallyCopyable = core::analysis::isTriviallyCopyable(fullType->second);
 				}
 			}
 
-			// if the given expression is a plain reference and trivial, we need to deref it
-			if(core::lang::isPlainReference(exprIn) && isTrivial) return builder.deref(exprIn);
+			// if the given expression is a plain reference and is trivially copyable, we need to deref it
+			if(core::lang::isPlainReference(exprIn) && isTriviallyCopyable) return builder.deref(exprIn);
 
 			// otherwise we need to cast it to const cpp_ref to encode copy construction
 			return core::lang::buildRefCast(exprIn, core::lang::buildRefType(innerType, true, false, core::lang::ReferenceType::Kind::CppReference));
@@ -272,9 +279,23 @@ namespace detail {
 	}
 
 
+	// mapCopyAndMoveConstructor
+	core::ExpressionPtr mapCopyAndMoveConstructor(const fed::ClangExpressionInfo& exprInfo) {
+		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
+				<< " has " << exprInfo.numArgs << " arguments";
+		return derefOrDematerialize(exprInfo.converter.convertExpr(exprInfo.args[0]));
+	}
+
+
 	// mapDoneCall
 	core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo& exprInfo) {
 		return lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant());
+	}
+
+
+	// mapToTreetureVoidCtor
+	core::ExpressionPtr mapToTreetureVoidCtor(const fed::ClangExpressionInfo& exprInfo) {
+		return lang::buildTreetureRun(lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant()));
 	}
 
 
@@ -343,6 +364,37 @@ namespace detail {
 			return ret;
 		}
 		return args;
+	}
+
+
+	// AfterCallMapper
+	core::ExpressionPtr AfterCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
+		auto ret = AggregationCallMapper::convertArgument(clangArg, converter);
+		// the arguments need to be task_ref objects. If they are not, we need to convert them
+		auto retType = ret->getType();
+		if(core::analysis::isRefType(retType)) retType = core::lang::ReferenceType(retType).getElementType();
+		if(!lang::isTaskReference(retType)) {
+			if(auto genType = retType.isa<core::GenericTypePtr>()) {
+				assert_true(converter.getIRTranslationUnit().getTypes().find(genType) != converter.getIRTranslationUnit().getTypes().end()) << "Can't find type " << genType << " in irTU";
+				// we have to lookup the record type from the irTU in order to look up the conversion opereators
+				auto tagType = converter.getIRTranslationUnit().getTypes().at(genType);
+				auto memFuns = tagType->getRecord()->getMemberFunctions();
+				core::MemberFunctionPtr conversionOperator;
+				for(const auto& memFun : memFuns) {
+					auto name = memFun->getNameAsString();
+					if(boost::starts_with(name, insieme::utils::getMangledOperatorConversionPrefix())
+							&& lang::isTaskReference(memFun->getImplementation()->getType().as<core::FunctionTypePtr>()->getReturnType())) {
+						conversionOperator = memFun;
+						break;
+					}
+				}
+				assert_true(conversionOperator) << "Could not find conversion operator to task_ref in type " << genType;
+
+				// now that we found the correct conversion operator, we return a call to it
+				ret = converter.getIRBuilder().callExpr(conversionOperator->getImplementation(), insieme::frontend::utils::prepareThisExpr(converter, ret));
+			}
+		}
+		return ret;
 	}
 
 

@@ -4,6 +4,18 @@
 
 using namespace allscale::api::core;
 
+struct TaskRefConvertible {
+	task_reference handle;
+	operator task_reference() {
+		return handle;
+	}
+};
+
+task_reference& getTaskRefReference() {
+	task_reference* tr;
+	return *tr;
+}
+
 int main() {
 	; // this is required because of the clang compound source location bug
 
@@ -37,6 +49,29 @@ int main() {
 		treeture<int> a = done(1);
 		dep1.add(a);
 		dep1.add(a.getTaskReference());
+	}
+
+	// explicit conversion of arguments to core::after
+
+	#pragma test expect_ir(R"(
+		def struct IMP_TaskRefConvertible {
+			handle : task_ref;
+			function IMP__conversion_operator_task_reference = () -> task_ref {
+				return *(this).handle;
+			}
+		};
+		def IMP_getTaskRefReference = function () -> ref<task_ref,f,f,cpp_ref> {
+			var ref<ptr<task_ref>,f,f,plain> v0 = ref_decl(type_lit(ref<ptr<task_ref>,f,f,plain>));
+			return ptr_to_ref(*v0);
+		};
+		{
+			var ref<IMP_TaskRefConvertible,f,f,plain> v0 = IMP_TaskRefConvertible::(ref_decl(type_lit(ref<IMP_TaskRefConvertible,f,f,plain>)));
+			dependency_after(v0.IMP__conversion_operator_task_reference(), IMP_getTaskRefReference());
+		}
+	)")
+	{
+		TaskRefConvertible trc;
+		allscale::api::core::after(trc, getTaskRefReference());
 	}
 
 	return 0;

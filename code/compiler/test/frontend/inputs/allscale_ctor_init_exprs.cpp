@@ -18,7 +18,7 @@ int main() {
 		def struct IMP_RefConstructExpr {
 			y : task_ref;
 			ctor function (v1 : ref<task_ref,t,f,cpp_ref>) {
-				<ref<task_ref,f,f,plain>>((this).y) {v1};
+				<ref<task_ref,f,f,plain>>((this).y) {*v1};
 			}
 		};
 		{
