@@ -78,8 +78,10 @@ namespace analysis {
 	 */
 	class DataRange : public insieme::utils::less_than_comparable<DataRange> {
 
+		using set_type = insieme::analysis::cba::Set<DataSpan>;
+
 		// the list of covered spans, or uninitialized if spans are unknown
-		insieme::analysis::cba::Set<DataSpan> spans;
+		set_type spans;
 
 	public:
 
@@ -87,7 +89,7 @@ namespace analysis {
 		 * Creates a new, unknown data range.
 		 */
 		DataRange()
-			: spans() {}
+			: spans(set_type::getUniversal()) {}
 
 		DataRange(const insieme::core::ExpressionPtr& expr)
 			: DataRange(DataPoint(expr)) {}
@@ -209,11 +211,11 @@ namespace analysis {
 			: requirements(requirements) {}
 
 		bool isUnknown() const {
-			return !requirements;
+			return requirements.isUniversal();
 		}
 
 		bool empty() const {
-			return requirements && requirements.empty();
+			return requirements.empty();
 		}
 
 		bool isUniverse() const {

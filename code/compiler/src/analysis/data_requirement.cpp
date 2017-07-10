@@ -78,11 +78,11 @@ namespace analysis {
 		// check some corner cases
 		if (range.isUnknown()) return out << "unknown";
 		if (range.isEmpty())   return out << "empty";
-		if (range.spans->size() == 1) return out << *range.spans->begin();
+		if (range.spans.size() == 1) return out << *range.spans.begin();
 
 		// make sure strings are printed in fixed order
 		std::vector<std::string> entries;
-		for(const auto& cur : *range.spans) {
+		for(const auto& cur : range.spans) {
 			entries.push_back(toString(cur));
 		}
 		std::sort(entries.begin(),entries.end());
@@ -118,8 +118,8 @@ namespace analysis {
 
 		// implicitly merge nested union nodes
 		for(const auto& cur : ranges) {
-			for(const auto& span : *cur.spans) {
-				res.spans->insert(span);
+			for(const auto& span : cur.spans) {
+				res.spans.insert(span);
 			}
 		}
 
@@ -133,8 +133,8 @@ namespace analysis {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs) {
-		if (!reqs.requirements) return out << "unknown";
-		return out << *reqs.requirements;
+		if (reqs.isUnknown()) return out << "unknown";
+		return out << reqs.requirements;
 	}
 
 
