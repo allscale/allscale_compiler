@@ -1,11 +1,9 @@
 #pragma once
 
 #include <ostream>
-#include <set>
-
-#include <boost/optional.hpp>
 
 #include "insieme/core/ir.h"
+#include "insieme/analysis/cba/common/set.h"
 #include "insieme/analysis/cba/haskell/context.h"
 
 #include "insieme/utils/comparable.h"
@@ -81,7 +79,7 @@ namespace analysis {
 	class DataRange : public insieme::utils::less_than_comparable<DataRange> {
 
 		// the list of covered spans, or uninitialized if spans are unknown
-		boost::optional<std::set<DataSpan>> spans;
+		insieme::analysis::cba::Set<DataSpan> spans;
 
 	public:
 
@@ -121,11 +119,11 @@ namespace analysis {
 		// -- observers --
 
 		bool isEmpty() const {
-			return spans.is_initialized() && spans->empty();
+			return spans.empty();
 		}
 
 		bool isUnknown() const {
-			return !spans;
+			return spans.isUniversal();
 		}
 
 		bool operator==(const DataRange& other) const;
@@ -198,14 +196,16 @@ namespace analysis {
 	 */
 	class DataRequirements {
 
+		using set_type = insieme::analysis::cba::Set<DataRequirement>;
+
 		// the data requirements, if known (if not set, requirements are not known)
-		boost::optional<std::set<DataRequirement>> requirements;
+		set_type requirements;
 
 	public:
 
-		DataRequirements() {}
+		DataRequirements() : requirements(set_type::getUniversal()) {}
 
-		DataRequirements(const std::set<DataRequirement>& requirements)
+		DataRequirements(const set_type& requirements)
 			: requirements(requirements) {}
 
 		bool isUnknown() const {
@@ -213,19 +213,19 @@ namespace analysis {
 		}
 
 		bool empty() const {
-			return requirements && requirements->empty();
+			return requirements && requirements.empty();
 		}
 
-		operator bool() const {
-			return requirements.is_initialized();
+		bool isUniverse() const {
+			return requirements.isUniversal();
 		}
 
 		auto begin() const {
-			return requirements->begin();
+			return requirements.begin();
 		}
 
 		auto end() const {
-			return requirements->end();
+			return requirements.end();
 		}
 
 		friend std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs);
