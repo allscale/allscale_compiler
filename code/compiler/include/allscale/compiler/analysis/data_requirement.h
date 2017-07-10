@@ -17,9 +17,9 @@ namespace analysis {
 	/**
 	 * The type of access required to some part of a data item.
 	 */
-	enum class AccessMode {
-		ReadOnly,
-		ReadWrite
+	enum class AccessMode : int {
+		ReadOnly  = 0,
+		ReadWrite = 1
 	};
 
 	// enable printing of access modes

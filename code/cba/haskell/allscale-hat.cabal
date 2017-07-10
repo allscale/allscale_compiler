@@ -12,6 +12,7 @@ library
                         -optc-O3
     hs-source-dirs:     src
     exposed-modules:    Allscale.Adapter,
+                        Allscale.Analysis.DataRequirements,
                         Allscale.Analysis.OutOfBounds
     build-depends:      insieme-hat,
                         attoparsec >= 0.13,
