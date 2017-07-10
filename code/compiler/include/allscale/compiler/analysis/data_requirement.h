@@ -3,8 +3,12 @@
 #include <ostream>
 #include <set>
 
+#include <boost/optional.hpp>
+
 #include "insieme/core/ir.h"
 #include "insieme/analysis/cba/haskell/context.h"
+
+#include "insieme/utils/comparable.h"
 
 namespace allscale {
 namespace compiler {
@@ -23,6 +27,118 @@ namespace analysis {
 
 
 	/**
+	 * The reference of a a single data point.
+	 */
+	class DataPoint : public insieme::utils::less_than_comparable<DataPoint> {
+
+		insieme::core::ExpressionPtr expr;
+
+	public:
+
+		DataPoint(const insieme::core::ExpressionPtr& expr)
+			: expr(expr) {
+			assert_true(expr);
+		}
+
+		bool operator==(const DataPoint& other) const;
+
+		bool operator<(const DataPoint& other) const;
+
+		// add pretty printer support
+		friend std::ostream& operator<<(std::ostream& out, const DataPoint& point);
+
+	};
+
+	/**
+	 * A range of data points, spanning between two points.
+	 */
+	class DataSpan : public insieme::utils::less_than_comparable<DataSpan> {
+
+		DataPoint from;
+
+		DataPoint to;
+
+	public:
+
+		DataSpan(const DataPoint& point)
+			: from(point), to(point) {}
+
+		DataSpan(const DataPoint& from, const DataPoint& to)
+			: from(from), to(to) {}
+
+		bool operator==(const DataSpan& other) const;
+
+		bool operator<(const DataSpan& other) const;
+
+		// add pretty printer support
+		friend std::ostream& operator<<(std::ostream& out, const DataSpan& span);
+
+	};
+
+	/**
+	 * A range of data points formed by the union of a set of DataSpans.
+	 */
+	class DataRange : public insieme::utils::less_than_comparable<DataRange> {
+
+		// the list of covered spans, or uninitialized if spans are unknown
+		boost::optional<std::set<DataSpan>> spans;
+
+	public:
+
+		/**
+		 * Creates a new, unknown data range.
+		 */
+		DataRange()
+			: spans() {}
+
+		DataRange(const insieme::core::ExpressionPtr& expr)
+			: DataRange(DataPoint(expr)) {}
+
+		DataRange(const DataPoint& point)
+			: DataRange(DataSpan(point)) {}
+
+		DataRange(const DataSpan& span)
+			: spans(std::set<DataSpan>{ span }) {}
+
+
+		// -- factory functions --
+
+		static DataRange unknown();
+
+		static DataRange empty();
+
+		static DataPoint term(const insieme::core::ExpressionPtr& expr);
+
+		static DataSpan span(const DataPoint& from, const DataPoint& to);
+
+		static DataRange merge(const std::vector<DataRange>& ranges);
+
+		template<typename ... Ranges>
+		static DataRange merge(const Ranges& ... ranges) {
+			return merge(std::vector<DataRange>{ ranges ... });
+		}
+
+		// -- observers --
+
+		bool isEmpty() const {
+			return spans.is_initialized() && spans->empty();
+		}
+
+		bool isUnknown() const {
+			return !spans;
+		}
+
+		bool operator==(const DataRange& other) const;
+
+		bool operator<(const DataRange& other) const;
+
+		// add pretty printer support
+		friend std::ostream& operator<<(std::ostream& out, const DataRange& range);
+
+	};
+
+
+	/**
 	 * A data requirement, referencing a data item, a (sub-)range of
 	 * the data item and the mode of access.
 	 */
@@ -32,30 +148,23 @@ namespace analysis {
 		insieme::core::ExpressionPtr dataItem;
 
 		// the expression computing the range
-		insieme::core::ExpressionPtr range;
+		DataRange range;
 
 		// the access mode
 		AccessMode mode;
 
 	public:
 
-		// TODO: add ways to express unknown requirements
-
-
-		DataRequirement(const insieme::core::ExpressionPtr& dataItem, const insieme::core::ExpressionPtr& range, AccessMode mode)
+		DataRequirement(const insieme::core::ExpressionPtr& dataItem, const DataRange& range, AccessMode mode)
 			: dataItem(dataItem), range(range), mode(mode) {
-
 			assert_true(dataItem) << "Data item reference must not be null!";
-			assert_true(range) << "Data item range must not be null!";
-
 		}
-
 
 		bool operator==(const DataRequirement& other) const {
 			// shortcut for the same object id
 			if (this == &other) return true;
 			// compare individual fields
-			return mode == other.mode && *dataItem == *other.dataItem && *range == *other.range;
+			return mode == other.mode && *dataItem == *other.dataItem && range == other.range;
 		}
 
 		bool operator!=(const DataRequirement& other) const {
@@ -75,7 +184,7 @@ namespace analysis {
 			if (*dataItem != *other.dataItem) return false;
 
 			// and finally the range
-			return *range < *other.range;
+			return range < other.range;
 		}
 
 		friend std::ostream& operator<<(std::ostream& out, const DataRequirement& req);
@@ -84,17 +193,39 @@ namespace analysis {
 
 
 	/**
-	 *
+	 * The result of a data requirement analysis, summarizing the data accessed
+	 * by a given code fragment.
 	 */
 	class DataRequirements {
 
-		std::set<DataRequirement> requirements;
-
+		// the data requirements, if known (if not set, requirements are not known)
+		boost::optional<std::set<DataRequirement>> requirements;
 
 	public:
 
+		DataRequirements() {}
+
+		DataRequirements(const std::set<DataRequirement>& requirements)
+			: requirements(requirements) {}
+
+		bool isUnknown() const {
+			return !requirements;
+		}
+
 		bool empty() const {
-			return requirements.empty();
+			return requirements && requirements->empty();
+		}
+
+		operator bool() const {
+			return requirements.is_initialized();
+		}
+
+		auto begin() const {
+			return requirements->begin();
+		}
+
+		auto end() const {
+			return requirements->end();
 		}
 
 		friend std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs);
