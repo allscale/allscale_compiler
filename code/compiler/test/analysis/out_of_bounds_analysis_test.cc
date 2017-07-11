@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "allscale/cba/out_of_bounds_analysis.h"
+#include "allscale/compiler/analysis/out_of_bounds_analysis.h"
 
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/ir_builder.h"
@@ -9,7 +9,8 @@
 #include "insieme/utils/assert.h"
 
 namespace allscale {
-namespace cba {
+namespace compiler {
+namespace analysis {
 
 	using namespace insieme::core;
 	using namespace insieme::analysis::cba::haskell;
@@ -290,5 +291,6 @@ namespace cba {
 		ASSERT_EQ(OutOfBoundsResult::IsNotOutOfBounds, getOutOfBounds(ctx, call));
 	}
 
-} // end namespace cba
+} // end namespace analysis
+} // end namespace compiler
 } // end namespace allscale

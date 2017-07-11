@@ -78,7 +78,11 @@ namespace analysis {
 	 */
 	class DataRange : public insieme::utils::less_than_comparable<DataRange> {
 
+	public:
+
 		using set_type = insieme::analysis::cba::Set<DataSpan>;
+
+	private:
 
 		// the list of covered spans, or uninitialized if spans are unknown
 		set_type spans;
@@ -99,6 +103,9 @@ namespace analysis {
 
 		DataRange(const DataSpan& span)
 			: spans(std::set<DataSpan>{ span }) {}
+
+		DataRange(const set_type& spans)
+			: spans(spans) {}
 
 
 		// -- factory functions --
@@ -198,7 +205,11 @@ namespace analysis {
 	 */
 	class DataRequirements {
 
+	public:
+
 		using set_type = insieme::analysis::cba::Set<DataRequirement>;
+
+	private:
 
 		// the data requirements, if known (if not set, requirements are not known)
 		set_type requirements;

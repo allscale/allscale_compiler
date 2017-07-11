@@ -1,4 +1,4 @@
-#include "allscale/cba/out_of_bounds_analysis.h"
+#include "allscale/compiler/analysis/out_of_bounds_analysis.h"
 
 #include "insieme/core/lang/reference.h"
 #include "insieme/core/inspyer/inspyer.h"
@@ -16,7 +16,8 @@ using namespace insieme;
 using namespace insieme::analysis::cba::haskell;
 
 namespace allscale {
-namespace cba {
+namespace compiler {
+namespace analysis {
 
 	OutOfBoundsResult getOutOfBounds(Context& ctxt, const core::CallExprAddress& call) {
 		const auto& refext = call.getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
@@ -28,5 +29,6 @@ namespace cba {
 		return static_cast<OutOfBoundsResult>(res);
 	}
 
-} // end namespace cba
+} // end namespace analysis
+} // end namespace compiler
 } // end namespace allscale

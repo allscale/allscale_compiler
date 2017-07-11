@@ -179,43 +179,42 @@ extern "C" {
 	using namespace allscale::compiler::analysis;
 
 	DataPoint* hat_c_mk_data_point(NodePtr* node) {
-		DataPoint* dp = new DataPoint(node->as<ExpressionPtr>());
+		DataPoint* dp = new DataPoint(std::move(node->as<ExpressionPtr>()));
 		delete node;
 		return dp;
 	}
 
 	DataSpan* hat_c_mk_data_span(DataPoint* from, DataPoint* to) {
-		DataSpan* ds = new DataSpan(*from, *to);
+		DataSpan* ds = new DataSpan(std::move(*from), std::move(*to));
 		delete from;
 		delete to;
 		return ds;
 	}
 
-	using DataSpanSet = cba::Set<DataSpan>;
-	DataSpanSet* hat_c_mk_data_span_set(const DataSpan* spans[], long long size) {
+	DataRange::set_type* hat_c_mk_data_span_set(const DataSpan* spans[], long long size) {
 		if(size < 0) {
-			return new DataSpanSet(DataSpanSet::getUniversal());
+			return new DataRange::set_type(DataRange::set_type::getUniversal());
 		}
 
-		auto dss = new DataSpanSet();
+		auto dss = new DataRange::set_type();
 		for(int i = 0; i < size; i++) {
-			dss->insert(*spans[i]);
+			dss->insert(std::move(*spans[i]));
 			delete spans[i];
 		}
 
 		return dss;
 	}
 
-	DataRange* hat_c_mk_data_range(DataSpanSet* dss) {
-		DataRange* dr = new DataRange(*dss);
+	DataRange* hat_c_mk_data_range(DataRange::set_type* dss) {
+		DataRange* dr = new DataRange(std::move(*dss));
 		delete dss;
 		return dr;
 	}
 
 	DataRequirement* hat_c_mk_data_requirement(NodePtr* node, DataRange* range, int accessMode) {
 		DataRequirement* dr = new DataRequirement(
-			node->as<ExpressionPtr>(),
-			*range,
+			std::move(node->as<ExpressionPtr>()),
+			std::move(*range),
 			static_cast<AccessMode>(accessMode)
 		);
 		delete node;
@@ -223,23 +222,22 @@ extern "C" {
 		return dr;
 	}
 
-	using DataRequirementSet = cba::Set<DataRequirement>;
-	DataRequirementSet* hat_c_mk_data_requirement_set(const DataRequirement* reqs[], long long size) {
+	DataRequirements::set_type* hat_c_mk_data_requirement_set(const DataRequirement* reqs[], long long size) {
 		if(size < 0) {
-			return new DataRequirementSet(DataRequirementSet::getUniversal());
+			return new DataRequirements::set_type(DataRequirements::set_type::getUniversal());
 		}
 
-		auto drs = new DataRequirementSet();
+		auto drs = new DataRequirements::set_type();
 		for(int i = 0; i < size; i++) {
-			drs->insert(*reqs[i]);
+			drs->insert(std::move(*reqs[i]));
 			delete reqs[i];
 		}
 
 		return drs;
 	}
 
-	DataRequirements* hat_c_mk_data_requirements(DataRequirementSet* drs) {
-		DataRequirements* dr = new DataRequirements(*drs);
+	DataRequirements* hat_c_mk_data_requirements(DataRequirements::set_type* drs) {
+		DataRequirements* dr = new DataRequirements(std::move(*drs));
 		delete drs;
 		return dr;
 	}

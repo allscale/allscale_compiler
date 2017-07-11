@@ -2,7 +2,7 @@ resolver: lts-6.17
 
 packages:
 - '.'
-- '../../../insieme/code/analysis/src/cba/haskell/insieme-hat'
+- '../../../../../insieme/code/analysis/src/cba/haskell/insieme-hat'
 
 extra-deps:
 - attoparsec-binary-0.2

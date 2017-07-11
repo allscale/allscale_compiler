@@ -5,7 +5,8 @@
 #include "insieme/analysis/cba/haskell/context.h"
 
 namespace allscale {
-namespace cba {
+namespace compiler {
+namespace analysis {
 
 	enum class OutOfBoundsResult : int {
 		MayBeOutOfBounds,
@@ -16,5 +17,6 @@ namespace cba {
 	OutOfBoundsResult getOutOfBounds(insieme::analysis::cba::haskell::Context& ctxt,
 	                                 const insieme::core::CallExprAddress& expr);
 
-} // end namespace cba
+} // end namespace analysis
+} // end namespace compiler
 } // end namespace allscale

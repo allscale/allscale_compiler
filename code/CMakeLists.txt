@@ -44,7 +44,6 @@ include(allscale_runtime)
 include(allscale_api)
 
 # -- AllScale Compiler
-add_subdirectory(cba)
 add_subdirectory(compiler)
 
 # -- Integration Test Files
