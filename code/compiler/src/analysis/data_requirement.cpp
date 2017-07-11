@@ -1,5 +1,17 @@
 #include "allscale/compiler/analysis/data_requirement.h"
 
+#include "insieme/analysis/cba/haskell/context.h"
+#include "insieme/analysis/cba/common/set.h"
+
+extern "C" {
+
+	using namespace insieme::analysis::cba::haskell;
+	using namespace allscale::compiler::analysis;
+
+	DataRequirements* hat_hs_data_requirements(StablePtr ctx, const HaskellNodeAddress node_hs);
+
+}
+
 namespace allscale {
 namespace compiler {
 namespace analysis {
@@ -145,12 +157,91 @@ namespace analysis {
 		return getDataRequirements(context, stmt);
 	}
 
-	DataRequirements getDataRequirements(AnalysisContext&, const StatementPtr&) {
-		// TODO: implement this analysis
-		return DataRequirements();
+	DataRequirements getDataRequirements(AnalysisContext& ctx, const StatementPtr& stmt) {
+		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
+		DataRequirements* res_ptr = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
+		assert_true(res_ptr);
+
+		DataRequirements res = *res_ptr;
+		delete res_ptr;
+
+		return res;
 	}
 
 } // end namespace analysis
 } // end namespace compiler
 } // end namespace allscale
 
+extern "C" {
+
+	using namespace insieme::core;
+	using namespace insieme::analysis;
+	using namespace allscale::compiler::analysis;
+
+	DataPoint* hat_c_mk_data_point(NodePtr* node) {
+		DataPoint* dp = new DataPoint(node->as<ExpressionPtr>());
+		delete node;
+		return dp;
+	}
+
+	DataSpan* hat_c_mk_data_span(DataPoint* from, DataPoint* to) {
+		DataSpan* ds = new DataSpan(*from, *to);
+		delete from;
+		delete to;
+		return ds;
+	}
+
+	using DataSpanSet = cba::Set<DataSpan>;
+	DataSpanSet* hat_c_mk_data_span_set(const DataSpan* spans[], long long size) {
+		if(size < 0) {
+			return new DataSpanSet(DataSpanSet::getUniversal());
+		}
+
+		auto dss = new DataSpanSet();
+		for(int i = 0; i < size; i++) {
+			dss->insert(*spans[i]);
+			delete spans[i];
+		}
+
+		return dss;
+	}
+
+	DataRange* hat_c_mk_data_range(DataSpanSet* dss) {
+		DataRange* dr = new DataRange(*dss);
+		delete dss;
+		return dr;
+	}
+
+	DataRequirement* hat_c_mk_data_requirement(NodePtr* node, DataRange* range, int accessMode) {
+		DataRequirement* dr = new DataRequirement(
+			node->as<ExpressionPtr>(),
+			*range,
+			static_cast<AccessMode>(accessMode)
+		);
+		delete node;
+		delete range;
+		return dr;
+	}
+
+	using DataRequirementSet = cba::Set<DataRequirement>;
+	DataRequirementSet* hat_c_mk_data_requirement_set(const DataRequirement* reqs[], long long size) {
+		if(size < 0) {
+			return new DataRequirementSet(DataRequirementSet::getUniversal());
+		}
+
+		auto drs = new DataRequirementSet();
+		for(int i = 0; i < size; i++) {
+			drs->insert(*reqs[i]);
+			delete reqs[i];
+		}
+
+		return drs;
+	}
+
+	DataRequirements* hat_c_mk_data_requirements(DataRequirementSet* drs) {
+		DataRequirements* dr = new DataRequirements(*drs);
+		delete drs;
+		return dr;
+	}
+
+}
