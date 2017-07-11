@@ -19,7 +19,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (passBoundSet,updateContext)
+import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,passBoundSet,updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex
@@ -204,12 +204,8 @@ dataRequirements addr = case getNode addr of
 
 -- * FFI
 
-type CDataRequirement = ()
-type CDataRequirementSet = ()
-type CDataRequirements = ()
-
 foreign export ccall "hat_hs_data_requirements"
-  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (Ptr CDataRequirements)
+  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
 
 hsDataRequirements ctx_hs stmt_hs = do
     ctx  <- deRefStablePtr ctx_hs
@@ -220,30 +216,29 @@ hsDataRequirements ctx_hs stmt_hs = do
     updateContext ctx_c ctx_nhs
     passDataRequirements ctx_c res
 
-
 foreign import ccall "hat_c_mk_data_requirement"
-  mkCDataRequirement :: Ptr CIrTree -> Ptr CDataRange -> CInt -> IO (Ptr CDataRequirement)
+  mkCDataRequirement :: CRepPtr IR.Tree -> CRepPtr DataRange -> CInt -> IO (CRepPtr DataRequirement)
 
 foreign import ccall "hat_c_mk_data_requirement_set"
-  mkCDataRequirementSet :: Ptr (Ptr CDataRequirement) -> CLLong -> IO (Ptr CDataRequirementSet)
+  mkCDataRequirementSet :: CRepArr DataRequirement -> CLLong -> IO (CSetPtr DataRequirement)
 
 foreign import ccall "hat_c_mk_data_requirements"
-  mkCDataRequirements :: Ptr CDataRequirementSet -> IO (Ptr CDataRequirements)
+  mkCDataRequirements :: CSetPtr DataRequirement -> IO (CRepPtr DataRequirements)
 
-passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (Ptr CDataRequirements)
+passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (CRepPtr DataRequirements)
 passDataRequirements ctx (DataRequirements s) = do
     s_c <- passBoundSet passDataRequirement mkCDataRequirementSet s
     mkCDataRequirements s_c
   where
-    passDataRequirement :: DataRequirement -> IO (Ptr CDataRequirement)
+    passDataRequirement :: DataRequirement -> IO (CRepPtr DataRequirement)
     passDataRequirement (DataRequirement d r a) = do
         d_c <- BS.useAsCStringLen (dumpBinaryDump d) (mkCIrTree' ctx)
         r_c <- passDataRange ctx r
         mkCDataRequirement d_c r_c (convertAccessMode a)
 
-    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (Ptr CIrTree)
+    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (CRepPtr IR.Tree)
     mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
-    
+
     convertAccessMode :: AccessMode -> CInt
     convertAccessMode ReadOnly = 0
     convertAccessMode ReadWrite = 1

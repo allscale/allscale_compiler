@@ -8,9 +8,6 @@ module Allscale.Analysis.Entities.DataRange(
     DataSpan,
     DataRange,
     point,
-    
-    CIrTree,        -- TODO: this should probably be imported from somewhere
-    CDataRange,
     passDataRange,
     mkCIrTree
 ) where
@@ -21,7 +18,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (passBoundSet,updateContext)
+import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,passBoundSet,updateContext)
 import Insieme.Inspire.BinaryDumper (dumpBinaryDump)
 
 import qualified Data.ByteString as BS
@@ -58,44 +55,37 @@ point t = DataRange $ BSet.singleton $ DataSpan p p
 -- * FFI
 --
 
-type CDataRange = ()
-type CDataSpan = ()
-type CDataSpanSet = ()
-type CDataPoint = ()
-type CIrTree = ()
-
 foreign import ccall "hat_c_mk_ir_tree"
-  mkCIrTree :: Ctx.CContext -> CString -> CSize -> IO (Ptr CIrTree)
+  mkCIrTree :: Ctx.CContext -> CString -> CSize -> IO (CRepPtr IR.Tree)
 
 foreign import ccall "hat_c_mk_data_point"
-  mkCDataPoint :: Ptr CIrTree -> IO (Ptr CDataPoint)
+  mkCDataPoint :: CRepPtr IR.Tree -> IO (CRepPtr DataPoint)
 
 foreign import ccall "hat_c_mk_data_span"
-  mkCDataSpan :: Ptr CDataPoint -> Ptr CDataPoint -> IO (Ptr CDataSpan)
+  mkCDataSpan :: CRepPtr DataPoint -> CRepPtr DataPoint -> IO (CRepPtr DataSpan)
 
 foreign import ccall "hat_c_mk_data_span_set"
-  mkCDataSpanSet :: Ptr (Ptr CDataSpan) -> CLLong -> IO (Ptr CDataSpanSet)
+  mkCDataSpanSet :: CRepArr DataSpan -> CLLong -> IO (CSetPtr DataSpan)
 
 foreign import ccall "hat_c_mk_data_range"
-  mkCDataRange :: Ptr CDataSpanSet -> IO (Ptr CDataRange)
-  
+  mkCDataRange :: CSetPtr DataSpan -> IO (CRepPtr DataRange)
 
-passDataRange :: Ctx.CContext -> DataRange -> IO (Ptr CDataRange)
+passDataRange :: Ctx.CContext -> DataRange -> IO (CRepPtr DataRange)
 passDataRange ctx (DataRange s) = do
     s_c <- passBoundSet passDataSpan mkCDataSpanSet s
     mkCDataRange s_c
   where
-  
-    passDataSpan :: DataSpan -> IO (Ptr CDataSpan)
+
+    passDataSpan :: DataSpan -> IO (CRepPtr DataSpan)
     passDataSpan (DataSpan f t) = do
         f_c <- passDataPoint f
         t_c <- passDataPoint t
         mkCDataSpan f_c t_c
 
-    passDataPoint :: DataPoint -> IO (Ptr CDataPoint)
+    passDataPoint :: DataPoint -> IO (CRepPtr DataPoint)
     passDataPoint (DataPoint irtree) = do
         irtree_c <- BS.useAsCStringLen (dumpBinaryDump irtree) (mkCIrTree' ctx)
         mkCDataPoint irtree_c
-    
-    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (Ptr CIrTree)
+
+    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (CRepPtr IR.Tree)
     mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
