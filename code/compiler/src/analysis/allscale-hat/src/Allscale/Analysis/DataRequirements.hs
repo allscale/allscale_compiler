@@ -7,11 +7,11 @@
 
 module Allscale.Analysis.DataRequirements where
 
+import Allscale.Analysis.Entities.DataRange
 import Control.DeepSeq
 import Control.Monad
 import Data.Foldable (or)
 import Data.List
-import Data.Set
 import Data.Maybe
 import Data.Typeable
 import Debug.Trace
@@ -21,6 +21,7 @@ import Foreign.C.Types
 import GHC.Generics (Generic)
 import Insieme.Adapter (passBoundSet,updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
+import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
@@ -42,24 +43,17 @@ import qualified Insieme.Utils.Arithmetic as Ar
 import qualified Insieme.Utils.BoundSet as BSet
 
 --
--- * Data Requirements
+-- * Access Modes
 --
 
 data AccessMode = ReadOnly
                 | ReadWrite
     deriving (Eq,Ord,Show,Generic,NFData)
 
-data DataPoint = DataPoint IR.Tree
-    deriving (Eq,Ord,Show,Generic,NFData)
 
-data DataSpan = DataSpan {
-                    form :: DataPoint,
-                    to   :: DataPoint
-              }
-    deriving (Eq,Ord,Show,Generic,NFData)
-
-data DataRange = DataRange (BSet.UnboundSet DataSpan)
-    deriving (Eq,Ord,Show,Generic,NFData)
+--
+-- * Data Requirements
+--
 
 data DataRequirement = DataRequirement {
                             dataItemRef :: IR.Tree,
@@ -94,24 +88,125 @@ data DataRequirementAnalysis = DataRequirementAnalysis
 
 
 dataRequirements :: NodeAddress -> Solver.TypedVar DataRequirements
-dataRequirements addr = var
-    where
-        var = Solver.mkVariable (idGen addr) [] Solver.top
+dataRequirements addr = case getNode addr of
 
-        analysis = Solver.mkAnalysisIdentifier DataRequirementAnalysis "DR"
+    -- types have no data requirements
+    n | isType n -> noRequirements
+    
+    -- also literals have no requirements
+    IR.Node IR.Literal _ -> noRequirements 
+    
+    -- for call expressions, we have to apply special rules
+    IR.Node IR.CallExpr _ -> var
+      where
+        var = Solver.mkVariable varId cons Solver.bot
+        
+        cons = callTargetConstraint : childConstraints
+        
+        -- the standard-child-aggregation constraints 
+        
+        childConstraints = map go $ getChildren addr
+          where
+            go addr = Solver.forward (dataRequirements addr) var
+        
+        
+        -- constraints considering the call targets
+        
+        callTargetConstraint = Solver.createConstraint dep val var
+          where
+            dep a = (Solver.toVar callableVar) : (Solver.toVar <$> callableBodyVars a)
+            val a = Solver.join [(callTargetRequirements a),(localAccess a),(unknownTargetRequirements a)]
+            
+            
+            -- get access to functions targeted by this call
+            
+            callableVar = callableValue $ goDown 1 addr  
+            callableVal a = toValue $ Solver.get a callableVar  
+            
+            callableBodyVars a = case () of 
+            
+                _ | BSet.isUniverse callTargets -> [] 
+                _                               -> foldr go [] $ BSet.toList callTargets
+                    where
+                                
+                        go (Lambda addr) bs = (dataRequirements $ goDown 2 addr) : bs
+                        
+                        go _ bs = bs
+                        
+                
+              where
+                
+                callTargets = callableVal a
+                
+                
+            -- compute data requirements of call targets 
+            
+            callTargetRequirements a = Solver.join $ Solver.get a <$> callableBodyVars a
+            
+            
+            -- add data requirements in case of unknown call targets
+            
+            unknownTargetRequirements a = case () of 
+                _ | BSet.isUniverse $ callableVal a -> Solver.top
+                _                                   -> Solver.bot
+            
+            
+            -- also add data requirements if this call is targeting a ref_deref or ref_assign
+            
+            localAccess a = Solver.join [readAccess,writeAccess]
+              where
+                
+                targets = callableVal a
+                
+                contains lit = case () of 
+                    _ | BSet.isUniverse targets -> False
+                    _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
+                
+                readAccess = case () of
+                    _ | contains "ref_deref" -> requirements ReadOnly
+                    _                        -> Solver.bot
 
-        idGen = Solver.mkIdentifierFromExpression analysis
+                writeAccess = case () of
+                    _ | contains "ref_assign" -> requirements ReadWrite
+                    _                         -> Solver.bot
+            
+                requirements mode = DataRequirements $ BSet.singleton $ requirement mode
+            
+                requirement mode = DataRequirement {
+                            dataItemRef = getNode addr,
+                            range       = point $ getNode addr,
+                            accessMode  = mode
+                    }
+            
+    
+    -- for everything else we aggregate the requirements of the child nodes
+    _ -> var
+      where
+        var = Solver.mkVariable varId cons Solver.bot
+        
+        cons = map go $ getChildren addr
+          where
+            go addr = Solver.forward (dataRequirements addr) var  
+        
+  where
+
+    noRequirements = Solver.mkVariable varId [] Solver.bot
+
+    analysis = Solver.mkAnalysisIdentifier DataRequirementAnalysis "DR"
+
+    idGen = Solver.mkIdentifierFromExpression analysis
+    
+    varId = idGen addr
+
+
+
+
 
 -- * FFI
 
 type CDataRequirement = ()
 type CDataRequirementSet = ()
 type CDataRequirements = ()
-type CDataRange = ()
-type CDataSpan = ()
-type CDataSpanSet = ()
-type CDataPoint = ()
-type CIrTree = ()
 
 foreign export ccall "hat_hs_data_requirements"
   hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (Ptr CDataRequirements)
@@ -125,26 +220,12 @@ hsDataRequirements ctx_hs stmt_hs = do
     updateContext ctx_c ctx_nhs
     passDataRequirements ctx_c res
 
-foreign import ccall "hat_c_mk_ir_tree"
-  mkCIrTree :: Ctx.CContext -> CString -> CSize -> IO (Ptr CIrTree)
-
-foreign import ccall "hat_c_mk_data_point"
-  mkCDataPoint :: Ptr CIrTree -> IO (Ptr CDataPoint)
-
-foreign import ccall "hat_c_mk_data_span"
-  mkCDataSpan :: Ptr CDataPoint -> Ptr CDataPoint -> IO (Ptr CDataSpan)
-
-foreign import ccall "hat_c_mk_data_span_set"
-  mkCDataSpanSet :: Ptr (Ptr CDataSpan) -> CLLong -> IO (Ptr CDataSpanSet)
-
-foreign import ccall "hat_c_mk_data_range"
-  mkCDataRange :: Ptr CDataSpanSet -> IO (Ptr CDataRange)
 
 foreign import ccall "hat_c_mk_data_requirement"
   mkCDataRequirement :: Ptr CIrTree -> Ptr CDataRange -> CInt -> IO (Ptr CDataRequirement)
 
 foreign import ccall "hat_c_mk_data_requirement_set"
-  mkCDataRequirementSet :: Ptr (Ptr CDataRequirement) -> CLLong -> IO (Ptr CDataSpanSet)
+  mkCDataRequirementSet :: Ptr (Ptr CDataRequirement) -> CLLong -> IO (Ptr CDataRequirementSet)
 
 foreign import ccall "hat_c_mk_data_requirements"
   mkCDataRequirements :: Ptr CDataRequirementSet -> IO (Ptr CDataRequirements)
@@ -157,28 +238,12 @@ passDataRequirements ctx (DataRequirements s) = do
     passDataRequirement :: DataRequirement -> IO (Ptr CDataRequirement)
     passDataRequirement (DataRequirement d r a) = do
         d_c <- BS.useAsCStringLen (dumpBinaryDump d) (mkCIrTree' ctx)
-        r_c <- passDataRange r
+        r_c <- passDataRange ctx r
         mkCDataRequirement d_c r_c (convertAccessMode a)
-
-    passDataRange :: DataRange -> IO (Ptr CDataRange)
-    passDataRange (DataRange s) = do
-        s_c <- passBoundSet passDataSpan mkCDataSpanSet s
-        mkCDataRange s_c
-
-    passDataSpan :: DataSpan -> IO (Ptr CDataSpan)
-    passDataSpan (DataSpan f t) = do
-        f_c <- passDataPoint f
-        t_c <- passDataPoint t
-        mkCDataSpan f_c t_c
-
-    passDataPoint :: DataPoint -> IO (Ptr CDataPoint)
-    passDataPoint (DataPoint irtree) = do
-        irtree_c <- BS.useAsCStringLen (dumpBinaryDump irtree) (mkCIrTree' ctx)
-        mkCDataPoint irtree_c
 
     mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (Ptr CIrTree)
     mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
-
+    
     convertAccessMode :: AccessMode -> CInt
     convertAccessMode ReadOnly = 0
     convertAccessMode ReadWrite = 1

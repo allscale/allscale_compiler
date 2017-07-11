@@ -137,7 +137,7 @@ namespace analysis {
 
 	namespace {
 
-		DataRequirements getDataRequirements(NodeManager& mgr, const std::string& str) {
+		DataRequirements getDataRequirements(NodeManager& mgr, const std::string& str, bool debug = false) {
 			IRBuilder builder(mgr);
 
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
@@ -151,7 +151,15 @@ namespace analysis {
 			assert_correct_ir(stmt);
 
 			// compute data requirements
-			return allscale::compiler::analysis::getDataRequirements(stmt);
+			insieme::analysis::cba::haskell::Context ctxt;
+			auto res = allscale::compiler::analysis::getDataRequirements(ctxt,stmt);
+
+			if (debug) {
+				ctxt.dumpStatistics();
+				ctxt.dumpSolution();
+			}
+
+			return res;
 		}
 
 		bool isEmpty(const DataRequirements& req) {
@@ -161,10 +169,10 @@ namespace analysis {
 	}
 
 
-	TEST(DISABLED_DataRequirementAnalysis, NoDependencies) {
+	TEST(DataRequirementAnalysis, NoRequirements) {
 		NodeManager mgr;
 
-		// some literals => no data dependencies
+		// some literals => no data requirements
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"12"));
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"\"hello\""));
 
@@ -173,28 +181,70 @@ namespace analysis {
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"{ 12; }"));
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"{ 12; 14; }"));
 
-		// also, there should be no dependency if only the reference of a element is obtained
+		// also, there should be no dependency if only the reference of a element is obtained, but not accessed
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"data_item_element_access(lit(\"A\":ref<A>),12,type_lit(int<4>))"));
 	}
 
-//	TEST(DataRequirementAnalysis, ReadDependency) {
-//		NodeManager mgr;
-//
-//		// aquire a reference and read from it
-//		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,
-//				R"(
-//					{
-//						// get a reference -- this does not cause a dependency
-//						auto ref = data_item_element_access(item,12,type_lit(int<4>));
-//						// read the reference -- this creates a data dependency
-//						*ref;
-//					}
-//				)"
-//		));
-//
-//
-//	}
+	TEST(DISABLED_DataRequirementAnalysis, ReadRequirement) {
+		NodeManager mgr;
 
+		// acquire a reference and read from it
+		EXPECT_EQ(
+			"{ A[12] RO }",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						// read the reference -- this creates a data requirement
+						*ref;
+					}
+				)"
+			))
+		);
+
+	}
+
+	TEST(DISABLED_DataRequirementAnalysis, WriteRequirement) {
+		NodeManager mgr;
+
+		// acquire a reference and write to it
+		EXPECT_EQ(
+			"{ A[12] RO }",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						// write to the reference -- this creates a data requirement
+						ref = 14;
+					}
+				)"
+			))
+		);
+
+	}
+
+
+	TEST(DISABLED_DataRequirementAnalysis, ReadWriteRequirement) {
+		NodeManager mgr;
+
+		// acquire a reference and read from it
+		EXPECT_EQ(
+			"{ A[12] RO }",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						// read the reference -- this creates a data requirement
+						ref = *ref;
+					}
+				)"
+			))
+		);
+
+	}
 
 } // end namespace analysis
 } // end namespace compiler
