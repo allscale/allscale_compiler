@@ -7,7 +7,6 @@
 
 module Allscale.Analysis.DataRequirements where
 
-
 import Control.DeepSeq
 import Control.Monad
 import Data.Foldable (or)
@@ -20,7 +19,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (withArraySignedLen)
+import Insieme.Adapter (updateContext,withArraySignedLen)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
@@ -117,7 +116,14 @@ type CIrTree = ()
 foreign export ccall "hat_hs_data_requirements"
   hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (Ptr CDataRequirements)
 
-hsDataRequirements _ _ = return nullPtr
+hsDataRequirements ctx_hs stmt_hs = do
+    ctx  <- deRefStablePtr ctx_hs
+    stmt <- deRefStablePtr stmt_hs
+    let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (dataRequirements stmt)
+    let ctx_c =  Ctx.getCContext ctx
+    ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
+    updateContext ctx_c ctx_nhs
+    passDataRequirements ctx_c res
 
 foreign import ccall "hat_c_mk_ir_tree"
   mkCIrTree :: Ctx.CContext -> CString -> CSize -> IO (Ptr CIrTree)

@@ -162,7 +162,7 @@ namespace analysis {
 		DataRequirements* res_ptr = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
 		assert_true(res_ptr);
 
-		DataRequirements res = *res_ptr;
+		DataRequirements res = std::move(*res_ptr);
 		delete res_ptr;
 
 		return res;
