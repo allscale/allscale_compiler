@@ -19,7 +19,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (updateContext,withArraySignedLen)
+import Insieme.Adapter (passBoundSet,updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
@@ -151,7 +151,7 @@ foreign import ccall "hat_c_mk_data_requirements"
 
 passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (Ptr CDataRequirements)
 passDataRequirements ctx (DataRequirements s) = do
-    s_c <- passDataRequirementSet s
+    s_c <- passBoundSet passDataRequirement mkCDataRequirementSet s
     mkCDataRequirements s_c
   where
     passDataRequirement :: DataRequirement -> IO (Ptr CDataRequirement)
@@ -160,15 +160,9 @@ passDataRequirements ctx (DataRequirements s) = do
         r_c <- passDataRange r
         mkCDataRequirement d_c r_c (convertAccessMode a)
 
-    passDataRequirementSet :: BSet.UnboundSet DataRequirement -> IO (Ptr CDataRequirementSet)
-    passDataRequirementSet BSet.Universe = mkCDataRequirementSet nullPtr (-1)
-    passDataRequirementSet reqs = do
-        reqs_c <- forM (BSet.toList reqs) passDataRequirement
-        withArraySignedLen reqs_c mkCDataRequirementSet
-
     passDataRange :: DataRange -> IO (Ptr CDataRange)
     passDataRange (DataRange s) = do
-        s_c <- passDataSpanSet s
+        s_c <- passBoundSet passDataSpan mkCDataSpanSet s
         mkCDataRange s_c
 
     passDataSpan :: DataSpan -> IO (Ptr CDataSpan)
@@ -176,12 +170,6 @@ passDataRequirements ctx (DataRequirements s) = do
         f_c <- passDataPoint f
         t_c <- passDataPoint t
         mkCDataSpan f_c t_c
-
-    passDataSpanSet :: BSet.UnboundSet DataSpan -> IO (Ptr CDataSpanSet)
-    passDataSpanSet BSet.Universe = mkCDataSpanSet nullPtr (-1)
-    passDataSpanSet spans = do
-        spans_c <- forM (BSet.toList spans) passDataSpan
-        withArraySignedLen spans_c mkCDataSpanSet
 
     passDataPoint :: DataPoint -> IO (Ptr CDataPoint)
     passDataPoint (DataPoint irtree) = do
