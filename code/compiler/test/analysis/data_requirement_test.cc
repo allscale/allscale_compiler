@@ -185,12 +185,12 @@ namespace analysis {
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"data_item_element_access(lit(\"A\":ref<A>),12,type_lit(int<4>))"));
 	}
 
-	TEST(DISABLED_DataRequirementAnalysis, ReadRequirement) {
+	TEST(DataRequirementAnalysis, ReadRequirement) {
 		NodeManager mgr;
 
 		// acquire a reference and read from it
 		EXPECT_EQ(
-			"{ A[12] RO }",
+			"{Requirement { A[12] RO }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{
@@ -205,12 +205,12 @@ namespace analysis {
 
 	}
 
-	TEST(DISABLED_DataRequirementAnalysis, WriteRequirement) {
+	TEST(DataRequirementAnalysis, WriteRequirement) {
 		NodeManager mgr;
 
 		// acquire a reference and write to it
 		EXPECT_EQ(
-			"{ A[12] RO }",
+			"{Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{
@@ -226,12 +226,12 @@ namespace analysis {
 	}
 
 
-	TEST(DISABLED_DataRequirementAnalysis, ReadWriteRequirement) {
+	TEST(DataRequirementAnalysis, ReadWriteRequirement) {
 		NodeManager mgr;
 
 		// acquire a reference and read from it
 		EXPECT_EQ(
-			"{ A[12] RO }",
+			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{

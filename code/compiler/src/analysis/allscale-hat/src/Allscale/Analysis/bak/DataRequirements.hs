@@ -8,7 +8,6 @@
 module Allscale.Analysis.DataRequirements where
 
 import Allscale.Analysis.Entities.DataRange
-import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
 import Control.Monad
 import Data.Foldable (or)
@@ -20,7 +19,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,passBoundSet,updateContext)
+import Insieme.Adapter (passBoundSet,updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex
@@ -34,10 +33,13 @@ import Insieme.Inspire.Query
 import Insieme.Inspire.Visit
 
 import qualified Data.ByteString as BS
+import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
+import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR
+import qualified Insieme.Utils.Arithmetic as Ar
 import qualified Insieme.Utils.BoundSet as BSet
 
 --
@@ -71,6 +73,7 @@ data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
 -- * Data Requirements Lattice
 --
 
+
 instance Solver.Lattice DataRequirements where
     bot   = DataRequirements $ BSet.empty
     merge (DataRequirements a) (DataRequirements b) = DataRequirements $ BSet.union a b
@@ -79,17 +82,10 @@ instance Solver.ExtLattice DataRequirements where
     top   = DataRequirements $ BSet.Universe
 
 
---
--- * Data Requirements analysis token
---
-
 data DataRequirementAnalysis = DataRequirementAnalysis
     deriving (Typeable)
 
 
---
--- * Data Requirements variable and constraint generator
---
 
 dataRequirements :: NodeAddress -> Solver.TypedVar DataRequirements
 dataRequirements addr = case getNode addr of
@@ -118,7 +114,7 @@ dataRequirements addr = case getNode addr of
         
         callTargetConstraint = Solver.createConstraint dep val var
           where
-            dep a = (Solver.toVar callableVar) : (Solver.toVar <$> referenceVars a) ++ (Solver.toVar <$> callableBodyVars a)
+            dep a = (Solver.toVar callableVar) : (Solver.toVar <$> callableBodyVars a)
             val a = Solver.join [(callTargetRequirements a),(localAccess a),(unknownTargetRequirements a)]
             
             
@@ -143,7 +139,7 @@ dataRequirements addr = case getNode addr of
                 callTargets = callableVal a
                 
                 
-            -- aggregate data requirements of call targets 
+            -- compute data requirements of call targets 
             
             callTargetRequirements a = Solver.join $ Solver.get a <$> callableBodyVars a
             
@@ -157,47 +153,30 @@ dataRequirements addr = case getNode addr of
             
             -- also add data requirements if this call is targeting a ref_deref or ref_assign
             
-            referenceVar = elementReferenceValue $ goDown 2 addr
-            referenceVal a = toSet $ toValue $ Solver.get a referenceVar
-              where
-                toSet (ElementReferenceSet s) = s
-            
-            referenceVars a = case () of
-                _ | isRead a || isWrite a -> [referenceVar]
-                _                         -> []
-            
-            
             localAccess a = Solver.join [readAccess,writeAccess]
               where
                 
+                targets = callableVal a
+                
+                contains lit = case () of 
+                    _ | BSet.isUniverse targets -> False
+                    _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
+                
                 readAccess = case () of
-                    _ | isRead a -> requirements ReadOnly
+                    _ | contains "ref_deref" -> requirements ReadOnly
                     _                        -> Solver.bot
 
                 writeAccess = case () of
-                    _ | isWrite a -> requirements ReadWrite
+                    _ | contains "ref_assign" -> requirements ReadWrite
                     _                         -> Solver.bot
             
-                requirements mode = DataRequirements $ BSet.map go $ referenceVal a
-                  where
-                    go (ElementReference ref range) = DataRequirement {
-                                dataItemRef = ref,
-                                range       = range,
-                                accessMode  = mode
-                        } 
+                requirements mode = DataRequirements $ BSet.singleton $ requirement mode
             
-            
-            -- utilities
-            
-            mayCall a lit = case () of 
-                _ | BSet.isUniverse targets -> False
-                _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
-              where
-                targets = callableVal a
-                
-            isRead a = mayCall a "ref_deref"
-            
-            isWrite a = mayCall a "ref_assign"
+                requirement mode = DataRequirement {
+                            dataItemRef = getNode addr,
+                            range       = point $ getNode addr,
+                            accessMode  = mode
+                    }
             
     
     -- for everything else we aggregate the requirements of the child nodes
@@ -225,8 +204,12 @@ dataRequirements addr = case getNode addr of
 
 -- * FFI
 
+type CDataRequirement = ()
+type CDataRequirementSet = ()
+type CDataRequirements = ()
+
 foreign export ccall "hat_hs_data_requirements"
-  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
+  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (Ptr CDataRequirements)
 
 hsDataRequirements ctx_hs stmt_hs = do
     ctx  <- deRefStablePtr ctx_hs
@@ -237,29 +220,30 @@ hsDataRequirements ctx_hs stmt_hs = do
     updateContext ctx_c ctx_nhs
     passDataRequirements ctx_c res
 
+
 foreign import ccall "hat_c_mk_data_requirement"
-  mkCDataRequirement :: CRepPtr IR.Tree -> CRepPtr DataRange -> CInt -> IO (CRepPtr DataRequirement)
+  mkCDataRequirement :: Ptr CIrTree -> Ptr CDataRange -> CInt -> IO (Ptr CDataRequirement)
 
 foreign import ccall "hat_c_mk_data_requirement_set"
-  mkCDataRequirementSet :: CRepArr DataRequirement -> CLLong -> IO (CSetPtr DataRequirement)
+  mkCDataRequirementSet :: Ptr (Ptr CDataRequirement) -> CLLong -> IO (Ptr CDataRequirementSet)
 
 foreign import ccall "hat_c_mk_data_requirements"
-  mkCDataRequirements :: CSetPtr DataRequirement -> IO (CRepPtr DataRequirements)
+  mkCDataRequirements :: Ptr CDataRequirementSet -> IO (Ptr CDataRequirements)
 
-passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (CRepPtr DataRequirements)
+passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (Ptr CDataRequirements)
 passDataRequirements ctx (DataRequirements s) = do
     s_c <- passBoundSet passDataRequirement mkCDataRequirementSet s
     mkCDataRequirements s_c
   where
-    passDataRequirement :: DataRequirement -> IO (CRepPtr DataRequirement)
+    passDataRequirement :: DataRequirement -> IO (Ptr CDataRequirement)
     passDataRequirement (DataRequirement d r a) = do
         d_c <- BS.useAsCStringLen (dumpBinaryDump d) (mkCIrTree' ctx)
         r_c <- passDataRange ctx r
         mkCDataRequirement d_c r_c (convertAccessMode a)
 
-    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (CRepPtr IR.Tree)
+    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (Ptr CIrTree)
     mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
-
+    
     convertAccessMode :: AccessMode -> CInt
     convertAccessMode ReadOnly = 0
     convertAccessMode ReadWrite = 1

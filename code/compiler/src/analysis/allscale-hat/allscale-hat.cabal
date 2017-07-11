@@ -13,6 +13,7 @@ library
     hs-source-dirs:     src
     exposed-modules:    Allscale.Adapter,
                         Allscale.Analysis.Entities.DataRange,
+                        Allscale.Analysis.DataItemElementReference,
                         Allscale.Analysis.DataRequirements,
                         Allscale.Analysis.OutOfBounds
     build-depends:      insieme-hat,
