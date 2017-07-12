@@ -32,7 +32,10 @@ import qualified Insieme.Utils.BoundSet as BSet
 --
 
 data DataPoint = DataPoint IR.Tree
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq,Ord,Generic,NFData)
+    
+instance Show DataPoint where
+    show _ = "some-ir-tree"
 
 data DataSpan = DataSpan {
                     form :: DataPoint,

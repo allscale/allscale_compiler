@@ -36,7 +36,10 @@ data ElementReference = ElementReference {
             reference :: IR.Tree,
             range     :: DataRange
         } 
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq,Ord,Generic,NFData)
+
+instance Show ElementReference where
+    show (ElementReference _ r) = "ElementReference{some-ir-tree," ++ (show r) ++ "}"
 
 --
 -- * A lattice for the data item reference analysis
@@ -66,19 +69,33 @@ data ElementReferenceAnalysis = ElementReferenceAnalysis
 --
 
 elementReferenceValue :: NodeAddress -> Solver.TypedVar (ValueTree.Tree SimpleFieldIndex ElementReferenceSet)
-elementReferenceValue addr = dataflowValue addr analysis opsHandler
+elementReferenceValue addr = case getNodeType addr of
+
+    -- literals do not produce element references
+    IR.Literal -> Solver.mkVariable (idGen addr) [] (compose $ ElementReferenceSet $ BSet.empty)
+
+    -- default handling through data flow
+    _ -> dataflowValue addr analysis opsHandler
+    
   where
 
     analysis = mkDataFlowAnalysis ElementReferenceAnalysis "DI_ER" elementReferenceValue
 
-    opsHandler = [ refElementHandler ]
+    idGen = mkVarIdentifier analysis
+
+    opsHandler = [ refElementHandler, refDeclHandler ]
     
     refElementHandler = OperatorHandler cov noDep val
       where
         cov a = isBuiltin a "data_item_element_access"
-        val a = compose $ ElementReferenceSet $ BSet.singleton $ ElementReference ref range
+        val _ = compose $ ElementReferenceSet $ BSet.singleton $ ElementReference ref range
         ref   = getNode $ goDown 1 $ goDown 2 addr
         range = point $ getNode $ goDown 1 $ goDown 3 addr
+    
+    refDeclHandler = OperatorHandler cov noDep val
+      where
+        cov a = isBuiltin a "ref_decl"
+        val _ = compose $ ElementReferenceSet $ BSet.empty
         
     noDep a = []
     

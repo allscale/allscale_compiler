@@ -58,8 +58,10 @@ data DataRequirement = DataRequirement {
                             range       :: DataRange,
                             accessMode  :: AccessMode
                         }
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq,Ord,Generic,NFData)
 
+instance Show DataRequirement where
+    show (DataRequirement _ r a) = "Requirement{ir-tree," ++ (show r) ++ "," ++ (show a) ++ "}" 
 
 
 data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
@@ -99,6 +101,12 @@ dataRequirements addr = case getNode addr of
     
     -- also literals have no requirements
     IR.Node IR.Literal _ -> noRequirements 
+    
+    -- also variables have no requirements
+    IR.Node IR.Variable _ -> noRequirements 
+    
+    -- also lambda expressions have no data requirements
+    IR.Node IR.LambdaExpr _ -> noRequirements
     
     -- for call expressions, we have to apply special rules
     IR.Node IR.CallExpr _ -> var
@@ -157,7 +165,7 @@ dataRequirements addr = case getNode addr of
             
             -- also add data requirements if this call is targeting a ref_deref or ref_assign
             
-            referenceVar = elementReferenceValue $ goDown 2 addr
+            referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
             referenceVal a = toSet $ toValue $ Solver.get a referenceVar
               where
                 toSet (ElementReferenceSet s) = s

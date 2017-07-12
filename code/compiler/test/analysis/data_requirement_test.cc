@@ -6,6 +6,7 @@
 #include "insieme/core/ir_builder.h"
 #include "insieme/utils/string_utils.h"
 #include "insieme/core/checks/full_check.h"
+#include "insieme/core/dump/json_dump.h"
 
 namespace allscale {
 namespace compiler {
@@ -155,6 +156,7 @@ namespace analysis {
 			auto res = allscale::compiler::analysis::getDataRequirements(ctxt,stmt);
 
 			if (debug) {
+				insieme::core::dump::json::dumpIR("ir.json",stmt);
 				ctxt.dumpStatistics();
 				ctxt.dumpSolution();
 			}
@@ -183,6 +185,9 @@ namespace analysis {
 
 		// also, there should be no dependency if only the reference of a element is obtained, but not accessed
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"data_item_element_access(lit(\"A\":ref<A>),12,type_lit(int<4>))"));
+
+		// also a local variable operation should not cause a data requirement
+		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"{ var ref<int<4>> x; x = 14; }"));
 	}
 
 	TEST(DataRequirementAnalysis, ReadRequirement) {
@@ -229,7 +234,7 @@ namespace analysis {
 	TEST(DataRequirementAnalysis, ReadWriteRequirement) {
 		NodeManager mgr;
 
-		// acquire a reference and read from it
+		// acquire a reference and read from and write to it
 		EXPECT_EQ(
 			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
@@ -243,6 +248,53 @@ namespace analysis {
 				)"
 			))
 		);
+
+	}
+
+	TEST(DataRequirementAnalysis, AccessInFunction) {
+		NodeManager mgr;
+
+		// acquire a reference and read from it
+		EXPECT_EQ(
+			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def inc = ( r : ref<int<4>> ) -> unit {
+						r = *r + 1;
+					};
+
+					{
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+
+						// update value in function -- should add data requirements
+						inc(ref);
+					}
+				)"
+			))
+		);
+
+		// TODO: re-enable once symbolic value analysis is integrated
+//		// obtain the reference in a nested scope
+//		EXPECT_EQ(
+//			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+//			toString(getDataRequirements(mgr,
+//				R"(
+//					def inc = ( r : ref<'a>, i : 'b ) -> unit {
+//						// get a reference -- this does not cause a requirement
+//						auto ref = data_item_element_access(r,i,type_lit(int<4>));
+//						// read/write the reference
+//						ref = *ref + 1;
+//					};
+//
+//					{
+//						inc(lit("A":ref<A>),12);
+//					}
+//				)", true
+//
+//			))
+//		);
+
 
 	}
 
