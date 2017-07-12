@@ -20,7 +20,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,passBoundSet,updateContext)
+import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex
@@ -28,7 +28,6 @@ import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
-import Insieme.Inspire.BinaryDumper (dumpBinaryDump)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 import Insieme.Inspire.Visit
@@ -253,12 +252,9 @@ passDataRequirements ctx (DataRequirements s) = do
   where
     passDataRequirement :: DataRequirement -> IO (CRepPtr DataRequirement)
     passDataRequirement (DataRequirement d r a) = do
-        d_c <- BS.useAsCStringLen (dumpBinaryDump d) (mkCIrTree' ctx)
+        d_c <- dumpIrTree ctx d
         r_c <- passDataRange ctx r
         mkCDataRequirement d_c r_c (convertAccessMode a)
-
-    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (CRepPtr IR.Tree)
-    mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
 
     convertAccessMode :: AccessMode -> CInt
     convertAccessMode ReadOnly = 0
