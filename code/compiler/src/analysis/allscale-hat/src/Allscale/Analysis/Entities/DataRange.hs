@@ -9,7 +9,6 @@ module Allscale.Analysis.Entities.DataRange(
     DataRange,
     point,
     passDataRange,
-    mkCIrTree
 ) where
 
 import Control.DeepSeq
@@ -18,8 +17,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,passBoundSet,updateContext)
-import Insieme.Inspire.BinaryDumper (dumpBinaryDump)
+import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,updateContext)
 
 import qualified Data.ByteString as BS
 import qualified Insieme.Context as Ctx
@@ -58,9 +56,6 @@ point t = DataRange $ BSet.singleton $ DataSpan p p
 -- * FFI
 --
 
-foreign import ccall "hat_c_mk_ir_tree"
-  mkCIrTree :: Ctx.CContext -> CString -> CSize -> IO (CRepPtr IR.Tree)
-
 foreign import ccall "hat_c_mk_data_point"
   mkCDataPoint :: CRepPtr IR.Tree -> IO (CRepPtr DataPoint)
 
@@ -87,8 +82,5 @@ passDataRange ctx (DataRange s) = do
 
     passDataPoint :: DataPoint -> IO (CRepPtr DataPoint)
     passDataPoint (DataPoint irtree) = do
-        irtree_c <- BS.useAsCStringLen (dumpBinaryDump irtree) (mkCIrTree' ctx)
+        irtree_c <- dumpIrTree ctx irtree
         mkCDataPoint irtree_c
-
-    mkCIrTree' :: Ctx.CContext -> CStringLen -> IO (CRepPtr IR.Tree)
-    mkCIrTree' ctx (sz,s) = mkCIrTree ctx sz (fromIntegral s)
