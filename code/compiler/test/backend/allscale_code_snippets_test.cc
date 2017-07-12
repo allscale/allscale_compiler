@@ -294,14 +294,16 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
-		ASSERT_TRUE(code);
+		auto trg = convert(fib);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 
 		// compile to an actual binary
-		EXPECT_TRUE(backend::compileTo(fib, "fib_eager_art",3))
-		 	 << "Failed to compile: " << *code;
-
 		// NOTE: run result with "echo N | ./fib_eager_art"
+//		EXPECT_TRUE(backend::compileTo(fib, "fib_eager_art",3))
+//		 	 << "Failed to compile: " << *code;
 	}
 
 	TEST(CodeSnippet, FibLazyFull) {
@@ -329,14 +331,16 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
-		ASSERT_TRUE(code);
+		auto trg = convert(fib);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 
 		// compile to an actual binary
-		EXPECT_TRUE(backend::compileTo(fib, "fib_lazy_art",3))
-			<< "Failed to compile: " << *code;
-
 		// NOTE: run result with "echo N | ./fib_lazy_art"
+//		EXPECT_TRUE(backend::compileTo(fib, "fib_lazy_art",3))
+//			<< "Failed to compile: " << *code;
 	}
 
 
