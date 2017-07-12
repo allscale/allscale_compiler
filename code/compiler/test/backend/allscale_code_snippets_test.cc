@@ -344,6 +344,38 @@ namespace backend {
 	}
 
 
+	TEST(CodeSnippet, DependencyOperations) {
+		NodeManager mgr;
+
+		auto prog = parse(mgr,
+				R"(
+					int<4> main() {
+						var ref<dependencies,f,f,plain> v0 = dependency_after();
+						var ref<treeture<int<4>,t>,f,f,plain> v1 = treeture_run(treeture_done(1));
+						var ref<dependencies,f,f,plain> v2 = dependency_after(treeture_to_task_ref(*v1));
+						var ref<treeture<int<4>,t>,f,f,plain> v3 = treeture_run(treeture_done(1));
+						var ref<dependencies,f,f,plain> v4 = dependency_after(treeture_to_task_ref(*v1), treeture_to_task_ref(*v3));
+						return 0;
+					}
+				)"
+		);
+		ASSERT_TRUE(prog);
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+		auto trgCode = toString(*trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED2(containsSubString, trgCode, "allscale::runtime::dependencies v0 = allscale::runtime::after();");
+		EXPECT_PRED2(containsSubString, trgCode, "allscale::treeture<int32_t > v1 = allscale::treeture<int32_t >(1);");
+		EXPECT_PRED2(containsSubString, trgCode, "allscale::runtime::dependencies v2 = allscale::runtime::after(v1);");
+		EXPECT_PRED2(containsSubString, trgCode, "allscale::treeture<int32_t > v3 = allscale::treeture<int32_t >(1);");
+		EXPECT_PRED2(containsSubString, trgCode, "allscale::runtime::dependencies v4 = allscale::runtime::after(v1, v3);");
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+	}
+
+
 	TEST(CodeSnippet, CppEmptyMain) {
 		NodeManager mgr;
 
