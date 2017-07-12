@@ -37,7 +37,6 @@ namespace backend {
 
 
 	bool isCompiling(const insieme::backend::TargetCodePtr& code) {
-
 		// get a temporary file path
 		auto tmp = fs::unique_path(fs::temp_directory_path() / "allscale-trg-%%%%%%%%");
 
@@ -53,7 +52,6 @@ namespace backend {
 
 
 	TEST(CodeSnippet, EmptyMain) {
-
 		NodeManager mgr;
 
 		// create an empty code snippet
@@ -68,11 +66,9 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code);
-
 	}
 
 	TEST(CodeSnippet, SimpleExpression) {
-
 		NodeManager mgr;
 
 		// create an empty code snippet
@@ -85,11 +81,9 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code);
-
 	}
 
 	TEST(CodeSnippet, SimpleLambda) {
-
 		NodeManager mgr;
 
 		// create an empty code snippet
@@ -102,11 +96,9 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code);
-
 	}
 
 	TEST(CodeSnippet, FibEager) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -134,7 +126,6 @@ namespace backend {
 	}
 
 	TEST(CodeSnippet, FibEagerRef) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -162,7 +153,6 @@ namespace backend {
 	}
 
 	TEST(CodeSnippet, FibLazy) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -189,7 +179,6 @@ namespace backend {
 	}
 
 	TEST(CodeSnippet, FibLazyRef) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -216,7 +205,6 @@ namespace backend {
 	}
 
 	TEST(CodeSnippet, LambdaToClosure) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -277,13 +265,10 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, code) << "Failed to compile: " << *code;
-
-
 	}
 
 
 	TEST(CodeSnippet, FibEagerFull) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -320,7 +305,6 @@ namespace backend {
 	}
 
 	TEST(CodeSnippet, FibLazyFull) {
-
 		NodeManager mgr;
 
 		auto fib = parse(mgr,
@@ -382,7 +366,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 	// make sure allscale BE does not break standard interception
@@ -433,7 +416,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 	TEST(CodeSnippet, CppFib) {
@@ -475,7 +457,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 	TEST(CodeSnippet, CppFibLazy) {
@@ -568,14 +549,14 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main() {
-					
+
 					struct range {
 						int start;
 						int end;
 					};
-			
+
 					range full;
 					full.start = 0;
 					full.end = 1000;
@@ -614,7 +595,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 
@@ -625,14 +605,14 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					struct range {
 						int start;
 						int end;
 					};
-			
+
 					prec(fun(
 						[](const range& r) { return r.start + 1 >= r.end; },
 						[](const range& r) {
@@ -668,7 +648,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 	TEST(CodeSnippet, IntTreeture) {
@@ -678,9 +657,9 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					prec(fun(
 						[](int)->bool { return true; },
 						[](int) { return 10; },
@@ -704,7 +683,6 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 
@@ -715,7 +693,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
 					
 					prec(fun(
@@ -741,53 +719,52 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
-    TEST(CodeSnippet, CppCaptureValue) {
-        NodeManager mgr;
-
-        auto code = R"(
-                #include "allscale/api/core/prec.h"
-
-                using namespace allscale::api::core;
-               
-                int main(int argc, char** argv) {
-
-                    int var;
-                    prec(
-                        [](int)->bool { return true; },
-                        [var](int p) { var + p; },
-                        [](int,const auto& f) { return f(12); }
-                    )(1).wait();
-
-                    return 0;
-                }
-            )";
-
-        auto prog = frontend::parseCode(mgr,code);
-        ASSERT_TRUE(prog);
-
-        // check for semantic errors
-        ASSERT_TRUE(core::checks::check(prog).empty())
-            << core::printer::dumpErrors(core::checks::check(prog));
-
-        // convert with allscale backend
-        auto trg = convert(prog);
-        ASSERT_TRUE(trg);
-
-        // check that the resulting source is compiling
-        EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-    }
-
-    TEST(CodeSnippet, CppCaptureReference) {
+	TEST(CodeSnippet, CppCaptureValue) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
+				int main(int argc, char** argv) {
+
+						int var;
+						prec(
+								[](int)->bool { return true; },
+								[var](int p) { var + p; },
+								[](int,const auto& f) { return f(12); }
+						)(1).wait();
+
+						return 0;
+				}
+		)";
+
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
+
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+		<< core::printer::dumpErrors(core::checks::check(prog));
+
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
+
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+	}
+
+	TEST(CodeSnippet, CppCaptureReference) {
+		NodeManager mgr;
+
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+
+				using namespace allscale::api::core;
+
 				int main(int argc, char** argv) {
 
 					int var;
@@ -816,14 +793,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCapturePointerValue) {
+	TEST(CodeSnippet, CppCapturePointerValue) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x;
 					int* var = &x;
@@ -852,14 +829,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCapturePointerReference) {
+	TEST(CodeSnippet, CppCapturePointerReference) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x;
 					int* var = &x;
@@ -888,14 +865,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCaptureStructValue) {
+	TEST(CodeSnippet, CppCaptureStructValue) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				struct Data {
 					int value;
 				};
@@ -927,14 +904,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCaptureStructReference) {
+	TEST(CodeSnippet, CppCaptureStructReference) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				struct Data {
 					int value;
 				};
@@ -966,14 +943,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCaptureLambdaValue) {
+	TEST(CodeSnippet, CppCaptureLambdaValue) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					auto fun = []() {
 						return 3;
@@ -1003,14 +980,14 @@ namespace backend {
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
 	}
 
-    TEST(CodeSnippet, CppCaptureLambdaReference) {
+	TEST(CodeSnippet, CppCaptureLambdaReference) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					auto fun = []() {
 						return 3;
@@ -1041,14 +1018,14 @@ namespace backend {
 	}
 
 
-    TEST(CodeSnippet, CppCaptureLambdaWithClosureValue) {
+	TEST(CodeSnippet, CppCaptureLambdaWithClosureValue) {
 		NodeManager mgr;
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x; int y;
 					auto fun = [x,&y]() {};
@@ -1084,7 +1061,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x; int y;
 					auto fun = [x,&y]() {};
@@ -1151,12 +1128,11 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 
 
-	TEST(DISABLED_CodeSnippet, CppPforEmpty) {
+	TEST(CodeSnippet, CppPforEmpty) {
 		NodeManager mgr;
 
 		auto code = R"(
@@ -1167,7 +1143,7 @@ namespace backend {
 				using namespace allscale::api::user;
 				
 				int main(int argc, char** argv) {
-					
+
 					pfor(0,10,[](int){
 						// nothing to do
 					});
@@ -1189,47 +1165,45 @@ namespace backend {
 
 		// check that the resulting source is compiling
 		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
 	}
 
 
-	TEST(DISABLED_CodeSnippet, CppPforArray) {
-			NodeManager mgr;
+	TEST(CodeSnippet, CppPforArray) {
+		NodeManager mgr;
 
-			auto code = R"(
-					#include "allscale/api/core/prec.h"
-					#include "allscale/api/user/operator/pfor.h"
+		auto code = R"(
+				#include "allscale/api/core/prec.h"
+				#include "allscale/api/user/operator/pfor.h"
 
-					using namespace allscale::api::core;
-					using namespace allscale::api::user;
+				using namespace allscale::api::core;
+				using namespace allscale::api::user;
+
+				int main(int argc, char** argv) {
 					
-					int main(int argc, char** argv) {
-						
-						int A[10];
+					int A[10];
 
-						pfor(0,10,[&](int x){
-							A[x] = 10;
-						});
+					pfor(0,10,[&](int x){
+						A[x] = 10;
+					});
 
-						return 0;
-					}
-				)";
+					return 0;
+				}
+			)";
 
-			auto prog = frontend::parseCode(mgr,code);
-			ASSERT_TRUE(prog);
+		auto prog = frontend::parseCode(mgr,code);
+		ASSERT_TRUE(prog);
 
-			// check for semantic errors
-			ASSERT_TRUE(core::checks::check(prog).empty())
-				<< core::printer::dumpErrors(core::checks::check(prog));
+		// check for semantic errors
+		ASSERT_TRUE(core::checks::check(prog).empty())
+			<< core::printer::dumpErrors(core::checks::check(prog));
 
-			// convert with allscale backend
-			auto trg = convert(prog);
-			ASSERT_TRUE(trg);
+		// convert with allscale backend
+		auto trg = convert(prog);
+		ASSERT_TRUE(trg);
 
-			// check that the resulting source is compiling
-			EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
-
-		}
+		// check that the resulting source is compiling
+		EXPECT_PRED1(isCompiling, trg) << "Failed to compile: " << *trg;
+	}
 
 
 } // end namespace backend
