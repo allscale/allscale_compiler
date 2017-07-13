@@ -1,9 +1,5 @@
-resolver: lts-6.17
+resolver: lts-8.22
 
 packages:
 - '.'
 - '../../../../../insieme/code/analysis/src/cba/haskell/insieme-hat'
-
-extra-deps:
-- attoparsec-binary-0.2
-- directory-1.2.6.3
