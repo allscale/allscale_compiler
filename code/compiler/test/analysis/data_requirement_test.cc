@@ -294,6 +294,26 @@ namespace analysis {
 			))
 		);
 
+		// obtain the reference in a nested scope with modification
+		EXPECT_EQ(
+			"{Requirement { A[int_add(12, 2)] RO },Requirement { A[int_add(12, 2)] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def inc = ( r : ref<'a>, i : int<4> ) -> unit {
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(r,i+2,type_lit(int<4>));
+						// read/write the reference
+						ref = *ref + 1;
+					};
+
+					{
+						inc(lit("A":ref<A>),12);
+					}
+				)"
+
+			))
+		);
+
 
 	}
 
