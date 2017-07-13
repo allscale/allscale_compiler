@@ -17,6 +17,7 @@ import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
+import Insieme.Analysis.SymbolicValue (symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
@@ -85,18 +86,25 @@ elementReferenceValue addr = case getNodeType addr of
 
     opsHandler = [ refElementHandler, refDeclHandler ]
     
-    refElementHandler = OperatorHandler cov noDep val
+    refElementHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "data_item_element_access"
-        val _ = compose $ ElementReferenceSet $ BSet.singleton $ ElementReference ref range
-        ref   = getNode $ goDown 1 $ goDown 2 addr
-        range = point $ getNode $ goDown 1 $ goDown 3 addr
+        dep _ _ = Solver.toVar <$> [refVar,rangeVar] 
+        val _ a = compose $ ElementReferenceSet $ BSet.map go $ BSet.cartProduct (refVal a) (rangeVal a)
+          where
+            go (a,b) = ElementReference a (point b)
+        
+        refVar = symbolicValue $ goDown 1 $ goDown 2 addr
+        refVal a = BSet.changeBound $ toValue $ Solver.get a refVar
+        
+        rangeVar = symbolicValue $ goDown 1 $ goDown 3 addr
+        rangeVal a = BSet.changeBound $ toValue $ Solver.get a rangeVar
     
     refDeclHandler = OperatorHandler cov noDep val
       where
         cov a = isBuiltin a "ref_decl"
-        val _ = compose $ ElementReferenceSet $ BSet.empty
+        val _ _ = compose $ ElementReferenceSet $ BSet.empty
         
-    noDep a = []
+    noDep _ _ = []
     
     compose = toComposed

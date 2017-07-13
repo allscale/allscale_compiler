@@ -111,30 +111,30 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
     refNull = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_null"
-        dep _ = []
-        val _ = toComposed $ BSet.singleton $ Ar.zero
+        dep _ _ = []
+        val _ _ = toComposed $ BSet.singleton $ Ar.zero
 
     noChange = OperatorHandler cov dep val
       where
         cov a = any (isBuiltin a) ["ref_cast", "ref_reinterpret" , "ref_narrow", "ref_expand"]
-        dep _ = [Solver.toVar baseRefVar]
-        val a = Solver.get a baseRefVar
+        dep _ _ = [Solver.toVar baseRefVar]
+        val _ a = Solver.get a baseRefVar
 
         baseRefVar   = elementCount $ goDown 1 $ goDown 2 addr
 
     creation = OperatorHandler cov dep val
       where
         cov a = any (isBuiltin a) ["ref_decl", "ref_new"] && isRefArray
-        dep _ = [Solver.toVar arraySize]
-        val a = Solver.get a $ arraySize
+        dep _ _ = [Solver.toVar arraySize]
+        val _ a = Solver.get a $ arraySize
 
         arraySize = arithmeticValue $ goesDown [0,2,0,2,1,0] addr
 
     scalar = OperatorHandler cov dep val
       where
         cov a = any (isBuiltin a) ["ref_decl", "ref_new"] && not isRefArray
-        dep _ = []
-        val _ = toComposed $ BSet.singleton $ Ar.one
+        dep _ _ = []
+        val _ _ = toComposed $ BSet.singleton $ Ar.one
 
     isRefArray = maybeToBool $ isArrayType <$> (getReferencedType $ goDown 0 addr)
 

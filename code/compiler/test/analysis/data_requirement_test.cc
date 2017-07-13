@@ -274,26 +274,25 @@ namespace analysis {
 			))
 		);
 
-		// TODO: re-enable once symbolic value analysis is integrated
-//		// obtain the reference in a nested scope
-//		EXPECT_EQ(
-//			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
-//			toString(getDataRequirements(mgr,
-//				R"(
-//					def inc = ( r : ref<'a>, i : 'b ) -> unit {
-//						// get a reference -- this does not cause a requirement
-//						auto ref = data_item_element_access(r,i,type_lit(int<4>));
-//						// read/write the reference
-//						ref = *ref + 1;
-//					};
-//
-//					{
-//						inc(lit("A":ref<A>),12);
-//					}
-//				)", true
-//
-//			))
-//		);
+		// obtain the reference in a nested scope
+		EXPECT_EQ(
+			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def inc = ( r : ref<'a>, i : 'b ) -> unit {
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(r,i,type_lit(int<4>));
+						// read/write the reference
+						ref = *ref + 1;
+					};
+
+					{
+						inc(lit("A":ref<A>),12);
+					}
+				)"
+
+			))
+		);
 
 
 	}
