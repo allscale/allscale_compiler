@@ -12,7 +12,7 @@
 #include "allscale/compiler/checks/allscale_checks.h"
 
 
-#include "../frontend/test_utils.inc"
+#include "test_utils.inc"
 
 namespace allscale {
 namespace compiler {
@@ -568,14 +568,14 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main() {
-					
+
 					struct range {
 						int start;
 						int end;
 					};
-			
+
 					range full;
 					full.start = 0;
 					full.end = 1000;
@@ -594,7 +594,7 @@ namespace backend {
 							a.get();
 							b.get();
 							return done(true);
-						} 
+						}
 					))(full).get();
 
 					return 0;
@@ -625,14 +625,14 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					struct range {
 						int start;
 						int end;
 					};
-			
+
 					prec(fun(
 						[](const range& r) { return r.start + 1 >= r.end; },
 						[](const range& r) {
@@ -648,7 +648,7 @@ namespace backend {
 							a.get();
 							b.get();
 							return done(true);
-						} 
+						}
 					))(range{0,1000}).get();
 
 					return 0;
@@ -678,9 +678,9 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					prec(fun(
 						[](int)->bool { return true; },
 						[](int) { return 10; },
@@ -715,9 +715,9 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					prec(fun(
 						[](int)->bool { return true; },
 						[](int) {},
@@ -751,7 +751,7 @@ namespace backend {
                 #include "allscale/api/core/prec.h"
 
                 using namespace allscale::api::core;
-               
+
                 int main(int argc, char** argv) {
 
                     int var;
@@ -787,7 +787,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 
 					int var;
@@ -823,7 +823,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x;
 					int* var = &x;
@@ -859,7 +859,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x;
 					int* var = &x;
@@ -895,7 +895,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				struct Data {
 					int value;
 				};
@@ -934,7 +934,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				struct Data {
 					int value;
 				};
@@ -973,7 +973,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					auto fun = []() {
 						return 3;
@@ -1010,7 +1010,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					auto fun = []() {
 						return 3;
@@ -1048,7 +1048,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x; int y;
 					auto fun = [x,&y]() {};
@@ -1084,7 +1084,7 @@ namespace backend {
 				#include "allscale/api/core/prec.h"
 
 				using namespace allscale::api::core;
-			   
+
 				int main(int argc, char** argv) {
 					int x; int y;
 					auto fun = [x,&y]() {};
@@ -1165,9 +1165,9 @@ namespace backend {
 
 				using namespace allscale::api::core;
 				using namespace allscale::api::user;
-				
+
 				int main(int argc, char** argv) {
-					
+
 					pfor(0,10,[](int){
 						// nothing to do
 					});
@@ -1202,9 +1202,9 @@ namespace backend {
 
 					using namespace allscale::api::core;
 					using namespace allscale::api::user;
-					
+
 					int main(int argc, char** argv) {
-						
+
 						int A[10];
 
 						pfor(0,10,[&](int x){

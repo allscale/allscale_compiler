@@ -145,12 +145,12 @@ int main() {
 			var ref<treeture<int<4>,f>,f,f,plain> v665 = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> v666 = treeture_done(2);
 			__any_string__user_api_add(
-				type_instantiation(
-					type_lit((ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
+				instantiate(
+					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
 					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
 				)(ref_kind_cast(v665, type_lit(cpp_ref))),
-				type_instantiation(
-					type_lit((ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
+				instantiate(
+					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
 					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
 				)(ref_kind_cast(v666, type_lit(cpp_ref)))
 			);
