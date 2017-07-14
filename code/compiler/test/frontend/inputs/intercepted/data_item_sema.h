@@ -17,17 +17,18 @@ const T& data_item_element_access(const DataItem& item, const typename DataItem:
 
 class SimplestDI {
 
-	using range_type = int;
 	double data[100];
 
 public:
+	using range_type = int;
+
 	SimplestDI() {}
 
 	double get() const {
 		return data_item_element_access(*this, 0, data[0]);
 	}
 
-	const int& operator[](int i) const {
+	const double& operator[](int i) const {
 		return data_item_element_access(*this, i, data[i]);
 	}
 
@@ -52,10 +53,11 @@ struct NonBaseRange {
 
 class NonBaseRangeDI {
 
-	using range_type = NonBaseRange;
 	double data[100];
 
 public:
+	using range_type = NonBaseRange;
+
 	NonBaseRangeDI() {}
 
 	const double& operator[](int i) const {
@@ -87,18 +89,19 @@ class TemplatedRange {
 template<typename T, typename INDEX_T>
 class TemplatedDI {
 
-	using range_type = TemplatedRange<INDEX_T>;
 	T data[100];
 
 public:
+	using range_type = TemplatedRange<INDEX_T>;
+
 	TemplatedDI() {}
 
-	const double& operator[](INDEX_T i, INDEX_T j) const {
-		return data_item_element_access(*this, { i, j, i + j }, data[i]);
+	const double& operator[](INDEX_T i) const {
+		return data_item_element_access(*this, { i, i * 2, i + 3 }, data[i]);
 	}
 
-	double& operator[](INDEX_T i, INDEX_T j) {
-		return data_item_element_access(*this, { i, j, i + j }, data[i]);
+	double& operator[](INDEX_T i) {
+		return data_item_element_access(*this, { i, i * 2, i + 3 }, data[i]);
 	}
 
 	void someOtherMethod() const {

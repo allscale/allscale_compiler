@@ -14,8 +14,8 @@ namespace allscale {
 namespace compiler {
 namespace frontend {
 
-	TEST(AllScaleDiSemaConversionTest, Basic) {
-
+	TEST(AllScaleDiSemaConversionTest, Simplest) {
+		//runAllscaleTestOn("/inputs/allscale_di_sema_simplest.cpp", true);
 	}
 
 } // end namespace frontend
