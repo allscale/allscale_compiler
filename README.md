@@ -126,3 +126,24 @@ See `scripts/license`.
     $ cmake -G "Visual Studio 14 Win64" -DBUILD_SHARED_LIBS=OFF Z:\path\to\project
 
 Add path for third-party libraries when needed.
+
+### Eclipse Project
+
+    $ cmake -G "Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_VERSION=4.4 /path/to/project
+    $ sed '/__cplusplus/d' -i .cproject
+
+After this, you can import this project using "Existing Projects into Workspace".
+You will have to modify some settings of the project afterwards:
+* Modify the source directory location
+  * Right click on the *[Source directory]* entry in the *Project Explorer*
+  * Go to *Properties*
+  * On the *Resource* page:
+    * *Edit* the location with the button on the right
+    * Remove the trailing "code/" part of the path
+    * Apply the changes
+* Mark the *[Subprojects]* and *[Targets]* entries as derived:
+  * Right click on them in the *Project Explorer*
+  * Go to *Properties*
+  * On the *Resource* page:
+    * Check the "Derived" checkbox
+    * Apply the changes

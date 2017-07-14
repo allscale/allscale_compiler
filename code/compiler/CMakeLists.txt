@@ -58,3 +58,13 @@ configure_file(../allscale_integration_test_config.in ${PROJECT_BINARY_DIR}/alls
 
 # integration test driver requires allscalecc
 add_dependencies(compiler_allscale_integration_tests compiler_allscalecc)
+
+# add test input sources
+if(MSVC)
+	glob_headers(allscale_frontend_test_input_incs test/frontend/inputs)
+	glob_sources(allscale_frontend_test_input_srcs test/frontend/inputs)
+	set(allscale_frontend_test_input_srcs ${allscale_frontend_test_input_srcs} ${allscale_frontend_test_input_incs})
+	add_custom_target(allscale_frontend_test_input SOURCES ${allscale_frontend_test_input_srcs})
+	msvc_source_group("Input Files" "${allscale_frontend_test_input_srcs}" STRIP test/frontend/inputs)
+	set_target_properties(allscale_frontend_test_input PROPERTIES FOLDER "compiler/Tests")
+endif()

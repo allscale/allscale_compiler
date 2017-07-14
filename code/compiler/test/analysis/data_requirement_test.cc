@@ -184,7 +184,7 @@ namespace analysis {
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"{ 12; 14; }"));
 
 		// also, there should be no dependency if only the reference of a element is obtained, but not accessed
-		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"data_item_element_access(lit(\"A\":ref<A>),12,type_lit(int<4>))"));
+		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"data_item_element_access(lit(\"A\":ref<A>),12,type_lit(ref<int<4>>))"));
 
 		// also a local variable operation should not cause a data requirement
 		EXPECT_PRED1(isEmpty,getDataRequirements(mgr,"{ var ref<int<4>> x; x = 14; }"));
@@ -200,7 +200,7 @@ namespace analysis {
 				R"(
 					{
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(ref<int<4>>));
 						// read the reference -- this creates a data requirement
 						*ref;
 					}
@@ -215,7 +215,7 @@ namespace analysis {
 				R"(
 					{
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),lit("x":bla),type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),lit("x":bla),type_lit(ref<int<4>>));
 						// read the reference -- this creates a data requirement
 						*ref;
 					}
@@ -235,7 +235,7 @@ namespace analysis {
 				R"(
 					{
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(ref<int<4>>));
 						// write to the reference -- this creates a data requirement
 						ref = 14;
 					}
@@ -256,7 +256,7 @@ namespace analysis {
 				R"(
 					{
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(ref<int<4>>));
 						// read the reference -- this creates a data requirement
 						ref = *ref;
 					}
@@ -277,7 +277,7 @@ namespace analysis {
 					{
 						let point = lit("point" : (int<4>)->point);
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),point(12),type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),point(12),type_lit(ref<int<4>>));
 						// read the reference -- this creates a data requirement
 						*ref;
 					}
@@ -301,7 +301,7 @@ namespace analysis {
 
 					{
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
+						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(ref<int<4>>));
 
 						// update value in function -- should add data requirements
 						inc(ref);
@@ -317,7 +317,7 @@ namespace analysis {
 				R"(
 					def inc = ( r : ref<'a>, i : 'b ) -> unit {
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(r,i,type_lit(int<4>));
+						auto ref = data_item_element_access(r,i,type_lit(ref<int<4>>));
 						// read/write the reference
 						ref = *ref + 1;
 					};
@@ -337,7 +337,7 @@ namespace analysis {
 				R"(
 					def inc = ( r : ref<'a>, i : int<4> ) -> unit {
 						// get a reference -- this does not cause a requirement
-						auto ref = data_item_element_access(r,i+2,type_lit(int<4>));
+						auto ref = data_item_element_access(r,i+2,type_lit(ref<int<4>>));
 						// read/write the reference
 						ref = *ref + 1;
 					};
@@ -362,7 +362,7 @@ namespace analysis {
 				R"(
 					{
 						for(int<4> i = 0 .. 10) {
-							*data_item_element_access(lit("A":ref<A>),i,type_lit(int<4>));
+							*data_item_element_access(lit("A":ref<A>),i,type_lit(ref<int<4>>));
 						}
 					}
 				)"
@@ -377,7 +377,7 @@ namespace analysis {
 					{
 						let point = lit("point" : (int<4>)->point);
 						for(int<4> i = 0 .. 10) {
-							*data_item_element_access(lit("A":ref<A>),point(i),type_lit(int<4>));
+							*data_item_element_access(lit("A":ref<A>),point(i),type_lit(ref<int<4>>));
 						}
 					}
 				)"
@@ -399,7 +399,7 @@ namespace analysis {
 						let point = lit("point" : (int<4>,int<4>)->point);
 						for(int<4> i = 0 .. 10) {
 							for(int<4> j = 4 .. 12) {
-								*data_item_element_access(lit("A":ref<A>),point(i,j),type_lit(int<4>));
+								*data_item_element_access(lit("A":ref<A>),point(i,j),type_lit(ref<int<4>>));
 							}
 						}
 					}
@@ -422,11 +422,11 @@ namespace analysis {
 					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
 						let point = lit("point" : (int<4>,int<4>)->point);
 						for(int<4> i = a .. b) {
-							auto ref1 = data_item_element_access(A,i-1,type_lit(int<4>));
-							auto ref2 = data_item_element_access(A, i ,type_lit(int<4>));
-							auto ref3 = data_item_element_access(A,i+1,type_lit(int<4>));
+							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+							auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+							auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-							auto ref = data_item_element_access(B,i,type_lit(int<4>));
+							auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
 
 							ref = *ref1 + *ref2 + *ref3;
 						}
@@ -448,11 +448,11 @@ namespace analysis {
 					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
 						let point = lit("point" : (int<4>,int<4>)->point);
 						for(int<4> i = a .. b) {
-							auto ref1 = data_item_element_access(A,i-1,type_lit(int<4>));
-							auto ref2 = data_item_element_access(A, i ,type_lit(int<4>));
-							auto ref3 = data_item_element_access(A,i+1,type_lit(int<4>));
+							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+							auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+							auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-							auto ref = data_item_element_access(B,i,type_lit(int<4>));
+							auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
 
 							ref = *ref1 + *ref2 + *ref3;
 						}
