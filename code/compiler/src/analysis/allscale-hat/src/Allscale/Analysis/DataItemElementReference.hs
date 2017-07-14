@@ -17,7 +17,7 @@ import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
-import Insieme.Analysis.SymbolicValue (symbolicValue)
+import Insieme.Analysis.SymbolicValue (SymbolicValueLattice,symbolicValue,genericSymbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
@@ -27,6 +27,31 @@ import qualified Insieme.Utils.BoundSet as BSet
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 
 
+
+
+
+--
+-- * A symbolic value analysis for ranges, including loop iterators.
+--
+
+data SymbolicValueWithIteratorsAnalysis = SymbolicValueWithIteratorsAnalysis
+    deriving (Typeable)
+
+symbolicValueWithIterators :: NodeAddress -> Solver.TypedVar SymbolicValueLattice
+symbolicValueWithIterators = genericSymbolicValue analysis
+  where
+    -- we just re-use the default version of the generic symbolic value analysis
+    analysis = (mkDataFlowAnalysis SymbolicValueWithIteratorsAnalysis "SwI" symbolicValueWithIterators) {
+        iteratorVariableHandler = iterVarHandler
+    }
+
+    iterVarHandler iter = Solver.mkVariable varId [] val
+      where
+      
+        varId = mkVarIdentifier analysis iter
+        
+        val = toComposed $ BSet.singleton $ getNode iter 
+     
 
 
 --
@@ -97,7 +122,7 @@ elementReferenceValue addr = case getNodeType addr of
         refVar = symbolicValue $ goDown 1 $ goDown 2 addr
         refVal a = BSet.changeBound $ toValue $ Solver.get a refVar
         
-        rangeVar = symbolicValue $ goDown 1 $ goDown 3 addr
+        rangeVar = symbolicValueWithIterators $ goDown 1 $ goDown 3 addr
         rangeVal a = BSet.changeBound $ toValue $ Solver.get a rangeVar
     
     refDeclHandler = OperatorHandler cov noDep val

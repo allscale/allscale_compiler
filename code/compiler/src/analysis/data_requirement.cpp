@@ -40,7 +40,7 @@ namespace analysis {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const DataPoint& point) {
-		return out << *point.expr;
+		return out << dumpOneLine(point.expr);
 	}
 
 
@@ -61,7 +61,7 @@ namespace analysis {
 	std::ostream& operator<<(std::ostream& out, const DataSpan& span) {
 		// check whether it is a single point
 		if (span.from == span.to) return out << span.from;
-		return out << "span(" << span.from << "-" << span.to << ")";
+		return out << "span(" << span.from << "," << span.to << ")";
 	}
 
 

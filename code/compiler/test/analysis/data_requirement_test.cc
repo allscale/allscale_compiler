@@ -82,9 +82,9 @@ namespace analysis {
 		auto s28 = DataRange::span(r2,r8);
 		auto s48 = DataRange::span(r4,r8);
 
-		EXPECT_EQ("span(2-4)",toString(s24));
-		EXPECT_EQ("span(2-8)",toString(s28));
-		EXPECT_EQ("span(4-8)",toString(s48));
+		EXPECT_EQ("span(2,4)",toString(s24));
+		EXPECT_EQ("span(2,8)",toString(s28));
+		EXPECT_EQ("span(4,8)",toString(s48));
 
 
 
@@ -208,6 +208,21 @@ namespace analysis {
 			))
 		);
 
+		// acquire a reference and read from it (using a literal to address element)
+		EXPECT_EQ(
+			"{Requirement { A[x] RO }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),lit("x":bla),type_lit(int<4>));
+						// read the reference -- this creates a data requirement
+						*ref;
+					}
+				)"
+			))
+		);
+
 	}
 
 	TEST(DataRequirementAnalysis, WriteRequirement) {
@@ -244,6 +259,27 @@ namespace analysis {
 						auto ref = data_item_element_access(lit("A":ref<A>),12,type_lit(int<4>));
 						// read the reference -- this creates a data requirement
 						ref = *ref;
+					}
+				)"
+			))
+		);
+
+	}
+
+	TEST(DataRequirementAnalysis, WrappedRange) {
+		NodeManager mgr;
+
+		// acquire a reference and read from it
+		EXPECT_EQ(
+			"{Requirement { A[point(12)] RO }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						let point = lit("point" : (int<4>)->point);
+						// get a reference -- this does not cause a requirement
+						auto ref = data_item_element_access(lit("A":ref<A>),point(12),type_lit(int<4>));
+						// read the reference -- this creates a data requirement
+						*ref;
 					}
 				)"
 			))
@@ -296,7 +332,7 @@ namespace analysis {
 
 		// obtain the reference in a nested scope with modification
 		EXPECT_EQ(
-			"{Requirement { A[int_add(12, 2)] RO },Requirement { A[int_add(12, 2)] RW }}",
+			"{Requirement { A[12+2] RO },Requirement { A[12+2] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def inc = ( r : ref<'a>, i : int<4> ) -> unit {
@@ -314,6 +350,120 @@ namespace analysis {
 			))
 		);
 
+	}
+
+	TEST(DataRequirementAnalysis, ForLoop) {
+		NodeManager mgr;
+
+		// read from a data structure inside a for loop
+		EXPECT_EQ(
+			"{Requirement { A[span(0,10)] RO }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						for(int<4> i = 0 .. 10) {
+							*data_item_element_access(lit("A":ref<A>),i,type_lit(int<4>));
+						}
+					}
+				)"
+			))
+		);
+
+		// read from a data structure inside a for loop
+		EXPECT_EQ(
+			"{Requirement { A[span(point(0),point(10))] RO }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					{
+						let point = lit("point" : (int<4>)->point);
+						for(int<4> i = 0 .. 10) {
+							*data_item_element_access(lit("A":ref<A>),point(i),type_lit(int<4>));
+						}
+					}
+				)"
+			))
+		);
+
+	}
+
+	TEST(DataRequirementAnalysis, ForLoop2D) {
+		NodeManager mgr;
+
+		// read from a data structure inside a for loop
+		EXPECT_EQ(
+			"{Requirement { A[span(point(0, 4),point(10, 12))] RO }}",
+			toString(getDataRequirements(mgr,
+				R"(
+
+					{
+						let point = lit("point" : (int<4>,int<4>)->point);
+						for(int<4> i = 0 .. 10) {
+							for(int<4> j = 4 .. 12) {
+								*data_item_element_access(lit("A":ref<A>),point(i,j),type_lit(int<4>));
+							}
+						}
+					}
+				)"
+			))
+		);
+
+	}
+
+
+
+	TEST(DataRequirementAnalysis, ForLoop1DStencil) {
+		NodeManager mgr;
+
+		// compute stencil with fixed boundary
+		EXPECT_EQ(
+			"{Requirement { A[span(10+1,20+1)] RO },Requirement { A[span(10-1,20-1)] RO },Requirement { A[span(10,20)] RO },Requirement { B[span(10,20)] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+						let point = lit("point" : (int<4>,int<4>)->point);
+						for(int<4> i = a .. b) {
+							auto ref1 = data_item_element_access(A,i-1,type_lit(int<4>));
+							auto ref2 = data_item_element_access(A, i ,type_lit(int<4>));
+							auto ref3 = data_item_element_access(A,i+1,type_lit(int<4>));
+
+							auto ref = data_item_element_access(B,i,type_lit(int<4>));
+
+							ref = *ref1 + *ref2 + *ref3;
+						}
+					};
+
+					{
+						stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),10,20);
+					}
+				)"
+			))
+		);
+
+
+		// compute stencil with literal boundary
+		EXPECT_EQ(
+			"{Requirement { A[span(*x,*y)] RO },Requirement { A[span(*x-1,*y-1)] RO },Requirement { A[span(*x+1,*y+1)] RO },Requirement { B[span(*x,*y)] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+						let point = lit("point" : (int<4>,int<4>)->point);
+						for(int<4> i = a .. b) {
+							auto ref1 = data_item_element_access(A,i-1,type_lit(int<4>));
+							auto ref2 = data_item_element_access(A, i ,type_lit(int<4>));
+							auto ref3 = data_item_element_access(A,i+1,type_lit(int<4>));
+
+							auto ref = data_item_element_access(B,i,type_lit(int<4>));
+
+							ref = *ref1 + *ref2 + *ref3;
+						}
+					};
+
+					{
+						stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+					}
+				)"
+			))
+		);
 
 	}
 

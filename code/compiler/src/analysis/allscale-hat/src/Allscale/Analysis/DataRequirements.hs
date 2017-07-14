@@ -28,6 +28,7 @@ import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
+import Insieme.Analysis.SymbolicValue (symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 import Insieme.Inspire.Visit
@@ -206,6 +207,54 @@ dataRequirements addr = case getNode addr of
             
             isWrite a = mayCall a "ref_assign"
             
+            
+    -- for for-loops, iterator bounds need to be included  
+    IR.Node IR.ForStmt _ -> var
+      where
+        var = Solver.mkVariable varId [con] Solver.bot
+        con = Solver.createConstraint dep val var
+        
+        dep _ = ( Solver.toVar <$> [beginDepVar,endDepVar,stepDepVar,bodyDepVar] )
+             ++ ( Solver.toVar <$> [beginValVar,endValVar] )
+        
+        val a = Solver.join [beginDepVal a,endDepVal a,stepDepVal a,bodyDepVal a]
+        
+        -- get the addresses of sub-elements
+        iter  = getNode $ goDown 1 $ goDown 0 addr
+        begin = goDown 1 $ goDown 0 $ goDown 0 addr
+        end   = goDown 1 addr
+        step  = goDown 2 addr
+        body  = goDown 3 addr
+        
+        -- get data requirement variables
+        beginDepVar = dataRequirements begin
+        endDepVar   = dataRequirements end
+        stepDepVar  = dataRequirements step
+        bodyDepVar  = dataRequirements body
+        
+        -- get the symbolic value variables for the iterators
+        beginValVar = symbolicValue begin
+        endValVar   = symbolicValue end
+        
+        -- get the data requirement values
+        beginDepVal a = Solver.get a beginDepVar
+        endDepVal   a = Solver.get a endDepVar
+        stepDepVal  a = Solver.get a stepDepVar
+        
+        bodyDepVal  a = DataRequirements val
+          where
+          
+            DataRequirements bodyRequirements  = (Solver.get a bodyDepVar)
+            
+            val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)  
+                  then bodyRequirements 
+                  else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )  
+            
+            fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- BSet.toList toVals ]
+          
+            fromVals = toValue $ Solver.get a beginValVar
+            toVals   = toValue $ Solver.get a endValVar
+    
     
     -- for everything else we aggregate the requirements of the child nodes
     _ -> var
