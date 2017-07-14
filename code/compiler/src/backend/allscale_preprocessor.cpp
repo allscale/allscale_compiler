@@ -295,60 +295,91 @@ namespace backend {
 
 			// replace calls to recursive token by actual recursive call
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
-			body = core::transform::transformBottomUp(body, [&](const core::NodePtr& node)->core::NodePtr {
+			auto& ext2 = mgr.getLangExtension<AllScaleBackendModule>();
+			bool isDepFun = false;
+			body = core::transform::transformBottomUpGen(body, [&](const core::NodePtr& node)->core::NodePtr {
 
-				// replace recursive calls
-				if (core::analysis::isCallOf(node,ext.getRecfunToFun())) {
+				// In a first step, we replace calls to RecfunToFun and RecfunToDepFun with the passed callee
+				if (ext.isCallOfRecfunToFun(node) || ext.isCallOfRecfunToDepFun(node)) {
+					isDepFun = ext.isCallOfRecfunToDepFun(node);
 					return recFun;
 				}
 
-				// replace arguments of call to recFun by unpacking the tuple, if necessary
+				// and in the next step we have to fix the passed callee again.
+				// replace arguments of call by unpacking the tuple, if necessary
 				if (core::analysis::isCallOf(node,recFun)) {
 					// NOTE: this is necessary since the runtime interface requests those parameters unpacked
 
-					// check some expected properties
+					// check some expected properties and extract the (packed) argument
 					auto call = node.as<core::CallExprPtr>();
-					assert_eq(1,call->getNumArguments());
-					assert_true(call->getArgument(0).isa<core::InitExprPtr>());
+					assert_eq(isDepFun ? 2 : 1, call->getNumArguments());
+					const auto& arg = call->getArgument(isDepFun ? 1 : 0);
+					assert_true(arg.isa<core::InitExprPtr>());
 
-					// extract the type argument list
-					core::TypeList types;
-					for(const auto& cur : call->getArgumentList()) {
-						types.push_back(cur->getType());
-					}
-
-					// check whether this call is properly typed
-					if (core::types::deduceReturnType(recFun->getType().as<core::FunctionTypePtr>(), types, false)) return node;
-
-					// otherwise unpack the argument type
+					// now we collect all the stuff needed to build the resulting call
+					core::ExpressionPtr targetCallee;
 					core::ExpressionList args;
-					const auto& refDeref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
-					for(const auto& cur : call->getArgument(0).as<core::InitExprPtr>()->getInitExprList()) {
-						// remove unnecessary ref-deref calls
-						auto arg = cur;
-						if (!core::lang::isReference(arg) && core::analysis::isCallOf(arg,refDeref)) {
-							arg = cur.as<core::CallExprPtr>()->getArgument(0);
-						}
 
-						if(core::lang::isCppReference(arg)) {
-							core::lang::ReferenceType refType(arg);
-							if (!refType.isConst()) {
-								refType.setConst(true);
-								arg = core::lang::buildRefCast(arg,refType.toType());
-							}
-						}
+					// if we should serialize
+					if(serialize) {
+						// we just take the passed callee as is
+						targetCallee = recFun;
 
-						args.push_back(arg);
+						// if we are not serializing
+					} else {
+						// the calle is actually the spawning of a new work item
+						targetCallee = ext2.getSpawnWorkItem();
+						// if the user specified dependencies
+						if(isDepFun) {
+							// we use those
+							args.push_back(call->getArgument(0));
+
+							// otherwise we don't have any dependencies here
+						} else {
+							args.push_back(lang::buildNoDependencies(mgr));
+						}
+						// as a second argument, we append the work item description we got as recfun
+						args.push_back(recFun);
 					}
 
-					// create new call
-					return builder.callExpr(call->getFunctionExpr(),args);
+					// now we extract the argument types and append the type of the actual argument to the type list for checking
+					core::TypeList argTypes = core::extractTypes(args);
+					argTypes.push_back(arg->getType());
+
+					// check whether this call would properly typed
+					if (serialize && core::types::deduceReturnType(targetCallee->getType().as<core::FunctionTypePtr>(), argTypes, false)) {
+						// if this is the case, we can use the argument as is
+						args.push_back(arg);
+
+						// otherwise we have to unpack it
+					} else {
+						const auto& refDeref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
+						for(const auto& cur : arg.as<core::InitExprPtr>()->getInitExprList()) {
+							// remove unnecessary ref-deref calls
+							auto arg = cur;
+							if (!core::lang::isReference(arg) && core::analysis::isCallOf(arg,refDeref)) {
+								arg = cur.as<core::CallExprPtr>()->getArgument(0);
+							}
+
+							if(core::lang::isCppReference(arg)) {
+								core::lang::ReferenceType refType(arg);
+								if (!refType.isConst()) {
+									refType.setConst(true);
+									arg = core::lang::buildRefCast(arg,refType.toType());
+								}
+							}
+
+							args.push_back(arg);
+						}
+					}
+
+					// now we can return the final call
+					return builder.callExpr(targetCallee, args);
 				}
 
 				// everything else remains untouched
 				return node;
-
-			}).as<core::CompoundStmtPtr>();
+			});
 
 
 			// if serialization should be applied, do so
@@ -591,13 +622,11 @@ namespace backend {
 					auto trg = call->getFunctionExpr();
 					if(asExt.isCallOfRecfunToFun(trg) || asExt.isCallOfRecfunToDepFun(trg)) {
 
-						// TODO: support this by forwarding an additional dependency parameter before the closure parameter
-						assert_false(asExt.isCallOfRecfunToDepFun(trg))
-							<< "Passing of dependencies not supported yet.";
+						bool isDepFun = asExt.isCallOfRecfunToDepFun(trg);
 
 						// pack the recursive argument
 						core::ExpressionList closureValues;
-						closureValues.push_back(node.as<core::CallExprPtr>()->getArgument(0));
+						closureValues.push_back(call->getArgument(isDepFun ? 1 : 0));
 
 						// add the captured values
 						for(std::size_t i = 0; i<index.size(); ++i) {
@@ -616,8 +645,15 @@ namespace backend {
 
 						// build recursive call
 						core::ExpressionList args;
+						if(isDepFun) {
+							args.push_back(call->getArgument(0));
+						}
 						args.push_back(builder.initExprTemp(closureParamType,closureValues));
-						return builder.callExpr(lang::buildRecfunToFun(builder.accessComponent(builder.deref(newRecFunParam),0)),args);
+
+						auto param = builder.accessComponent(builder.deref(newRecFunParam), 0);
+						auto callTarget = isDepFun ? lang::buildRecfunToDepFun(param) : lang::buildRecfunToFun(param);
+
+						return builder.callExpr(callTarget, args);
 					}
 				}
 
@@ -736,17 +772,12 @@ namespace backend {
 			auto funType = builder.functionType(in->getType(), function.getTreetureType().toIRType());
 
 			// create the recursive function reference
-			auto recFun =
-					builder.callExpr(
-						ext2.getRecSpawnWorkItem(),
-						lang::buildNoDependencies(mgr),
-						builder.callExpr(
-							ext2.getCreateWorkItemDescriptionReference(),
-							builder.getIdentifierLiteral(wi_name),
-							builder.getTypeLiteral(function.getParameterType()),
-							builder.getTypeLiteral(function.getResultType())
-						)
-					);
+			auto recFun = builder.callExpr(
+					ext2.getCreateWorkItemDescriptionReference(),
+					builder.getIdentifierLiteral(wi_name),
+					builder.getTypeLiteral(function.getParameterType()),
+					builder.getTypeLiteral(function.getResultType())
+			);
 
 			// get instantiated step implementation
 			auto stepFun = inlineStep(function.getStepCases()[0],recFun,false);

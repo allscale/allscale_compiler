@@ -41,9 +41,6 @@ namespace backend {
 		// the operator for spawning a work item
 		LANG_EXT_LITERAL(SpawnWorkItem, "art_spawn", "(dependencies,art_wi_desc<('Args...),'Res>,'InitArgs...)->treeture<'Res,f>");
 
-		// the operator for spawning a recursively nested work item
-		LANG_EXT_LITERAL(RecSpawnWorkItem, "art_rec_spawn", "(dependencies,art_wi_desc<('Args...),'Res>)->('Args...)->treeture<'Res,f>");
-
 		// the operator for wrapping the execution of the main function
 		LANG_EXT_LITERAL(ProcessMain, "art_main", "(art_wi_desc<('Args...),'Res>,'Args...)->'Res");
 

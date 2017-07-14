@@ -57,8 +57,14 @@ namespace backend {
 				// add dependencies
 				ADD_HEADER("allscale/runtime.hpp");
 
-				// resolve the work item
-				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(1));
+				// resolve the work item, either by looking it up if it is a reference or by getting it from it's creation description
+				WorkItemDescriptionInfo info;
+				if(LANG_EXT(AllScaleBackendModule).isCallOfCreateWorkItemDescriptionReference(ARG(1))) {
+					const auto& lit = call->getArgument(1).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
+					info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, lit->getStringValue());
+				} else {
+					info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(1));
+				}
 
 				// add dependency to definition
 				context.addDependency(info.definition);
@@ -67,42 +73,20 @@ namespace backend {
 				auto workItemDescType = info.description_type;
 
 				// create the target
-				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn");
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn_with_dependencies");
 				trg = c_ast::instantiate(trg,workItemDescType);
 
 				// create the arguments
 				std::vector<c_ast::NodePtr> args;
+				// add the dependencies as the first argument
+				args.push_back(CONVERT_ARG(0));
+				// and append all the others
 				for(unsigned i=2; i<call->getArgumentList().size(); ++i) {
-					args.push_back(CONVERT_EXPR(call->getArgument(i)));
+					args.push_back(CONVERT_ARG(i));
 				}
 
 				// create the call
 				return c_ast::call(trg,args);
-			};
-
-			table[ext.getRecSpawnWorkItem()] = OP_CONVERTER {
-
-				// add dependencies
-				ADD_HEADER("allscale/runtime.hpp");
-
-				// resolve the name
-				const auto& lit = call->getArgument(1).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
-
-				// resolve the work item
-				auto& info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, lit->getStringValue());
-
-				// add dependency to definition
-				context.addDependency(info.definition);
-
-				// extract defining type
-				auto workItemDescType = info.description_type;
-
-				// create the target
-				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn");
-				trg = c_ast::instantiate(trg,workItemDescType);
-
-				// return just the function, arguments follow
-				return trg;
 			};
 
 			table[ext.getPrecFunCreate()] = OP_CONVERTER {
@@ -217,9 +201,8 @@ namespace backend {
 
 			table[ext.getTreetureParallel()] = OP_CONVERTER {
 
-				// TODO: integrate support for dependencies!!
-
 				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
 
@@ -233,6 +216,7 @@ namespace backend {
 				// create a call to treeture_combine
 				return c_ast::call(
 						C_NODE_MANAGER->create("allscale::runtime::treeture_parallel"),
+						CONVERT_ARG(0),
 						c_ast::call(std_move, CONVERT_ARG(1)),
 						c_ast::call(std_move, CONVERT_ARG(2))
 				);
@@ -240,9 +224,8 @@ namespace backend {
 
 			table[ext.getTreetureSequential()] = OP_CONVERTER {
 
-				// TODO: integrate support for dependencies!!
-
 				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
 
@@ -256,6 +239,7 @@ namespace backend {
 				// create a call to treeture_combine
 				return c_ast::call(
 						C_NODE_MANAGER->create("allscale::runtime::treeture_sequential"),
+						CONVERT_ARG(0),
 						c_ast::call(std_move, CONVERT_ARG(1)),
 						c_ast::call(std_move, CONVERT_ARG(2))
 				);
@@ -264,9 +248,8 @@ namespace backend {
 			table[ext.getTreetureCombine()] = OP_CONVERTER {
 				core::IRBuilder builder(call->getNodeManager());
 
-				// TODO: integrate support for dependencies!!
-
 				// add dependency to argument types
+				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(1)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(2)->getType()).definition);
 				context.addDependency(GET_TYPE_INFO(call->getArgument(3)->getType()).definition);
@@ -305,6 +288,7 @@ namespace backend {
 				// create a call to treeture_combine
 				return c_ast::call(
 						C_NODE_MANAGER->create("allscale::runtime::treeture_combine"),
+						CONVERT_ARG(0),
 						c_ast::call(std_move, CONVERT_ARG(1)),
 						c_ast::call(std_move, CONVERT_ARG(2)),
 						c_ast::ref(info.function->name)
@@ -360,8 +344,6 @@ namespace backend {
 
 
 			table[ext.getDependencyAfter()] = OP_CONVERTER {
-
-				// TODO: integrate support for dependencies!!
 
 				// convert arguments and add dependency to argument types
 				std::vector<c_ast::NodePtr> args;
