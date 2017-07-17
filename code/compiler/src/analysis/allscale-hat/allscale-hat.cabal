@@ -15,6 +15,7 @@ library
                         Allscale.Analysis.Entities.DataRange,
                         Allscale.Analysis.DataItemElementReference,
                         Allscale.Analysis.DataRequirements,
+                        Allscale.Analysis.Diagnostics,
                         Allscale.Analysis.OutOfBounds
     build-depends:      insieme-hat,
                         attoparsec >= 0.13,
