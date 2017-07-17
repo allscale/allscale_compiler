@@ -146,12 +146,12 @@ int main(int argc, char** argv) {
 			} else {
 				std::cout << "\n";
 				for(const auto& issue : issues) {
-					if(auto location = core::annotations::getLocation(issue.getTarget())) {
-						std::cout << *location << " ";
-					}
 					std::cout << toString(issue.getTarget())
 					          << " [" << toString(issue.getSeverity()) << "] "
 					          << issue.getMessage() << "\n";
+					if(auto location = core::annotations::getLocation(issue.getTarget())) {
+						core::annotations::prettyPrintLocation(std::cout, *location);
+					}
 				}
 			}
 		}
