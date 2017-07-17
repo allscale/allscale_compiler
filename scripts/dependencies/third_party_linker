@@ -2,6 +2,10 @@
 
 set -e
 
+# This is needed to always force wildcard expansion, even if no package files
+# are present.
+shopt -s nullglob
+
 export INSTALLER_DIR="$(dirname "$(readlink -f "$0")")"
 
 source "$INSTALLER_DIR/config.sh"
