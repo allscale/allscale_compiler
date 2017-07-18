@@ -7,6 +7,7 @@
 #include "insieme/utils/timer.h"
 
 #include "insieme/core/checks/ir_checks.h"
+#include "insieme/core/annotations/source_location.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/cmd/common_options.h"
@@ -16,6 +17,7 @@
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/checks/allscale_checks.h"
+#include "allscale/compiler/analysis/diagnostics.h"
 #include "allscale/compiler/backend/allscale_backend.h"
 
 namespace driver = insieme::driver;
@@ -125,6 +127,34 @@ int main(int argc, char** argv) {
 
 		// end program if this is all that is requested
 		if(commonOptions.checkSemaOnly) { return errors.empty() ? 0 : 1; }
+	}
+
+	// run diagnostics analysis
+	{
+		// TODO collect relevant nodes
+		std::vector<core::CallExprAddress> calls;
+		visitDepthFirstOnceInterruptible(core::ProgramAddress(program), [&](const core::CallExprAddress& call) {
+			calls.push_back(call);
+			return false;
+		});
+
+		if(!calls.empty()) {
+			std::cout << "Running diagnostics ... " << std::flush;
+			auto issues = allscale::compiler::analysis::runDiagnostics(calls[0]);
+			if(issues.empty()) {
+				std::cout << "done\n";
+			} else {
+				std::cout << "\n";
+				for(const auto& issue : issues) {
+					std::cout << toString(issue.getTarget())
+					          << " [" << toString(issue.getSeverity()) << "] "
+					          << issue.getMessage() << "\n";
+					if(auto location = core::annotations::getLocation(issue.getTarget())) {
+						core::annotations::prettyPrintLocation(std::cout, *location);
+					}
+				}
+			}
+		}
 	}
 
 	// Step 4: convert src file to target code
