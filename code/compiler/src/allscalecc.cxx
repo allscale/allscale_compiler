@@ -38,6 +38,9 @@ int main(int argc, char** argv) {
 	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
 	std::string backendString;
 
+	// allows one to disable colorized output
+	bool disableColorization;
+
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
@@ -48,6 +51,7 @@ int main(int argc, char** argv) {
 	// register allscalecc specific flags and parameters
 	parser.addParameter(",O",       opt_level,     0u,              "optimization level");
 	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
+	parser.addParameter("no-color", disableColorization, false, "disable colorized output");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -150,7 +154,7 @@ int main(int argc, char** argv) {
 					          << " [" << toString(issue.getSeverity()) << "] "
 					          << issue.getMessage() << "\n";
 					if(auto location = core::annotations::getLocation(issue.getTarget())) {
-						core::annotations::prettyPrintLocation(std::cout, *location);
+						core::annotations::prettyPrintLocation(std::cout, *location, disableColorization);
 					}
 				}
 			}
