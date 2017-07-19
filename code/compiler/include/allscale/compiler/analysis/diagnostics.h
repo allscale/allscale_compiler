@@ -22,8 +22,8 @@ namespace analysis {
 
 	std::ostream& operator<<(std::ostream& out, Severity severity) {
 		switch(severity) {
-		case Severity::Warning: return out << "WARNING";
-		case Severity::Error:   return out << "ERROR";
+		case Severity::Warning: return out << "Warning";
+		case Severity::Error:   return out << "Error";
 		}
 		return out;
 	}
@@ -55,9 +55,13 @@ namespace analysis {
 			  return message;
 		  }
 
+		  friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
+
 	};
 
 	using Issues = std::vector<Issue>;
+
+	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorizationj = false);
 
 	// a context object for re-using partial results of analysis calls
 	using AnalysisContext = insieme::analysis::cba::haskell::Context;
