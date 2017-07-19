@@ -7,7 +7,6 @@
 #include "insieme/utils/timer.h"
 
 #include "insieme/core/checks/ir_checks.h"
-#include "insieme/core/annotations/source_location.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/cmd/common_options.h"
@@ -140,18 +139,19 @@ int main(int argc, char** argv) {
 
 		if(!calls.empty()) {
 			std::cout << "Running diagnostics ... " << std::flush;
-			auto issues = allscale::compiler::analysis::runDiagnostics(calls[0]);
+
+			allscale::compiler::analysis::Issues issues;
+			for(const auto& call : calls) {
+				auto is = allscale::compiler::analysis::runDiagnostics(call);
+				issues.insert(issues.end(), is.begin(), is.end());
+			}
+
 			if(issues.empty()) {
 				std::cout << "done\n";
 			} else {
 				std::cout << "\n";
 				for(const auto& issue : issues) {
-					std::cout << toString(issue.getTarget())
-					          << " [" << toString(issue.getSeverity()) << "] "
-					          << issue.getMessage() << "\n";
-					if(auto location = core::annotations::getLocation(issue.getTarget())) {
-						core::annotations::prettyPrintLocation(std::cout, *location, options.settings.noColor);
-					}
+					allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor);
 				}
 			}
 		}

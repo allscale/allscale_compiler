@@ -1,5 +1,11 @@
 #include "allscale/compiler/analysis/diagnostics.h"
 
+#include "insieme/core/annotations/naming.h"
+#include "insieme/core/annotations/source_location.h"
+#include "insieme/core/lang/lang.h"
+
+#include "insieme/utils/name_mangling.h"
+
 using namespace insieme::core;
 using namespace insieme::analysis::cba::haskell;
 
@@ -14,6 +20,43 @@ extern "C" {
 namespace allscale {
 namespace compiler {
 namespace analysis {
+
+	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
+		return out << toString(issue.severity) << ": "
+		           << issue.message << "\n"
+		           << "at address " << toString(issue.target);
+	}
+
+	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */) {
+		out << issue << "\n";
+
+		// print target nesting information
+		auto binding = issue.getTarget().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+		while (binding) {
+			auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+
+			out << "\t\tfrom: ";
+
+			// name
+			out << "\"" << insieme::utils::demangle(binding->getReference()->getName()->getValue()) << "\" ";
+
+			// location
+			if(lang::isBuiltIn(lambdaexpr.getAddressedNode())) {
+				out << "(builtin) ";
+			} else if(auto location = annotations::getLocation(lambdaexpr)) {
+				out << "(" << *location << ") ";
+			}
+
+			// address
+			out << "at " << toString(lambdaexpr) << "\n";
+
+			binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+		}
+
+		if(auto location = annotations::getLocation(issue.getTarget())) {
+			annotations::prettyPrintLocation(out, *location, disableColorization);
+		}
+	}
 
 	Issues runDiagnostics(const insieme::core::NodeAddress& node) {
 		AnalysisContext context;
