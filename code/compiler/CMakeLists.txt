@@ -23,15 +23,7 @@ target_link_libraries(compiler
 if(NOT MSVC)
 	add_subdirectory(src/analysis/allscale-hat)
 	link_directories(${CMAKE_CURRENT_BINARY_DIR}/src/analysis/allscale-hat)
-	link_directories(${LIBHSRTS_DIR})
-	link_directories(${GMP_ROOT}/lib)
-
 	add_dependencies(compiler allscale_hat)
-
-	# Gold linker does not automatically resolve libHSrts depdency from analysis
-	# lib, need to specify them explicitly.
-	target_link_libraries(compiler ${LIBHSRTS})
-
 	target_link_libraries(compiler ${allscale_hat})
 endif()
 

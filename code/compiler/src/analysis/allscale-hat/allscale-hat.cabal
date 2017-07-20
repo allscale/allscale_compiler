@@ -7,11 +7,15 @@ maintainer:         Herbert Jordan <herbert@dps.uibk.ac.at>
 build-type:         Simple
 cabal-version:      >= 1.10
 
-library
+foreign-library allscale-hat
+    type:               native-shared
+    if os(windows)
+      options: standalone
+
     ghc-options:        -O2
                         -optc-O3
     hs-source-dirs:     src
-    exposed-modules:    Allscale.Adapter,
+    other-modules:      Allscale.Adapter,
                         Allscale.Analysis.Entities.DataRange,
                         Allscale.Analysis.DataItemElementReference,
                         Allscale.Analysis.DataRequirements,
