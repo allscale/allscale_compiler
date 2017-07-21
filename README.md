@@ -4,12 +4,12 @@ The AllScale compiler is a source-to-source compiler for C++ applications that u
 
 ## Quickstart Guide
 
-This quickstart guide requires GCC 5, m4, CMake, pkg-config and Ruby in addition to a standard Linux setup.
+This quickstart guide requires GCC 5 (or 6), m4, CMake, bison, flex, pkg-config and Ruby in addition to a standard Linux setup.
 Install them via your distribution's package manager.
 For example, on Ubuntu 16.04 LTS:
 
     $ sudo apt update
-    $ sudo apt install git build-essential m4 cmake pkg-config ruby
+    $ sudo apt install git build-essential m4 cmake bison flex pkg-config ruby
 
 Then run the following commands:
 
