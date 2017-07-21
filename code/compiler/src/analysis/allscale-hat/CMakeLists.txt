@@ -4,59 +4,62 @@ get_filename_component(ZLIB_LIBRARIES_DIR ${ZLIB_LIBRARIES} PATH)
 file(GLOB_RECURSE allscale_hat_srcs allscale-hat.cabal src/*.hs)
 file(GLOB_RECURSE insieme_hat_srcs
 	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/insieme-hat.cabal
+	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/src/*.chs
 	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/src/*.hs
 )
 
-set(stack_data ${STACK_ROOT}/stack-root_$ENV{USER})
+get_filename_component(CABAL_PATH_ENTRY "${CABAL_EXECUTABLE}" DIRECTORY)
+set(CABAL_PATH_ENTRY "${CABAL_PATH_ENTRY}:")
 
-# calling stack
-set(stack
-	${CMAKE_COMMAND} -E env
-	"STACK_ROOT=${stack_data}"
-	"LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
-	"LD_LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
-	${STACK_ROOT}/bin/stack --ghc-variant standard
+get_target_property(INSIEME_HAT_SOURCE_DIR insieme_hat SOURCE_DIR)
+get_target_property(INSIEME_HAT_BINARY_DIR insieme_hat BINARY_DIR)
+
+if(DEFINED CABAL_ROOT)
+  set(CABAL_PATH_ENTRY "${CABAL_ROOT}/bin:")
+else()
+  set(CABAL_PATH_ENTRY "${THIRD_PARTY_DIR}/cabal/bin/:")
+endif()
+
+set(haskell_env
+  ${CMAKE_COMMAND} -E env
+  "PATH=${CABAL_PATH_ENTRY}${THIRD_PARTY_DIR}/ghc/bin/:$ENV{PATH}"
+  "LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
+  "LD_LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
+  "HOME=${INSIEME_HAT_BINARY_DIR}/cabal-home" # reusing insieme-hat cabal-homedir
 )
 
+set(cabal ${haskell_env} ${CABAL_EXECUTABLE})
+set(runhaskell ${haskell_env} runhaskell)
+set(cabal_file ${CMAKE_CURRENT_SOURCE_DIR}/allscale-hat.cabal)
+
 add_custom_command(
-	OUTPUT libHSallscale-hat.so
+	OUTPUT liballscale-hat.so
 
-	# create STACK_ROOT folder to prevent hideous error
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${stack_data}
+	# insieme_hat ought to already have done 'cabal update'
 
-	# install adequate ghc / cabal lib
-	COMMAND ${stack} setup
+	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/insieme-hat.project -v1 --enable-tests
 
-	# binarys like alex and c2hs have to be installed manually, do not
-	# merge these lines
-	COMMAND ${stack} build alex
-	COMMAND ${stack} build c2hs
+	# copy library to binary dir
+	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
-	# install dependencies and build package
-	COMMAND ${stack} build
-
-	# copy library (package key in name) to binary dir
-	COMMAND ${stack} runhaskell utils/copyLib.hs ${CMAKE_CURRENT_BINARY_DIR}
-
-	# AllScale-HAT depends on Insieme-HAT. Stating this target dependency here
-	# prevents both toolkits from being built simultaneously which can
-	# cause issues with stack. Furthermore, this invokation of stack also
-	# depends on the sources of Insieme-HAT as each HAT has its own
-	# .stack-work directory and Insieme-HAT is located in both of them.
-	#
-	# It is currently not possible to merge these two folders, as one is
-	# not located in a subdirectory of another. See
-	# <https://github.com/commercialhaskell/stack/issues/1731>
-	DEPENDS ${allscale_hat_srcs} ${insieme_hat_srcs} insieme_hat
+	DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" insieme_hat
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	COMMENT "Building AllScale HAT"
 )
 
-add_custom_target(allscale_hat DEPENDS libHSallscale-hat.so)
+add_custom_target(allscale_hat DEPENDS liballscale-hat.so)
 
-# runtime library exports
-set(LIBHSRTS_DIR ${stack_data}/programs/x86_64-linux/ghc-8.0.2/lib/ghc-8.0.2/rts PARENT_SCOPE)
-set(LIBHSRTS ${stack_data}/programs/x86_64-linux/ghc-8.0.2/lib/ghc-8.0.2/rts/libHSrts-ghc8.0.2.so PARENT_SCOPE)
+if(BUILD_DOCS)
+	add_custom_command(
+		TARGET allscale_hat
+		POST_BUILD
+		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${INSIEME_HAT_BINARY_DIR} "%comp:allscale-hat"
+		DEPENDS insieme_hat
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+endif()
 
-set(allscale_hat ${CMAKE_CURRENT_BINARY_DIR}/libHSallscale-hat.so PARENT_SCOPE)
+set(allscale_hat ${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so PARENT_SCOPE)
+
+
