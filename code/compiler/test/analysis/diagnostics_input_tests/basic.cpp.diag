@@ -1,0 +1,12 @@
+Warning: Diagnostics output not implemented.
+at address 0-0-2-0-1-2-0
+                from: "main" at 0-0
+<input_filepath>@4:2-4:37
+        std::cout << "Hello World" << std::endl;
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Error: You Must Construct Additional Pylons!
+at address 0-0-2-0-1-2-0
+                from: "main" at 0-0
+<input_filepath>@4:2-4:37
+        std::cout << "Hello World" << std::endl;
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
