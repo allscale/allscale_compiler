@@ -1,10 +1,2 @@
 Warning: Diagnostics output not implemented.
-                from: "main"
-<input_filepath>@4:2-4:37
-        std::cout << "Hello World" << std::endl;
-        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Error: You Must Construct Additional Pylons!
-                from: "main"
-<input_filepath>@4:2-4:37
-        std::cout << "Hello World" << std::endl;
-        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

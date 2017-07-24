@@ -59,17 +59,7 @@ namespace analysis {
 		auto errors = insieme::core::checks::check(program, allscale::compiler::checks::getFullCheck());
 		ASSERT_TRUE(errors.empty()) << errors << "\n------\n" << printer::dumpErrors(errors);
 
-		// TODO collect relevant nodes
-		std::vector<CallExprAddress> calls;
-		visitDepthFirstOnceInterruptible(ProgramAddress(program), [&](const CallExprAddress& call) {
-			calls.push_back(call);
-			return false;
-		});
-		if(calls.empty()) {
-			return;
-		}
-
-		auto issues = runDiagnostics(calls[0]);
+		auto issues = runDiagnostics(NodeAddress(program));
 		EXPECT_FALSE(issues.empty());
 
 		std::stringstream diag_output;
