@@ -28,18 +28,33 @@ namespace analysis {
 		return out;
 	}
 
+	/**
+	 * Category of the Diagnostics Message
+	 */
+	enum class Category : int {
+		Basic = 0,
+	};
+
+	std::ostream& operator<<(std::ostream& out, Category category) {
+		switch(category) {
+		case Category::Basic: return out << "Basic";
+		}
+		return out;
+	}
+
 	class Issue {
 
 	  private:
 
 		insieme::core::NodeAddress target;
 		Severity severity;
+		Category category;
 		std::string message;
 
 	  public:
 
-		Issue(insieme::core::NodeAddress target, Severity severity, std::string message)
-			: target(target), severity(severity), message(message) {
+		Issue(insieme::core::NodeAddress target, Severity severity, Category category, std::string message)
+			: target(target), severity(severity), category(category), message(message) {
 			assert_true(target);
 		}
 
@@ -49,6 +64,10 @@ namespace analysis {
 
 		Severity getSeverity() const {
 			return severity;
+		}
+
+		Category getCategory() const {
+			return category;
 		}
 
 		std::string getMessage() const {

@@ -22,7 +22,9 @@ namespace compiler {
 namespace analysis {
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
-		return out << toString(issue.severity) << ": " << issue.message;
+		return out << toString(issue.severity) << ": "
+		           << "[" << toString(issue.category) << "] "
+		           << issue.message;
 	}
 
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */, bool printNodeAddresse /* = false */) {
@@ -88,8 +90,8 @@ extern "C" {
 
 	using namespace allscale::compiler::analysis;
 
-	Issue* hat_c_mk_issue(NodeAddress* target, Severity severity, const char* message) {
-		return new Issue(*target, static_cast<Severity>(severity), message);
+	Issue* hat_c_mk_issue(NodeAddress* target, Severity severity, Category category, const char* message) {
+		return new Issue(*target, static_cast<Severity>(severity), category, message);
 	}
 
 	Issues* hat_c_mk_issues(Issue* issues[], size_t size) {
