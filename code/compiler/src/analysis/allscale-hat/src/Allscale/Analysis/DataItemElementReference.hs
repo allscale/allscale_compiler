@@ -18,6 +18,7 @@ import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueLattice,symbolicValue,genericSymbolicValue)
+import Insieme.Analysis.Reference (isMaterializingDeclaration,isMaterializingCall)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
@@ -98,14 +99,22 @@ elementReferenceValue :: NodeAddress -> Solver.TypedVar (ValueTree.Tree SimpleFi
 elementReferenceValue addr = case getNodeType addr of
 
     -- literals do not produce element references
-    IR.Literal -> Solver.mkVariable (idGen addr) [] (compose $ ElementReferenceSet $ BSet.empty)
+    IR.Literal -> noReference
+
+    -- materializing declarations do not produce element references
+    IR.Declaration | isMaterializingDeclaration (getNode addr) -> noReference
+
+    -- materializing calls do not produce element references
+    IR.CallExpr | isMaterializingCall (getNode addr) -> noReference
 
     -- default handling through data flow
     _ -> dataflowValue addr analysis opsHandler
     
   where
 
-    analysis = mkDataFlowAnalysis ElementReferenceAnalysis "DI_ER" elementReferenceValue
+    noReference = Solver.mkVariable (idGen addr) [] (compose $ ElementReferenceSet $ BSet.empty)
+
+    analysis = mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue
 
     idGen = mkVarIdentifier analysis
 
@@ -127,7 +136,7 @@ elementReferenceValue addr = case getNodeType addr of
     
     refDeclHandler = OperatorHandler cov noDep val
       where
-        cov a = isBuiltin a "ref_decl"
+        cov a = any (isBuiltin a) [ "ref_decl", "ref_alloc" ]
         val _ _ = compose $ ElementReferenceSet $ BSet.empty
         
     noDep _ _ = []
