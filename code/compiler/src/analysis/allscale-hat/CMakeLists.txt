@@ -42,7 +42,7 @@ add_custom_command(
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
-	DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" insieme_hat
+	DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${allscale_hat_srcs} insieme_hat
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	COMMENT "Building AllScale HAT"
@@ -55,7 +55,7 @@ if(BUILD_DOCS)
 		TARGET allscale_hat
 		POST_BUILD
 		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${INSIEME_HAT_BINARY_DIR} "%comp:allscale-hat"
-		DEPENDS insieme_hat
+		DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${allscale_hat_srcs} insieme_hat
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
 endif()
