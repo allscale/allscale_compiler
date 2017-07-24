@@ -54,7 +54,7 @@ namespace frontend {
 					const clang::CXXMethodDecl* calleeDecl = nullptr;
 					if(auto ctorCall = llvm::dyn_cast<clang::CXXConstructExpr>(expr)) calleeDecl = ctorCall->getConstructor();
 					if(auto methodCall = llvm::dyn_cast<clang::CallExpr>(expr)) calleeDecl = llvm::dyn_cast<clang::CXXMethodDecl>(methodCall->getCalleeDecl());
-					assert_true(calleeDecl) << "Unknown type of CallExpr";
+					if(!calleeDecl) return irExpr;
 
 					auto funcDecl = llvm::dyn_cast<clang::FunctionDecl>(calleeDecl);
 					// switch to the declaration containing the body (if there is one)
