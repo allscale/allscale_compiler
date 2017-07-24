@@ -44,7 +44,7 @@
 #include <string>
 
 // assertions on the data requirements
-void cba_expect_data_requirements(const std::string& region)  { /* nothing */ };
+void cba_expect_data_requirements(const char* region)  { /* nothing */ };
 
 // debugging
 void cba_print_code() {};

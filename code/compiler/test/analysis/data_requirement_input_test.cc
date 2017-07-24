@@ -49,6 +49,9 @@ namespace analysis {
 		insieme::frontend::ConversionJob job(file);
 		frontend::configureConversionJob(job);
 
+		job.addIncludeDirectory(ROOT_DIR);
+		job.addInterceptedHeaderDir(ROOT_DIR + "intercepted/");
+
 		// load file using the frontend
 		NodeManager mgr;
 		auto prog = job.execute(mgr);
@@ -90,13 +93,30 @@ namespace analysis {
 			if (name == "cba_expect_data_requirements") {
 				auto compound = getScope(call);
 
-				// for now, we have to create a temporary context TODO: fix context issue
+				// obtain expected value form user code
+				auto arg = call->getArgument(0).isa<CallExprPtr>();
+				assert_true(arg) << "Expected value is not a string literal!" << std::endl
+					<< *core::annotations::getLocation(call) << std::endl;
+
+				auto lit = arg->getArgument(0).isa<LiteralPtr>();
+				assert_true(arg) << "Expected value is not a string literal!" << std::endl
+					<< *core::annotations::getLocation(call) << std::endl;
+
+				auto expected = lit->getStringValue();
+				expected = expected.substr(1,expected.size()-2);
+
+				// for now, we have to create a temporary context
 				ctxt = std::move(insieme::analysis::cba::haskell::Context());
 				auto requirements = getDataRequirements(ctxt,compound);
 
-				// for now, we simply assume they are defined
-				EXPECT_FALSE(requirements.isUnknown())
-					<< *core::annotations::getLocation(call) << std::endl;		// TODO: actually check result
+				// TODO: check the actual value
+				std::cout << "Expected requirements:   " << expected << "\n";
+				std::cout << "Identified requirements: " << requirements << "\n";
+//				EXPECT_EQ(expected,toString(requirements))
+//					<< *core::annotations::getLocation(call) << std::endl;
+
+				EXPECT_FALSE(requirements.isUniverse())
+					<< *core::annotations::getLocation(call) << std::endl;
 
 			// debugging
 			} else if (name == "cba_print_code") {
