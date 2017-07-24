@@ -441,56 +441,60 @@ namespace analysis {
 
 
 		// compute stencil with literal boundary
-		EXPECT_EQ(
-			"{Requirement { A[span(*x,*y)] RO },Requirement { A[span(*x-1,*y-1)] RO },Requirement { A[span(*x+1,*y+1)] RO },Requirement { B[span(*x,*y)] RW }}",
-			toString(getDataRequirements(mgr,
-				R"(
-					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
-						let point = lit("point" : (int<4>,int<4>)->point);
-						for(int<4> i = a .. b) {
-							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
-							auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
-							auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
+		auto requirement = toString(getDataRequirements(mgr,
+			R"(
+				def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+					let point = lit("point" : (int<4>,int<4>)->point);
+					for(int<4> i = a .. b) {
+						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+						auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+						auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-							auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
+						auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
 
-							ref = *ref1 + *ref2 + *ref3;
-						}
-					};
-
-					{
-						stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+						ref = *ref1 + *ref2 + *ref3;
 					}
-				)"
-			))
-		);
+				};
+
+				{
+					stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+				}
+			)"
+		));
+
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y+1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y)] RW }");
 
 		// compute stencil with literal boundary and local variables
-		EXPECT_EQ(
-			"{Requirement { A[span(*x,*y)] RO },Requirement { A[span(*x-1,*y-1)] RO },Requirement { A[span(*x+1,*y+1)] RO },Requirement { B[span(*x,*y)] RW }}",
-			toString(getDataRequirements(mgr,
-				R"(
-					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
-						let point = lit("point" : (int<4>,int<4>)->point);
-						for(int<4> i = a .. b) {
-							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
-							auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
-							auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
+		requirement = toString(getDataRequirements(mgr,
+			R"(
+				def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+					let point = lit("point" : (int<4>,int<4>)->point);
+					for(int<4> i = a .. b) {
+						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+						auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+						auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-							var ref<int<4>> sum = 0; 
-							sum = *ref1 + *ref2 + *ref3;
+						var ref<int<4>> sum = 0; 
+						sum = *ref1 + *ref2 + *ref3;
 
-							auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
-							ref = *sum / 3;
-						}
-					};
-
-					{
-						stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+						auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
+						ref = *sum / 3;
 					}
-				)"
-			))
-		);
+				};
+
+				{
+					stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+				}
+			)"
+		));
+
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y+1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y)] RW }");
 
 	}
 
