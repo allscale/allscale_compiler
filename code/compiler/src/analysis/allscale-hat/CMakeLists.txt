@@ -50,6 +50,13 @@ add_custom_command(
 
 add_custom_target(allscale_hat DEPENDS liballscale-hat.so)
 
+add_custom_target(clean_allscale_hat
+	COMMAND ${CMAKE_COMMAND} -E remove "${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so"
+	COMMAND ${CMAKE_COMMAND} -E remove_directory "${INSIEME_HAT_BINARY_DIR}/dist-newstyle/"
+	COMMAND ${CMAKE_COMMAND} -E remove_directory "${INSIEME_HAT_BINARY_DIR}/cabal-home/.cabal"
+)
+add_dependencies(clean_allscale_hat clean_insieme_hat)
+
 if(BUILD_DOCS)
 	add_custom_command(
 		TARGET allscale_hat
