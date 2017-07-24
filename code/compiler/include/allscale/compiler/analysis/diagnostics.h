@@ -32,30 +32,30 @@ namespace analysis {
 
 	  private:
 
-		  insieme::core::NodeAddress target;
-		  Severity severity;
-		  std::string message;
+		insieme::core::NodeAddress target;
+		Severity severity;
+		std::string message;
 
 	  public:
 
-		  Issue(insieme::core::NodeAddress target, Severity severity, std::string message)
-			  : target(target), severity(severity), message(message) {
-			  assert_true(target);
-		  }
+		Issue(insieme::core::NodeAddress target, Severity severity, std::string message)
+			: target(target), severity(severity), message(message) {
+			assert_true(target);
+		}
 
-		  insieme::core::NodeAddress getTarget() const {
-			  return target;
-		  }
+		insieme::core::NodeAddress getTarget() const {
+			return target;
+		}
 
-		  Severity getSeverity() const {
-			  return severity;
-		  }
+		Severity getSeverity() const {
+			return severity;
+		}
 
-		  std::string getMessage() const {
-			  return message;
-		  }
+		std::string getMessage() const {
+			return message;
+		}
 
-		  friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
+		friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
 
 	};
 
