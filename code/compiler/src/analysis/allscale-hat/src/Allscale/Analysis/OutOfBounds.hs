@@ -102,7 +102,7 @@ convertArrayIndex = BSet.changeBound
 data ElementCountAnalysis = ElementCountAnalysis
   deriving (Typeable)
 
-elementCountAnalysis :: DataFlowAnalysis ElementCountAnalysis (ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10))
+elementCountAnalysis :: DataFlowAnalysis ElementCountAnalysis (ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10)) SimpleFieldIndex
 elementCountAnalysis = (mkDataFlowAnalysis ElementCountAnalysis "EC" elementCount)
 
 elementCount :: NodeAddress -> Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10))
