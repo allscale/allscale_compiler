@@ -61,7 +61,7 @@ namespace analysis {
 
 	using Issues = std::vector<Issue>;
 
-	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorizationj = false);
+	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
 	// a context object for re-using partial results of analysis calls
 	using AnalysisContext = insieme::analysis::cba::haskell::Context;
