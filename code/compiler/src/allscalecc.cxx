@@ -14,6 +14,7 @@
 #include "insieme/driver/utils/driver_utils.h"
 
 #include "allscale/compiler/config.h"
+#include "allscale/compiler/env_vars.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/analysis/diagnostics.h"
@@ -150,8 +151,9 @@ int main(int argc, char** argv) {
 				std::cout << "done\n";
 			} else {
 				std::cout << "\n";
+				bool printNodeAddresses = std::getenv(ALLSCALE_DIAG_NODE_ADDRESSES);
 				for(const auto& issue : issues) {
-					allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor);
+					allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
 				}
 			}
 		}

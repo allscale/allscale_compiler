@@ -28,40 +28,59 @@ namespace analysis {
 		return out;
 	}
 
+	/**
+	 * Category of the Diagnostics Message
+	 */
+	enum class Category : int {
+		Basic = 0,
+	};
+
+	std::ostream& operator<<(std::ostream& out, Category category) {
+		switch(category) {
+		case Category::Basic: return out << "Basic";
+		}
+		return out;
+	}
+
 	class Issue {
 
 	  private:
 
-		  insieme::core::NodeAddress target;
-		  Severity severity;
-		  std::string message;
+		insieme::core::NodeAddress target;
+		Severity severity;
+		Category category;
+		std::string message;
 
 	  public:
 
-		  Issue(insieme::core::NodeAddress target, Severity severity, std::string message)
-			  : target(target), severity(severity), message(message) {
-			  assert_true(target);
-		  }
+		Issue(insieme::core::NodeAddress target, Severity severity, Category category, std::string message)
+			: target(target), severity(severity), category(category), message(message) {
+			assert_true(target);
+		}
 
-		  insieme::core::NodeAddress getTarget() const {
-			  return target;
-		  }
+		insieme::core::NodeAddress getTarget() const {
+			return target;
+		}
 
-		  Severity getSeverity() const {
-			  return severity;
-		  }
+		Severity getSeverity() const {
+			return severity;
+		}
 
-		  std::string getMessage() const {
-			  return message;
-		  }
+		Category getCategory() const {
+			return category;
+		}
 
-		  friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
+		std::string getMessage() const {
+			return message;
+		}
+
+		friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
 
 	};
 
 	using Issues = std::vector<Issue>;
 
-	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorizationj = false);
+	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
 	// a context object for re-using partial results of analysis calls
 	using AnalysisContext = insieme::analysis::cba::haskell::Context;

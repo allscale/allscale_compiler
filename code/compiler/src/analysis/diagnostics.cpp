@@ -23,12 +23,16 @@ namespace analysis {
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
 		return out << toString(issue.severity) << ": "
-		           << issue.message << "\n"
-		           << "at address " << toString(issue.target);
+		           << "[" << toString(issue.category) << "] "
+		           << issue.message;
 	}
 
-	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */) {
+	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */, bool printNodeAddresse /* = false */) {
 		out << issue << "\n";
+
+		if(printNodeAddresse) {
+			out << "at address " << toString(issue.getTarget()) << "\n";
+		}
 
 		// print target nesting information
 		auto binding = issue.getTarget().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
@@ -38,17 +42,20 @@ namespace analysis {
 			out << "\t\tfrom: ";
 
 			// name
-			out << "\"" << insieme::utils::demangle(binding->getReference()->getName()->getValue()) << "\" ";
+			out << "\"" << insieme::utils::demangle(binding->getReference()->getName()->getValue()) << "\"";
 
 			// location
 			if(lang::isBuiltIn(lambdaexpr.getAddressedNode())) {
-				out << "(builtin) ";
+				out << " (builtin)";
 			} else if(auto location = annotations::getLocation(lambdaexpr)) {
-				out << "(" << *location << ") ";
+				out << " (" << *location << ")";
 			}
 
-			// address
-			out << "at " << toString(lambdaexpr) << "\n";
+			if (printNodeAddresse) {
+				out << " at " << toString(lambdaexpr);
+			}
+
+			out << "\n";
 
 			binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
 		}
@@ -83,8 +90,8 @@ extern "C" {
 
 	using namespace allscale::compiler::analysis;
 
-	Issue* hat_c_mk_issue(NodeAddress* target, Severity severity, const char* message) {
-		return new Issue(*target, static_cast<Severity>(severity), message);
+	Issue* hat_c_mk_issue(NodeAddress* target, Severity severity, Category category, const char* message) {
+		return new Issue(*target, static_cast<Severity>(severity), category, message);
 	}
 
 	Issues* hat_c_mk_issues(Issue* issues[], size_t size) {

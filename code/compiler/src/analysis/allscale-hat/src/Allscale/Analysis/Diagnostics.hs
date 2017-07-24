@@ -21,8 +21,12 @@ import qualified Insieme.Context as Ctx
 data Severity = Warning | Error
   deriving (Eq, Ord, Show, Generic, NFData)
 
+data Categroy = Basic
+  deriving (Eq, Ord, Show, Generic, NFData)
+
 data Issue = Issue { target   :: NodeAddress
                    , severity :: Severity
+                   , category :: Categroy
                    , message  :: String
                    }
   deriving (Eq, Ord, Show, Generic, NFData)
@@ -41,8 +45,8 @@ data DataRequirementAnalysis = DataRequirementAnalysis
 
 diagnosticsAnalysis :: NodeAddress -> Solver.TypedVar Issues
 diagnosticsAnalysis addr = Solver.mkVariable (idGen addr) []
-                         $ Issues [ Issue addr Warning "Diagnostics output not implemented."
-                                  , Issue addr Error "You Must Construct Additional Pylons!"
+                         $ Issues [ Issue addr Warning Basic "Diagnostics output not implemented."
+                                  , Issue addr Error Basic "You Must Construct Additional Pylons!"
                                   ]
   where
     analysis = Solver.mkAnalysisIdentifier DataRequirementAnalysis "DIAG"
@@ -64,7 +68,7 @@ hsDiagnostics ctx_hs expr_hs = do
     passIssues ctx_c res
 
 foreign import ccall "hat_c_mk_issue"
-  mkCIssue :: CRepPtr NodeAddress -> CInt -> CString -> IO (CRepPtr Issue)
+  mkCIssue :: CRepPtr NodeAddress -> CInt -> CInt -> CString -> IO (CRepPtr Issue)
 
 foreign import ccall "hat_c_mk_issues"
   mkCIssues :: CRepArr Issue -> CSize -> IO (CRepPtr Issues)
@@ -75,9 +79,12 @@ passIssues ctx (Issues is) = do
     withArrayUnsignedLen is_c mkCIssues
   where
     passIssue :: Issue -> IO (CRepPtr Issue)
-    passIssue (Issue t s m) = do
+    passIssue (Issue t s c m) = do
         t_c <- passNodeAddress ctx t
-        withCString m $ mkCIssue t_c (convertSeverity s)
+        withCString m $ mkCIssue t_c (convertSeverity s) (convertCategory c)
+
+    convertCategory :: Categroy -> CInt
+    convertCategory Basic = 0
 
     convertSeverity :: Severity -> CInt
     convertSeverity Warning = 0
