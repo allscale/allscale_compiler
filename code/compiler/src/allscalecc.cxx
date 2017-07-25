@@ -131,30 +131,15 @@ int main(int argc, char** argv) {
 
 	// run diagnostics analysis
 	{
-		// TODO collect relevant nodes
-		std::vector<core::CallExprAddress> calls;
-		visitDepthFirstOnceInterruptible(core::ProgramAddress(program), [&](const core::CallExprAddress& call) {
-			calls.push_back(call);
-			return false;
-		});
-
-		if(!calls.empty()) {
-			std::cout << "Running diagnostics ... " << std::flush;
-
-			allscale::compiler::analysis::Issues issues;
-			for(const auto& call : calls) {
-				auto is = allscale::compiler::analysis::runDiagnostics(call);
-				issues.insert(issues.end(), is.begin(), is.end());
-			}
-
-			if(issues.empty()) {
-				std::cout << "done\n";
-			} else {
-				std::cout << "\n";
-				bool printNodeAddresses = std::getenv(ALLSCALE_DIAG_NODE_ADDRESSES);
-				for(const auto& issue : issues) {
-					allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
-				}
+		std::cout << "Running diagnostics ... " << std::flush;
+		auto issues = allscale::compiler::analysis::runDiagnostics(core::NodeAddress(program));
+		if(issues.empty()) {
+			std::cout << "done\n";
+		} else {
+			std::cout << "\n";
+			bool printNodeAddresses = std::getenv(ALLSCALE_DIAG_NODE_ADDRESSES);
+			for(const auto& issue : issues) {
+				allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
 			}
 		}
 	}
