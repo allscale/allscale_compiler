@@ -9,8 +9,6 @@ int main() {
 
 	// test some request, but no access
 	{
-		cba_print_code();
-
 		cba_expect_data_requirements("{}");
 
 		// fabricate an artificial access
