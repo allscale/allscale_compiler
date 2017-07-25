@@ -21,6 +21,26 @@ namespace allscale {
 namespace compiler {
 namespace analysis {
 
+	bool Issue::operator==(const Issue& other) const {
+		return category == other.category
+		    && severity == other.severity
+		    && target == other.target
+		    && message == other.message;
+	}
+
+	bool Issue::operator<(const Issue& other) const {
+		if (target < other.target) return true;
+		if (!(target == other.target)) return false;
+
+		if (severity < other.severity) return true;
+		if (!(severity == other.severity)) return false;
+
+		if (category < other.category) return true;
+		if (!(category == other.category)) return false;
+
+		return message < other.message;
+	}
+
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
 		return out << toString(issue.severity) << ": "
 		           << "[" << toString(issue.category) << "] "
@@ -96,9 +116,8 @@ extern "C" {
 
 	Issues* hat_c_mk_issues(Issue* issues[], size_t size) {
 		auto ret = new Issues;
-		ret->reserve(size);
 		for(size_t i = 0; i < size; i++) {
-			ret->emplace_back(std::move(*issues[i]));
+			ret->emplace(std::move(*issues[i]));
 			delete issues[i];
 		}
 		return ret;

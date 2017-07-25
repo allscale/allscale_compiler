@@ -1,0 +1,10 @@
+Error: [Basic] Write access to global
+                from: "main"
+<input_filepath>@4:5-4:9
+    x = 5;
+    ^~~~~
+Error: [Basic] Read access to global
+                from: "main"
+<input_filepath>@5:13
+    int y = x;
+            ^

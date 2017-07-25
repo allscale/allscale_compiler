@@ -1,0 +1,6 @@
+Error: [Basic] Write access to global
+                from: "foo" (<input_filepath>@8:5)
+                from: "main"
+<input_filepath>@4:5-4:9
+    x = 5;
+    ^~~~~

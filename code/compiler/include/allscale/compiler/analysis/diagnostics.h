@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ostream>
-#include <vector>
+#include <set>
 #include <string>
 
 #include "insieme/core/ir_address.h"
@@ -74,11 +74,14 @@ namespace analysis {
 			return message;
 		}
 
+		bool operator==(const Issue&) const;
+		bool operator<(const Issue&) const;
+
 		friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
 
 	};
 
-	using Issues = std::vector<Issue>;
+	using Issues = std::set<Issue>;
 
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 

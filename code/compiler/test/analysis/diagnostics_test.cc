@@ -60,7 +60,6 @@ namespace analysis {
 		ASSERT_TRUE(errors.empty()) << errors << "\n------\n" << printer::dumpErrors(errors);
 
 		auto issues = runDiagnostics(NodeAddress(program));
-		EXPECT_FALSE(issues.empty());
 
 		std::stringstream diag_output;
 		for(const auto& issue : issues) {
@@ -78,6 +77,10 @@ namespace analysis {
 			std::string line, expected_line;
 			std::getline(diag_output, line);
 			std::getline(expected_diag_output, expected_line);
+
+			// strip cr
+			boost::replace_all(line,          "\r", "");
+			boost::replace_all(expected_line, "\r", "");
 
 			// expand tabs
 			boost::replace_all(line,          "\t", "        ");
