@@ -5,19 +5,21 @@ module Allscale.Analysis.Diagnostics where
 
 import Debug.Trace
 
-import Control.Monad
 import Control.DeepSeq (NFData)
-import Data.Typeable (Typeable)
+import Control.Monad
+import Data.Maybe
 import Data.Set (Set)
+import Data.Typeable (Typeable)
 import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
 import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,updateContext,passNodeAddress,withArrayUnsignedLen)
 import Insieme.Analysis.Callable
-import Insieme.Analysis.Reference
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
+import Insieme.Analysis.Framework.Utils.OperatorHandler
+import Insieme.Analysis.Reference
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
@@ -52,6 +54,8 @@ instance Solver.Lattice Issues where
 
 mkOneIssue = Issues . Set.singleton
 
+mkIssues = Issues . Set.fromList
+
 -- * Analysis Dispatcher
 
 -- TODO parameterize sub analysis
@@ -60,33 +64,16 @@ runDiagnostics s addr = (Solver.join issues, ns)
   where
     (issues, ns) = Solver.resolveAll s [allFineAnalysis addr, globalVariableDiagnosis addr]
 
--- * Analyses
+-- * Generic Diagnosis
 
-data DataRequirementAllFineAnalysis = DataRequirementAllFineAnalysis
-  deriving (Typeable)
+data Diagnosis = Diagnosis { varGen        :: NodeAddress -> Solver.TypedVar Issues
+                           , analysis      :: Solver.AnalysisIdentifier
+                           , opHandler     :: [OperatorHandler Issues]
+                           , unknownTarget :: NodeAddress -> Issues
+                           }
 
-allFineAnalysis :: NodeAddress -> Solver.TypedVar Issues
-allFineAnalysis addr = Solver.mkVariable (idGen addr) [] Solver.bot
-  where
-    analysis = Solver.mkAnalysisIdentifier DataRequirementAllFineAnalysis "DIAG_fine"
-    idGen = Solver.mkIdentifierFromExpression analysis
-
-
-data DataRequirementMorePylonsAnalysis = DataRequirementMorePylonsAnalysis
-  deriving (Typeable)
-
-morePylonsAnalysis :: NodeAddress -> Solver.TypedVar Issues
-morePylonsAnalysis addr = Solver.mkVariable (idGen addr) []
-                        $ mkOneIssue $ Issue addr Error Basic "You Must Construct Additional Pylons!"
-  where
-    analysis = Solver.mkAnalysisIdentifier DataRequirementMorePylonsAnalysis "DIAG_pylon"
-    idGen = Solver.mkIdentifierFromExpression analysis
-
-data DataRequirementGlobalVariable = DataRequirementGlobalVariable
-  deriving (Typeable)
-
-globalVariableDiagnosis :: NodeAddress -> Solver.TypedVar Issues
-globalVariableDiagnosis addr = case getNode addr of
+diagnosis :: Diagnosis -> NodeAddress -> Solver.TypedVar Issues
+diagnosis diag addr = case getNode addr of
 
     -- types have no issues
     n | isType n -> noIssues
@@ -108,8 +95,9 @@ globalVariableDiagnosis addr = case getNode addr of
 
         callTargetConstraint = Solver.createConstraint dep val var
           where
-            dep a = Solver.toVar callableVar : (Solver.toVar <$> referenceVars a) ++ (Solver.toVar <$> callableBodyVars a)
-            val a = Solver.join [callTargetIssues a, localIssues a, unknownTargetIssues a]
+            dep a = Solver.toVar callableVar : (localIssueVars a) ++ (Solver.toVar <$> callableBodyVars a)
+
+            val a = Solver.join (callTargetIssues a : unknownTargetIssues a : localIssues a)
 
             -- get access to functions targeted by this call
             callableVar = callableValue $ goDown 1 addr
@@ -119,7 +107,7 @@ globalVariableDiagnosis addr = case getNode addr of
                 _ | BSet.isUniverse callTargets -> []
                 _                               -> foldr go [] $ BSet.toList callTargets
                   where
-                    go (Lambda addr) bs = (globalVariableDiagnosis $ goDown 2 addr) : bs
+                    go (Lambda addr) bs = (varGen diag $ goDown 2 addr) : bs
                     go _ bs = bs
               where
                 callTargets = callableVal a
@@ -129,48 +117,25 @@ globalVariableDiagnosis addr = case getNode addr of
 
             -- add data requirements in case of unknown call targets
             unknownTargetIssues a = case () of
-                _ | BSet.isUniverse $ callableVal a -> mkOneIssue $ Issue addr Warning Basic "Call to unknown function"
+                _ | BSet.isUniverse $ callableVal a -> unknownTarget diag $ goDown 1 addr
                 _                                   -> Solver.bot
 
-            -- also add data requirements if this call is targeting a ref_deref or ref_assign
-            referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
-            referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
-            referenceVal a = toValue $ Solver.get a referenceVar
+            getActiveOperators a = if BSet.isUniverse targets then [] else concatMap f (opHandler diag)
+                where
+                    targets = callableVal a
+                    f o = mapMaybe go $ BSet.toList targets
+                        where
+                            go l = if covers o trg then Just (o,trg) else Nothing
+                                where
+                                    trg = toAddress l
 
-            referenceVars a = case () of
-                _ | isRead a || isWrite a -> [referenceVar]
-                _                         -> []
+            localIssueVars a = concat $ map go $ getActiveOperators a
+                where
+                    go (o,t) = dependsOn o t a
 
-            localIssues a = Solver.join [readAccess, writeAccess]
-              where
-                readAccess = case () of
-                    _ | isRead a -> mkIssue "Read"
-                    _            -> Solver.bot
-
-                writeAccess = case () of
-                    _ | isWrite a -> mkIssue "Write"
-                    _             -> Solver.bot
-
-                mkIssue _ | BSet.isUniverse (referenceVal a) = Solver.bot
-                mkIssue access = Issues $ Set.fromList is
-                  where
-                    is = if any globalAccess (BSet.toList $ referenceVal a)
-                         then [Issue addr Error Basic (access ++ " access to global")]
-                         else []
-
-                    globalAccess (Reference l _) = IR.Literal == getNodeType l
-                    globalAccess _ = False
-
-            -- utilities
-            mayCall a lit = case () of
-                _ | BSet.isUniverse targets -> False
-                _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
-              where
-                targets = callableVal a
-
-            isRead a = mayCall a "ref_deref"
-
-            isWrite a = mayCall a "ref_assign"
+            localIssues a = map go $ getActiveOperators a
+                where
+                    go (o,t) = getValue o t a
 
     -- for everything else we aggregate the requirements of the child nodes
     _ -> var
@@ -181,12 +146,72 @@ globalVariableDiagnosis addr = case getNode addr of
     -- the standard-child-aggregation constraints
     childConstraints var = map go $ getChildren addr
       where
-        go addr = Solver.forward (globalVariableDiagnosis addr) var
+        go addr = Solver.forward (varGen diag addr) var
 
     noIssues = Solver.mkVariable varId [] Solver.bot
-    analysis = Solver.mkAnalysisIdentifier DataRequirementGlobalVariable "DIAG_global"
-    idGen = Solver.mkIdentifierFromExpression analysis
+    idGen = Solver.mkIdentifierFromExpression $ analysis diag
     varId = idGen addr
+
+
+-- * Diagnoses
+
+data DataRequirementAllFineAnalysis = DataRequirementAllFineAnalysis
+  deriving (Typeable)
+
+allFineAnalysis :: NodeAddress -> Solver.TypedVar Issues
+allFineAnalysis addr = Solver.mkVariable (idGen addr) [] Solver.bot
+  where
+    analysis = Solver.mkAnalysisIdentifier DataRequirementAllFineAnalysis "DIAG_fine"
+    idGen = Solver.mkIdentifierFromExpression analysis
+
+
+data DataRequirementMorePylonsAnalysis = DataRequirementMorePylonsAnalysis
+  deriving (Typeable)
+
+morePylonsAnalysis :: NodeAddress -> Solver.TypedVar Issues
+morePylonsAnalysis addr = Solver.mkVariable (idGen addr) []
+                        $ mkOneIssue $ Issue addr Error Basic "You Must Construct Additional Pylons!"
+  where
+    analysis = Solver.mkAnalysisIdentifier DataRequirementMorePylonsAnalysis "DIAG_pylon"
+    idGen = Solver.mkIdentifierFromExpression analysis
+
+
+data GlobalVariableDiagnosis = GlobalVariableDiagnosis
+  deriving (Typeable)
+
+globalVariableDiagnosis :: NodeAddress -> Solver.TypedVar Issues
+globalVariableDiagnosis addr = diagnosis diag addr
+  where
+    diag = Diagnosis globalVariableDiagnosis analysis ops ut
+    analysis = Solver.mkAnalysisIdentifier GlobalVariableDiagnosis "DIAG_global"
+
+    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
+
+    ops = [readHandler, writeHandler]
+
+    readHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_deref"
+        val _ = handleOp "Read"
+
+    writeHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_assign"
+        val _ = handleOp "Write"
+
+    dep _ a = Solver.toVar <$> [referenceVar]
+
+    referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
+    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+
+    referenceVal a = toValue $ Solver.get a referenceVar
+
+    globalAccess (Reference l _) = IR.Literal == getNodeType l
+    globalAccess _ = False
+
+    handleOp access a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
+                                   then [Issue addr Error Basic (access ++ " access to global")]
+                                   else []
 
 -- * FFI
 
