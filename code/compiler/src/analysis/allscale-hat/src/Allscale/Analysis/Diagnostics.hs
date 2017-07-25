@@ -62,7 +62,7 @@ mkIssues = Issues . Set.fromList
 runDiagnostics :: Solver.SolverState -> NodeAddress -> (Issues, Solver.SolverState)
 runDiagnostics s addr = (Solver.join issues, ns)
   where
-    (issues, ns) = Solver.resolveAll s [allFineAnalysis addr, globalVariableDiagnosis addr]
+    (issues, ns) = Solver.resolveAll s [unknownReferenceDiagnosis addr, globalVariableDiagnosis addr]
 
 -- * Generic Diagnosis
 
@@ -155,25 +155,41 @@ diagnosis diag addr = case getNode addr of
 
 -- * Diagnoses
 
-data DataRequirementAllFineAnalysis = DataRequirementAllFineAnalysis
+data UnknownReferenceDiagnosis = UnknownReferenceDiagnosis
   deriving (Typeable)
 
-allFineAnalysis :: NodeAddress -> Solver.TypedVar Issues
-allFineAnalysis addr = Solver.mkVariable (idGen addr) [] Solver.bot
+unknownReferenceDiagnosis :: NodeAddress -> Solver.TypedVar Issues
+unknownReferenceDiagnosis addr = diagnosis diag addr
   where
-    analysis = Solver.mkAnalysisIdentifier DataRequirementAllFineAnalysis "DIAG_fine"
-    idGen = Solver.mkIdentifierFromExpression analysis
+    diag = Diagnosis unknownReferenceDiagnosis analysis ops ut
+    analysis = Solver.mkAnalysisIdentifier UnknownReferenceDiagnosis "DIAG_urd"
 
+    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
 
-data DataRequirementMorePylonsAnalysis = DataRequirementMorePylonsAnalysis
-  deriving (Typeable)
+    ops = [readHandler, writeHandler]
 
-morePylonsAnalysis :: NodeAddress -> Solver.TypedVar Issues
-morePylonsAnalysis addr = Solver.mkVariable (idGen addr) []
-                        $ mkOneIssue $ Issue addr Error Basic "You Must Construct Additional Pylons!"
-  where
-    analysis = Solver.mkAnalysisIdentifier DataRequirementMorePylonsAnalysis "DIAG_pylon"
-    idGen = Solver.mkIdentifierFromExpression analysis
+    readHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_deref"
+        val _ = handleOp "Read"
+
+    writeHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_assign"
+        val _ = handleOp "Write"
+
+    dep _ a = Solver.toVar <$> [referenceVar]
+
+    referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
+    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+
+    referenceVal a = toValue $ Solver.get a referenceVar
+
+    isUnknown = BSet.isUniverse . referenceVal
+
+    handleOp access a = mkIssues $ if isUnknown a
+                                   then [Issue addr Error Basic (access ++ " access to unknown location")]
+                                   else []
 
 
 data GlobalVariableDiagnosis = GlobalVariableDiagnosis
@@ -209,6 +225,7 @@ globalVariableDiagnosis addr = diagnosis diag addr
     globalAccess (Reference l _) = IR.Literal == getNodeType l
     globalAccess _ = False
 
+    handleOp _ a | BSet.isUniverse $ referenceVal a = Solver.bot
     handleOp access a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
                                    then [Issue addr Error Basic (access ++ " access to global")]
                                    else []
