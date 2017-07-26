@@ -7,6 +7,7 @@
 #include "insieme/utils/timer.h"
 
 #include "insieme/core/checks/ir_checks.h"
+#include "insieme/core/dump/json_dump.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/cmd/common_options.h"
@@ -38,6 +39,9 @@ int main(int argc, char** argv) {
 	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
 	std::string backendString;
 
+	// Allows the AllScale driver to dump an input code as JSON.
+	insieme::frontend::path dumpJSON;
+
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
@@ -46,8 +50,9 @@ int main(int argc, char** argv) {
 	commonOptions.addFlagsAndParameters(parser);
 
 	// register allscalecc specific flags and parameters
-	parser.addParameter(",O",       opt_level,     0u,              "optimization level");
-	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
+	parser.addParameter(",O",        opt_level,     0u,                        "optimization level");
+	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(), "dump intermediate representation (JSON)");
+	parser.addParameter("backend",   backendString, std::string(""),           "backend selection (for compatibility reasons - ignored)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -99,6 +104,13 @@ int main(int argc, char** argv) {
 		std::ofstream out(commonOptions.dumpIR.string());
 		out << core::printer::PrettyPrinter(program, core::printer::PrettyPrinter::PRINT_DEREFS);
 		std::cout << timer.step() << "s\n";
+	}
+
+	// dump JSON IR representation
+	if(!dumpJSON.empty()) {
+		std::cout << "Dumping JSON representation ...\n";
+		std::ofstream out(dumpJSON.string());
+		core::dump::json::dumpIR(out, program);
 	}
 
 	// perform semantic checks - also including the AllScale specific checks
