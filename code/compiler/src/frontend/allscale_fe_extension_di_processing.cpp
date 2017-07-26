@@ -27,17 +27,24 @@ namespace frontend {
 
 	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
 	                                                          insieme::frontend::conversion::Converter& converter) {
-		core::IRBuilder builder(irExpr->getNodeManager());
-		const auto& allscaleExt = irExpr->getNodeManager().getLangExtension<lang::AllscaleModule>();
+		auto& mgr = irExpr->getNodeManager();
+		core::IRBuilder builder(mgr);
+		auto& basic = mgr.getLangBasic();
+		const auto& allscaleExt = mgr.getLangExtension<lang::AllscaleModule>();
 
 		if(auto call = irExpr.isa<core::CallExprPtr>()) {
 			auto callee = call->getFunctionExpr();
 			auto calleeType = callee->getType().as<core::FunctionTypePtr>();
-			// TODO: if this is an instantiate node, we need to extract the child node
+
+			// if this is an instantiate node, we need to extract the actual callee
+			if(core::analysis::isCallOf(callee, basic.getInstantiate())) {
+				callee = core::analysis::getArgument(callee, 1);
+			}
+
+			// we only deal with literals
 			if(auto calleeLit = callee.isa<core::LiteralPtr>()) {
 				// check every intercepted method call
 				if(calleeType->isMember() && insieme::annotations::c::hasIncludeAttached(calleeLit)) {
-
 					// this lambda extracts the last statement in the body of the given FunctionDecl
 					auto extractLastChild = [](const clang::FunctionDecl* funcDecl) -> clang::Stmt* {
 						if(funcDecl->hasBody()) {

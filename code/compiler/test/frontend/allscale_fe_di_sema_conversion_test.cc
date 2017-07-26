@@ -22,6 +22,10 @@ namespace frontend {
 		runAllscaleTestOn("/inputs/allscale_di_sema_nonbaserange.cpp", true);
 	}
 
+	TEST(AllScaleDiSemaConversionTest, Templated) {
+		runAllscaleTestOn("/inputs/allscale_di_sema_templated.cpp", true);
+	}
+
 } // end namespace frontend
 } // end namespace compiler
 } // end namespace allscale

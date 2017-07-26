@@ -79,6 +79,7 @@ template<typename T>
 class TemplatedRange {
 	T indices[3];
 
+public:
 	TemplatedRange(T a, T b, T c) {
 		indices[0] = a;
 		indices[1] = b;
@@ -96,11 +97,11 @@ public:
 
 	TemplatedDI() {}
 
-	const double& operator[](INDEX_T i) const {
+	const T& operator[](INDEX_T i) const {
 		return data_item_element_access(*this, { i, i * 2, i + 3 }, data[i]);
 	}
 
-	double& operator[](INDEX_T i) {
+	T& operator[](INDEX_T i) {
 		return data_item_element_access(*this, { i, i * 2, i + 3 }, data[i]);
 	}
 
