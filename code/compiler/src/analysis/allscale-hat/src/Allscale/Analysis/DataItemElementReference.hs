@@ -112,9 +112,12 @@ elementReferenceValue addr = case getNodeType addr of
     
   where
 
-    noReference = Solver.mkVariable (idGen addr) [] (compose $ ElementReferenceSet $ BSet.empty)
+    noReferenceGen a = Solver.mkVariable (idGen a) [] (compose $ ElementReferenceSet $ BSet.empty)
+    noReference = noReferenceGen addr
 
-    analysis = mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue
+    analysis = (mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue) {
+        freeVariableHandler = noReferenceGen
+    }
 
     idGen = mkVarIdentifier analysis
 

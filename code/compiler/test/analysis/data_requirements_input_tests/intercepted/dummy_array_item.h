@@ -14,4 +14,12 @@ struct DummyArrayItem {
 	const int& get(int i) const {
 		return data_item_element_access(*this,i,x);
 	}
+
+	int& operator[](int i) {
+		return data_item_element_access(*this,i,x);
+	}
+
+	const int& operator[](int i) const {
+		return data_item_element_access(*this,i,x);
+	}
 };
