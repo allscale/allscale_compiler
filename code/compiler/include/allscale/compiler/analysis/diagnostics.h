@@ -85,6 +85,12 @@ namespace analysis {
 
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
+	enum class DiagnosisFlags : unsigned long {
+		All              = ~0u,
+		UnknownReference = (1ul << 0),
+		GlobalVariable   = (1ul << 1),
+	};
+
 	// a context object for re-using partial results of analysis calls
 	using AnalysisContext = insieme::analysis::cba::haskell::Context;
 
@@ -93,17 +99,19 @@ namespace analysis {
 	 *
 	 * @param context a context for the analysis to reuse partial results of previous analysis steps.
 	 * @param node the node to be analyzed
+	 * @param flags the combination of diagnosis to run on the target node
 	 * @return the list of diagnostic issues obtained for the given node
 	 */
-	Issues runDiagnostics(AnalysisContext& context, const insieme::core::NodeAddress& node);
+	Issues runDiagnostics(AnalysisContext& context, const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlags::All);
 
 	/**
 	 * A convenience entry for the diagnostics analysis, producing a temporary analysis context.
 	 *
 	 * @param node the node to be analyzed
+	 * @param flags the combination of diagnosis to run on the target node
 	 * @return the list of diagnostic issues obtained for the given node
 	 */
-	Issues runDiagnostics(const insieme::core::NodeAddress& node);
+	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlags::All);
 
 } // end namespace analysis
 } // end namespace compiler

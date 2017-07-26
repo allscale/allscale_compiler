@@ -13,7 +13,7 @@ extern "C" {
 
 	using namespace allscale::compiler::analysis;
 
-	Issues* hat_hs_diagnostics(StablePtr ctx, const HaskellNodeAddress node_hs);
+	Issues* hat_hs_diagnostics(StablePtr ctx, const HaskellNodeAddress node_hs, unsigned long flags);
 
 }
 
@@ -85,14 +85,14 @@ namespace analysis {
 		}
 	}
 
-	Issues runDiagnostics(const insieme::core::NodeAddress& node) {
+	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlags::All */) {
 		AnalysisContext context;
-		return runDiagnostics(context, node);
+		return runDiagnostics(context, node, flags);
 	}
 
-	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node) {
+	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlags::All */) {
 		auto node_hs = ctx.resolveNodeAddress(node);
-		Issues* res_ptr = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs);
+		Issues* res_ptr = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs, static_cast<unsigned long>(flags));
 		assert_true(res_ptr);
 
 		Issues res = std::move(*res_ptr);

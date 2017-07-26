@@ -8,6 +8,7 @@ import Debug.Trace
 import Control.DeepSeq (NFData)
 import Control.Monad
 import Data.Maybe
+import Data.Bits.Bitwise (toListLE)
 import Data.Set (Set)
 import Data.Typeable (Typeable)
 import Foreign
@@ -58,13 +59,14 @@ mkIssues = Issues . Set.fromList
 
 -- * Analysis Dispatcher
 
--- TODO parameterize sub analysis
-runDiagnostics :: Solver.SolverState -> NodeAddress -> (Issues, Solver.SolverState)
-runDiagnostics s addr = (Solver.join issues, ns)
+runDiagnostics :: Solver.SolverState -> NodeAddress -> [DiagnosisFunction] -> (Issues, Solver.SolverState)
+runDiagnostics s addr diags = (Solver.join issues, ns)
   where
-    (issues, ns) = Solver.resolveAll s [unknownReferenceDiagnosis addr, globalVariableDiagnosis addr]
+    (issues, ns) = Solver.resolveAll s $ diags <*> pure addr
 
 -- * Generic Diagnosis
+
+type DiagnosisFunction = NodeAddress -> Solver.TypedVar Issues
 
 data Diagnosis = Diagnosis { varGen        :: NodeAddress -> Solver.TypedVar Issues
                            , analysis      :: Solver.AnalysisIdentifier
@@ -232,13 +234,18 @@ globalVariableDiagnosis addr = diagnosis diag addr
 
 -- * FFI
 
-foreign export ccall "hat_hs_diagnostics"
-  hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr Issues)
+type DiagnosisFlags = CULong
 
-hsDiagnostics ctx_hs addr_hs = do
+foreign export ccall "hat_hs_diagnostics"
+  hsDiagnostics :: StablePtr Ctx.Context
+                -> StablePtr NodeAddress
+                -> DiagnosisFlags
+                -> IO (CRepPtr Issues)
+
+hsDiagnostics ctx_hs addr_hs diags = do
     ctx  <- deRefStablePtr ctx_hs
     addr <- deRefStablePtr addr_hs
-    let (res,ns) = runDiagnostics (Ctx.getSolverState ctx) addr
+    let (res,ns) = runDiagnostics (Ctx.getSolverState ctx) addr (selectDiags diags)
     let (ctx_c) = Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
     updateContext ctx_c ctx_nhs
@@ -266,3 +273,10 @@ passIssues ctx (Issues is) = do
     convertSeverity :: Severity -> CInt
     convertSeverity Warning = 0
     convertSeverity Error = 1
+
+selectDiags :: DiagnosisFlags -> [DiagnosisFunction]
+selectDiags = catMaybes . map sel . zip [0..] . toListLE
+  where
+    sel (0, True) = Just unknownReferenceDiagnosis
+    sel (1, True) = Just globalVariableDiagnosis
+    sel _         = Nothing

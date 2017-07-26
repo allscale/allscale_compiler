@@ -25,6 +25,7 @@ foreign-library allscale-hat
                         attoparsec >= 0.13,
                         attoparsec-binary >= 0.2,
                         base >= 4.7,
+                        bitwise >= 0.1,
                         bytestring >= 0.10,
                         containers >= 0.5,
                         deepseq >= 1.4,
