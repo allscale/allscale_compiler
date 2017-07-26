@@ -79,7 +79,7 @@ install_pkg() {
 }
 
 if [[ $# -eq 0 ]]; then
-	PACKAGES="llvm boost luajit cudd papi hwloc"
+	PACKAGES="llvm boost luajit cudd papi hwloc ghc cabal"
 else
 	PACKAGES="$@"
 fi
