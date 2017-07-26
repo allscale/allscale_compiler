@@ -1,6 +1,5 @@
-#include "allscale_analysis.h"
-
 #include <iostream>
+#include "allscale_analysis.h"
 
 int main() {
 

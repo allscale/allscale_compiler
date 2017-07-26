@@ -1,6 +1,6 @@
 #include "allscale/api/user/data/scalar.h"
 
-#include "allscale_analysis.h"
+#include "../../data_requirements_input_tests/allscale_analysis.h"
 
 using namespace allscale::api::user::data;
 

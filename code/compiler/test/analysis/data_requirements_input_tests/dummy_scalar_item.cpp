@@ -1,6 +1,6 @@
-#include "allscale_analysis.h"
-
 #include "intercepted/dummy_scalar_item.h"
+
+#include "allscale_analysis.h"
 
 int main() {
 
@@ -17,7 +17,7 @@ int main() {
 
 	// test some read access
 	{
-		cba_expect_data_requirements("{Requirement { ref_cast(v3, type_lit('c), type_lit('v), type_lit(cpp_ref))[0] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO }}");
 
 		// fabricate an artificial access
 		auto& ref = X.get();
@@ -29,7 +29,7 @@ int main() {
 
 	// test some write access
 	{
-		cba_expect_data_requirements("{Requirement { ref_cast(v3, type_lit('c), type_lit('v), type_lit(cpp_ref))[0] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RW }}");
 
 		// fabricate an artificial access
 		auto& ref = X.get();

@@ -28,7 +28,7 @@ namespace analysis {
 	namespace fs = boost::filesystem;
 
 	// the directory to load input files from
-	const auto ROOT_DIR = getAllscaleSourceRootDir() + "compiler/test/analysis/input_tests/";
+	const auto ROOT_DIR = getAllscaleSourceRootDir() + "compiler/test/analysis/data_requirements_input_tests/";
 
 	// the type definition (specifying the parameter type)
 	class DataRequirementInputTest : public ::testing::TestWithParam<std::string> {};
@@ -43,7 +43,6 @@ namespace analysis {
 		// check whether file is present
 		EXPECT_TRUE(fs::exists(file)) << "File " << file << " should exist!";
 		ASSERT_TRUE(fs::exists(file));
-		std::cout << "Loading: " << file << "... " << std::flush;
 
 		// set up converson job
 		insieme::frontend::ConversionJob job(file);
@@ -55,7 +54,9 @@ namespace analysis {
 		// load file using the frontend
 		NodeManager mgr;
 		auto prog = job.execute(mgr);
-		std::cout << "done" << std::endl;
+
+		// normalize the program (for stable variable ids)
+		prog = IRBuilder(mgr).normalize(prog);
 
 		// running semantic checks
 		auto res = core::checks::check(prog);
@@ -110,10 +111,10 @@ namespace analysis {
 				auto requirements = getDataRequirements(ctxt,compound);
 
 				// TODO: check the actual value
-				std::cout << "Expected requirements:   " << expected << "\n";
-				std::cout << "Identified requirements: " << requirements << "\n";
-//				EXPECT_EQ(expected,toString(requirements))
-//					<< *core::annotations::getLocation(call) << std::endl;
+//				std::cout << "Expected requirements:   " << expected << "\n";
+//				std::cout << "Identified requirements: " << requirements << "\n";
+				EXPECT_EQ(expected,toString(requirements))
+					<< *core::annotations::getLocation(call) << std::endl;
 
 				EXPECT_FALSE(requirements.isUniverse())
 					<< *core::annotations::getLocation(call) << std::endl;
