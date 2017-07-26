@@ -10,6 +10,7 @@ module Allscale.Analysis.Entities.DataRange(
     point,
     defineIteratorRange,
     passDataRange,
+    printRange,
 ) where
 
 import Control.DeepSeq
@@ -18,7 +19,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,updateContext)
+import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,updateContext, pprintTree)
 import Insieme.Inspire.Transform (substitute)
 
 import qualified Data.ByteString as BS
@@ -34,6 +35,10 @@ import qualified Insieme.Utils.BoundSet as BSet
 
 data DataPoint = DataPoint IR.Tree
     deriving (Eq,Ord,Show,Generic,NFData)
+
+printPoint :: DataPoint -> String
+printPoint (DataPoint t) = pprintTree t
+
     
 data DataSpan = DataSpan {
                     from :: DataPoint,
@@ -64,6 +69,13 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
         
         sub' o n t = substitute (Map.singleton o n) t
+
+printRange :: DataRange -> String
+printRange (DataRange BSet.Universe) = "-all-"
+printRange (DataRange set) = concat $ go <$> BSet.toList set
+  where
+    go (DataSpan a b) | a == b = printPoint a
+    go (DataSpan a b)          = "span(" ++ (printPoint a) ++ "," ++ (printPoint b) ++ ")"
 
 --
 -- * FFI

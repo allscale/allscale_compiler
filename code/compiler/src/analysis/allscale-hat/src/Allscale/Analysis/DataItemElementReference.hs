@@ -21,6 +21,7 @@ import Insieme.Analysis.SymbolicValue (SymbolicValueLattice,symbolicValue,generi
 import Insieme.Analysis.Reference (isMaterializingDeclaration,isMaterializingCall)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
+import Insieme.Adapter (pprintTree)
 
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Inspire as IR
@@ -63,10 +64,7 @@ data ElementReference = ElementReference {
             reference :: IR.Tree,
             range     :: DataRange
         } 
-    deriving (Eq,Ord,Generic,NFData)
-
-instance Show ElementReference where
-    show (ElementReference _ r) = "ElementReference{some-ir-tree," ++ (show r) ++ "}"
+    deriving (Eq,Ord,Show,Generic,NFData)
 
 --
 -- * A lattice for the data item reference analysis
@@ -78,10 +76,16 @@ data ElementReferenceSet = ElementReferenceSet (BSet.UnboundSet ElementReference
 instance Solver.Lattice ElementReferenceSet where
     bot   = ElementReferenceSet $ BSet.empty
     merge (ElementReferenceSet a) (ElementReferenceSet b) = ElementReferenceSet $ BSet.union a b
+    print = printReferenceSet
 
 instance Solver.ExtLattice ElementReferenceSet where
     top   = ElementReferenceSet $ BSet.Universe
 
+
+printReferenceSet (ElementReferenceSet BSet.Universe) = "{ - all - }"
+printReferenceSet (ElementReferenceSet set) = "{" ++ (concat $ go <$> BSet.toList set) ++ "}"
+  where
+    go (ElementReference ref range) = (pprintTree ref) ++ "[" ++ (printRange range) ++ "]"
 
 --
 -- * Element Reference Analysis token
@@ -121,7 +125,7 @@ elementReferenceValue addr = case getNodeType addr of
 
     idGen = mkVarIdentifier analysis
 
-    opsHandler = [ refElementHandler, refDeclHandler ]
+    opsHandler = [ refElementHandler, refCreationHandler, refForwardHandler ]
     
     refElementHandler = OperatorHandler cov dep val
       where
@@ -137,10 +141,18 @@ elementReferenceValue addr = case getNodeType addr of
         rangeVar = symbolicValueWithIterators $ goDown 1 $ goDown 3 addr
         rangeVal a = BSet.changeBound $ toValue $ Solver.get a rangeVar
     
-    refDeclHandler = OperatorHandler cov noDep val
+    refCreationHandler = OperatorHandler cov noDep val
       where
         cov a = any (isBuiltin a) [ "ref_decl", "ref_alloc" ]
         val _ _ = compose $ ElementReferenceSet $ BSet.empty
+        
+    refForwardHandler = OperatorHandler cov dep val
+      where
+        cov a = any (isBuiltin a) [ "ref_member_access" ]
+        dep _ _ = [Solver.toVar refVar]
+        val _ a = Solver.get a refVar
+        
+        refVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
         
     noDep _ _ = []
     
