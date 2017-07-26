@@ -16,14 +16,14 @@ source "$INSTALLER_DIR/defaults.sh"
 
 for pkg in "$FALLBACK_DIR/package_"*.sh; do
 	load_package "$(basename "$pkg")"
-	if pkg_is_installed; then
+	if pkg_is_locally_installed; then
 		ln -sfT "$PREFIX/$PACKAGE" "$THIRD_PARTY_DIR/$NAME"
 	fi
 done
 
 for pkg in "$INSTALLER_DIR/package_"*.sh; do
 	load_package "$(basename "$pkg")"
-	if pkg_is_installed; then
+	if pkg_is_locally_installed; then
 		ln -sfT "$PREFIX/$PACKAGE" "$THIRD_PARTY_DIR/$NAME"
 	fi
 done
