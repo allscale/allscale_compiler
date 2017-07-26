@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
 	}
 
 	// run diagnostics analysis
-	{
+	/*{
 		std::cout << "Running diagnostics ... " << std::flush;
 		auto issues = allscale::compiler::analysis::runDiagnostics(core::NodeAddress(program));
 		if(issues.empty()) {
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 				allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
 			}
 		}
-	}
+	}*/
 
 	// Step 4: convert src file to target code
 	std::cout << "Producing target code ... " << std::flush;
