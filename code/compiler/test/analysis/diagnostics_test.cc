@@ -67,7 +67,11 @@ namespace analysis {
 		}
 
 		// PRINT DIAGNOSTICS OUTPUT
-		//std::cout << diag_output.str();
+		//{
+		//	auto out = diag_output.str();
+		//	boost::replace_all(out, input_filepath, "<input_filepath>");
+		//	std::cout << out << std::flush;
+		//}
 
 		std::ifstream expected_diag_output(input_diag_filepath);
 		ASSERT_TRUE(expected_diag_output.good()) << "could not open file containing expected diagnostics output";
