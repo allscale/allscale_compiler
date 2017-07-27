@@ -37,7 +37,7 @@ add_custom_command(
 
 	# insieme_hat ought to already have done 'cabal update'
 
-	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/insieme-hat.project -v1 --enable-tests
+	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project -v1 --enable-tests
 
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
@@ -68,5 +68,3 @@ if(BUILD_DOCS)
 endif()
 
 set(allscale_hat ${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so PARENT_SCOPE)
-
-

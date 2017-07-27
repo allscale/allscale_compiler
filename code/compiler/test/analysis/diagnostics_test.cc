@@ -99,30 +99,10 @@ namespace analysis {
 		ASSERT_TRUE(diag_output.eof()) << "double check expected diag output for trailing newline";
 	}
 
-	std::vector<std::string> getFilenames() {
-		fs::path root(INPUT_TESTS_DIR);
-		assert_true(fs::is_directory(root));
-
-		std::vector<std::string> input_files;
-		for(const auto& entry : boost::make_iterator_range(fs::recursive_directory_iterator(root), {})) {
-			if(containsSubString(entry.path().string(), "disabled_")) {
-				continue;
-			}
-
-			auto ext = entry.path().extension().string();
-			if(ext != ".c" && ext != ".cpp") {
-				continue;
-			}
-
-			auto path = entry.path().string().substr(INPUT_TESTS_DIR.size());
-			input_files.push_back(path);
-		}
-
-		std::sort(input_files.begin(), input_files.end());
-		return input_files;
-	}
-
-	INSTANTIATE_TEST_CASE_P(InputFileChecks, DiagnosticsInputTest, ::testing::ValuesIn(getFilenames()), TestCaseNamePrinter());
+	INSTANTIATE_TEST_CASE_P(InputFileChecks,
+	                        DiagnosticsInputTest,
+	                        ::testing::ValuesIn(collectInputFiles(INPUT_TESTS_DIR, {".c", ".cpp"})),
+	                        TestCaseNamePrinter());
 
 } // end namespace analysis
 } // end namespace compiler
