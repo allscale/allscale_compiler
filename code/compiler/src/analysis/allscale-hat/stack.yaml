@@ -1,5 +1,0 @@
-resolver: lts-8.22
-
-packages:
-- '.'
-- '../../../../../insieme/code/analysis/src/cba/haskell/insieme-hat'
