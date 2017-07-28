@@ -19,6 +19,14 @@ target_link_libraries(compiler
 	utils
 )
 
+# Haskell dependency
+if(NOT MSVC)
+	add_subdirectory(src/analysis/allscale-hat)
+	link_directories(${CMAKE_CURRENT_BINARY_DIR}/src/analysis/allscale-hat)
+	add_dependencies(compiler allscale_hat)
+	target_link_libraries(compiler ${allscale_hat})
+endif()
+
 # include generated configs
 target_include_directories(compiler PUBLIC ${PROJECT_BINARY_DIR})
 

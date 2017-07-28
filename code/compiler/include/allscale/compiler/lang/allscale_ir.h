@@ -82,6 +82,7 @@ namespace lang {
 
 		LANG_EXT_LITERAL(DataItemElementAccess, "data_item_element_access",
 			"(ref<'data_item, 'c, 'v, 'k>, 'region, type<ref<'element_type, 'c2, 'v2, 'k2>>) -> ref<'element_type, 'c2, 'v2, 'k2>")
+
 	};
 
 	class RecOrPrecFunType {

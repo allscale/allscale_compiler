@@ -1,0 +1,5 @@
+Error: [Basic] Write access to unknown location
+                from: "main"
+<input_filepath>@5:5-5:10
+    *p = 21;
+    ^~~~~~

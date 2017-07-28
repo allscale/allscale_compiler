@@ -7,6 +7,7 @@
 #include "insieme/utils/timer.h"
 
 #include "insieme/core/checks/ir_checks.h"
+#include "insieme/core/dump/json_dump.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/cmd/common_options.h"
@@ -14,8 +15,10 @@
 #include "insieme/driver/utils/driver_utils.h"
 
 #include "allscale/compiler/config.h"
+#include "allscale/compiler/env_vars.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/checks/allscale_checks.h"
+#include "allscale/compiler/analysis/diagnostics.h"
 #include "allscale/compiler/backend/allscale_backend.h"
 
 namespace driver = insieme::driver;
@@ -36,6 +39,9 @@ int main(int argc, char** argv) {
 	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
 	std::string backendString;
 
+	// Allows the AllScale driver to dump an input code as JSON.
+	insieme::frontend::path dumpJSON;
+
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
@@ -44,8 +50,9 @@ int main(int argc, char** argv) {
 	commonOptions.addFlagsAndParameters(parser);
 
 	// register allscalecc specific flags and parameters
-	parser.addParameter(",O",       opt_level,     0u,              "optimization level");
-	parser.addParameter("backend", backendString, std::string(""), "backend selection (for compatibility reasons - ignored)");
+	parser.addParameter(",O",        opt_level,     0u,                        "optimization level");
+	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(), "dump intermediate representation (JSON)");
+	parser.addParameter("backend",   backendString, std::string(""),           "backend selection (for compatibility reasons - ignored)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -99,6 +106,13 @@ int main(int argc, char** argv) {
 		std::cout << timer.step() << "s\n";
 	}
 
+	// dump JSON IR representation
+	if(!dumpJSON.empty()) {
+		std::cout << "Dumping JSON representation ...\n";
+		std::ofstream out(dumpJSON.string());
+		core::dump::json::dumpIR(out, program);
+	}
+
 	// perform semantic checks - also including the AllScale specific checks
 	if(commonOptions.checkSema || commonOptions.checkSemaOnly) {
 
@@ -126,6 +140,21 @@ int main(int argc, char** argv) {
 		// end program if this is all that is requested
 		if(commonOptions.checkSemaOnly) { return errors.empty() ? 0 : 1; }
 	}
+
+	// run diagnostics analysis
+	/*{
+		std::cout << "Running diagnostics ... " << std::flush;
+		auto issues = allscale::compiler::analysis::runDiagnostics(core::NodeAddress(program));
+		if(issues.empty()) {
+			std::cout << "done\n";
+		} else {
+			std::cout << "\n";
+			bool printNodeAddresses = std::getenv(ALLSCALE_DIAG_NODE_ADDRESSES);
+			for(const auto& issue : issues) {
+				allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
+			}
+		}
+	}*/
 
 	// Step 4: convert src file to target code
 	std::cout << "Producing target code ... " << std::flush;
