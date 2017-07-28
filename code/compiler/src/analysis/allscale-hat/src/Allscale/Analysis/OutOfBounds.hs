@@ -10,12 +10,16 @@ module Allscale.Analysis.OutOfBounds (
     OutOfBoundsResult(..),
 ) where
 
+import Debug.Trace
+
 import Control.DeepSeq
 import Control.Monad
 import Data.Foldable (or)
 import Data.Typeable
-import Debug.Trace
+import Foreign
+import Foreign.C.Types
 import GHC.Generics (Generic)
+import Insieme.Adapter (updateContext)
 import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
@@ -29,6 +33,7 @@ import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Context as Ctx
 import qualified Insieme.Utils.Arithmetic as Ar
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -143,3 +148,18 @@ goesDown l = foldr1 (.) $ goDown <$> reverse l
 
 tracePrefix :: Show a => String -> a -> a
 tracePrefix prefix obj = traceShow (prefix ++ ": " ++ show obj) obj
+
+-- * FFI
+
+foreign export ccall "hat_out_of_bounds"
+  hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+
+hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+hsOutOfBounds ctx_hs expr_hs = do
+    ctx  <- deRefStablePtr ctx_hs
+    expr <- deRefStablePtr expr_hs
+    let (result,ns) = outOfBounds (Ctx.getSolverState ctx) expr
+    let ctx_c = Ctx.getCContext ctx
+    ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
+    updateContext ctx_c ctx_nhs
+    return $ fromIntegral $ fromEnum result

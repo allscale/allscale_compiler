@@ -15,8 +15,7 @@ foreign-library allscale-hat
     ghc-options:        -Wall -Wno-name-shadowing -Wno-type-defaults -Wno-unused-do-bind
                         -O2 -optc-O3
     hs-source-dirs:     src
-    other-modules:      Allscale.Adapter,
-                        Allscale.Analysis.Entities.DataRange,
+    other-modules:      Allscale.Analysis.Entities.DataRange,
                         Allscale.Analysis.DataItemElementReference,
                         Allscale.Analysis.DataRequirements,
                         Allscale.Analysis.Diagnostics,
