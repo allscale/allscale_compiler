@@ -20,6 +20,7 @@ foreign import ccall "hat_update_context"
 foreign export ccall "hat_out_of_bounds"
   outOfBounds :: StablePtr Ctx.Context -> StablePtr Addr.NodeAddress -> IO CInt
 
+outOfBounds :: StablePtr Ctx.Context -> StablePtr Addr.NodeAddress -> IO CInt
 outOfBounds ctx_hs expr_hs = do
     ctx  <- deRefStablePtr ctx_hs
     expr <- deRefStablePtr expr_hs

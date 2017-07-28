@@ -14,15 +14,11 @@ module Allscale.Analysis.Entities.DataRange(
 ) where
 
 import Control.DeepSeq
-import Control.Monad
-import Foreign
-import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,updateContext, pprintTree)
+import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,pprintTree)
 import Insieme.Inspire.Transform (substitute)
 
-import qualified Data.ByteString as BS
 import qualified Data.Map as Map
 import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR

@@ -12,8 +12,8 @@ foreign-library allscale-hat
     if os(windows)
       options: standalone
 
-    ghc-options:        -O2
-                        -optc-O3
+    ghc-options:        -Wall -Wno-name-shadowing -Wno-type-defaults -Wno-unused-do-bind
+                        -O2 -optc-O3
     hs-source-dirs:     src
     other-modules:      Allscale.Adapter,
                         Allscale.Analysis.Entities.DataRange,

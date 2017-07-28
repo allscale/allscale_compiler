@@ -13,8 +13,6 @@ module Allscale.Analysis.OutOfBounds (
 import Control.DeepSeq
 import Control.Monad
 import Data.Foldable (or)
-import Data.List
-import Data.Maybe
 import Data.Typeable
 import Debug.Trace
 import GHC.Generics (Generic)
@@ -26,14 +24,11 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValu
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
-import Insieme.Inspire.Visit
-import Insieme.Utils.ParseInt
 
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.Arithmetic as Ar
 import qualified Insieme.Utils.BoundSet as BSet
 

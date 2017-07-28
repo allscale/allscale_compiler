@@ -3,7 +3,7 @@
 
 module Allscale.Analysis.Diagnostics where
 
-import Debug.Trace
+--import Debug.Trace
 
 import Control.DeepSeq (NFData)
 import Control.Monad
@@ -15,10 +15,10 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,updateContext,passNodeAddress,withArrayUnsignedLen)
+import Insieme.Adapter (CRepPtr,CRepArr,updateContext,passNodeAddress,withArrayUnsignedLen)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.Reference
 import Insieme.Inspire.NodeAddress
@@ -53,8 +53,10 @@ instance Solver.Lattice Issues where
     bot = Issues Set.empty
     Issues x `merge` Issues y = Issues $ Set.union x y
 
+mkOneIssue :: Issue -> Issues
 mkOneIssue = Issues . Set.singleton
 
+mkIssues :: [Issue] -> Issues
 mkIssues = Issues . Set.fromList
 
 -- * Analysis Dispatcher
@@ -180,7 +182,7 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
         cov a = isBuiltin a "ref_assign"
         val _ = handleOp "Write"
 
-    dep _ a = Solver.toVar <$> [referenceVar]
+    dep _ _ = Solver.toVar <$> [referenceVar]
 
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
     referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
@@ -217,7 +219,7 @@ globalVariableDiagnosis addr = diagnosis diag addr
         cov a = isBuiltin a "ref_assign"
         val _ = handleOp "Write"
 
-    dep _ a = Solver.toVar <$> [referenceVar]
+    dep _ _ = Solver.toVar <$> [referenceVar]
 
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
     referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
@@ -237,11 +239,9 @@ globalVariableDiagnosis addr = diagnosis diag addr
 type DiagnosisFlags = CULong
 
 foreign export ccall "hat_hs_diagnostics"
-  hsDiagnostics :: StablePtr Ctx.Context
-                -> StablePtr NodeAddress
-                -> DiagnosisFlags
-                -> IO (CRepPtr Issues)
+  hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (CRepPtr Issues)
 
+hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (CRepPtr Issues)
 hsDiagnostics ctx_hs addr_hs diags = do
     ctx  <- deRefStablePtr ctx_hs
     addr <- deRefStablePtr addr_hs

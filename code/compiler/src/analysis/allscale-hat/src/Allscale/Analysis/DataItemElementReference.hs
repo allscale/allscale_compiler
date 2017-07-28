@@ -82,6 +82,7 @@ instance Solver.ExtLattice ElementReferenceSet where
     top   = ElementReferenceSet $ BSet.Universe
 
 
+printReferenceSet :: ElementReferenceSet -> String
 printReferenceSet (ElementReferenceSet BSet.Universe) = "{ - all - }"
 printReferenceSet (ElementReferenceSet set) = "{" ++ (concat $ go <$> BSet.toList set) ++ "}"
   where

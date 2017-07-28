@@ -7,34 +7,22 @@
 
 module Allscale.Analysis.DataRequirements where
 
+--import Debug.Trace
+
 import Allscale.Analysis.Entities.DataRange
 import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
-import Control.Monad
-import Data.Foldable (or)
-import Data.List
-import Data.Maybe
 import Data.Typeable
-import Debug.Trace
 import Foreign
-import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRep,CSet,CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext)
-import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
+import Insieme.Adapter (CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext)
 import Insieme.Analysis.Callable
-import Insieme.Analysis.Entities.FieldIndex
-import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
-import Insieme.Analysis.Framework.Dataflow
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
-import Insieme.Analysis.Framework.Utils.OperatorHandler
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
-import Insieme.Inspire.Visit
 
-import qualified Data.ByteString as BS
-import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR
@@ -284,6 +272,7 @@ dataRequirements addr = case getNode addr of
 foreign export ccall "hat_hs_data_requirements"
   hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
 
+hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
 hsDataRequirements ctx_hs stmt_hs = do
     ctx  <- deRefStablePtr ctx_hs
     stmt <- deRefStablePtr stmt_hs
