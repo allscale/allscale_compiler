@@ -85,10 +85,10 @@ namespace analysis {
 
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
-	enum class DiagnosisFlags : unsigned long {
-		All              = ~0u,
-		UnknownReference = (1ul << 0),
-		GlobalVariable   = (1ul << 1),
+	enum DiagnosisFlags : unsigned long {
+		DiagnosisFlagsAll              = ~0u,
+		DiagnosisFlagsUnknownReference = (1ul << 0),
+		DiagnosisFlagsGlobalVariable   = (1ul << 1),
 	};
 
 	// a context object for re-using partial results of analysis calls
@@ -102,7 +102,7 @@ namespace analysis {
 	 * @param flags the combination of diagnosis to run on the target node
 	 * @return the list of diagnostic issues obtained for the given node
 	 */
-	Issues runDiagnostics(AnalysisContext& context, const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlags::All);
+	Issues runDiagnostics(AnalysisContext& context, const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlagsAll);
 
 	/**
 	 * A convenience entry for the diagnostics analysis, producing a temporary analysis context.
@@ -111,7 +111,7 @@ namespace analysis {
 	 * @param flags the combination of diagnosis to run on the target node
 	 * @return the list of diagnostic issues obtained for the given node
 	 */
-	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlags::All);
+	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags = DiagnosisFlagsAll);
 
 } // end namespace analysis
 } // end namespace compiler

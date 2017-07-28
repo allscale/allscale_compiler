@@ -85,14 +85,14 @@ namespace analysis {
 		}
 	}
 
-	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlags::All */) {
+	Issues runDiagnostics(const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlagsAll */) {
 		AnalysisContext context;
 		return runDiagnostics(context, node, flags);
 	}
 
-	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlags::All */) {
+	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlagsAll */) {
 		auto node_hs = ctx.resolveNodeAddress(node);
-		Issues* res_ptr = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs, static_cast<unsigned long>(flags));
+		Issues* res_ptr = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs, flags);
 		assert_true(res_ptr);
 
 		Issues res = std::move(*res_ptr);
