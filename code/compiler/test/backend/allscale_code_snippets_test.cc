@@ -12,7 +12,7 @@
 #include "allscale/compiler/checks/allscale_checks.h"
 
 
-#include "../frontend/test_utils.inc"
+#include "test_utils.inc"
 
 namespace allscale {
 namespace compiler {
@@ -611,7 +611,7 @@ namespace backend {
 							a.get();
 							b.get();
 							return done(true);
-						} 
+						}
 					))(full).get();
 
 					return 0;
@@ -664,7 +664,7 @@ namespace backend {
 							a.get();
 							b.get();
 							return done(true);
-						} 
+						}
 					))(range{0,1000}).get();
 
 					return 0;
@@ -731,7 +731,7 @@ namespace backend {
 				using namespace allscale::api::core;
 
 				int main(int argc, char** argv) {
-					
+
 					prec(fun(
 						[](int)->bool { return true; },
 						[](int) {},
@@ -1177,7 +1177,7 @@ namespace backend {
 
 				using namespace allscale::api::core;
 				using namespace allscale::api::user;
-				
+
 				int main(int argc, char** argv) {
 
 					pfor(0,10,[](int){

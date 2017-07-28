@@ -8,86 +8,74 @@
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 
+#include "allscale_fe_test_utils.h"
+
 namespace allscale {
 namespace compiler {
 namespace frontend {
 
-#define ALLSCALE_ROOT_DIR insieme::utils::getInsiemeSourceRootDir() + "../../"
-#define ALLSCALE_FRONTEND_TEST_DIR ALLSCALE_ROOT_DIR + "code/compiler/test/frontend/"
-
-	namespace {
-		void runAllscaleTestOn(const string& filename) {
-			insieme::frontend::utils::runConversionTestOn(filename, [](insieme::frontend::ConversionJob& job) {
-				configureConversionJob(job);
-			}, [](insieme::core::NodeManager& mgr, insieme::core::lang::symbol_map& symbols) {
-				auto allscaleSymbols = mgr.getLangExtension<compiler::lang::AllscaleModule>().getSymbols();
-				symbols.insert(allscaleSymbols.begin(), allscaleSymbols.end());
-			}, [](const insieme::core::NodePtr& node) { return allscale::compiler::checks::check(node); });
-		}
-	}
-
 	TEST(AllScaleConversionTest, Basic) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic.cpp");
+		runAllscaleTestOn("/inputs/allscale_basic.cpp");
 	}
 
 	TEST(AllScaleConversionTest, BasicNonTrivial) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_basic_non_trivial.cpp");
+		runAllscaleTestOn("/inputs/allscale_basic_non_trivial.cpp");
 	}
 
 	TEST(AllScaleConversionTest, CtorInitExprs) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_ctor_init_exprs.cpp");
+		runAllscaleTestOn("/inputs/allscale_ctor_init_exprs.cpp");
 	}
 
 	TEST(AllScaleConversionTest, DependencyOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_dependency_ops.cpp");
+		runAllscaleTestOn("/inputs/allscale_dependency_ops.cpp");
 	}
 
 	TEST(AllScaleConversionTest, Fib) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fib.cpp");
+		runAllscaleTestOn("/inputs/allscale_fib.cpp");
 	}
 
 	TEST(AllScaleConversionTest, FunOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_fun_ops.cpp");
+		runAllscaleTestOn("/inputs/allscale_fun_ops.cpp");
 	}
 
 	TEST(AllScaleConversionTest, Members) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_members.cpp");
+		runAllscaleTestOn("/inputs/allscale_members.cpp");
 	}
 
 	TEST(AllScaleConversionTest, Pfor) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pfor.cpp");
+		runAllscaleTestOn("/inputs/allscale_pfor.cpp");
 	}
 
 	TEST(AllScaleConversionTest, Pick) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_pick.cpp");
+		runAllscaleTestOn("/inputs/allscale_pick.cpp");
 	}
 
 	TEST(AllScaleConversionTest, PrecDeps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_deps.cpp");
+		runAllscaleTestOn("/inputs/allscale_prec_deps.cpp");
 	}
 
 	TEST(AllScaleConversionTest, PrecNonTreetureStep) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_non_treeture_step.cpp");
+		runAllscaleTestOn("/inputs/allscale_prec_non_treeture_step.cpp");
 	}
 
 	TEST(AllScaleConversionTest, PrecVariants) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_variants.cpp");
+		runAllscaleTestOn("/inputs/allscale_prec_variants.cpp");
 	}
 
 	TEST(AllScaleConversionTest, PrecVoid) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_prec_void.cpp");
+		runAllscaleTestOn("/inputs/allscale_prec_void.cpp");
 	}
 
 	TEST(AllScaleConversionTest, TaskRefOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_task_ref_ops.cpp");
+		runAllscaleTestOn("/inputs/allscale_task_ref_ops.cpp");
 	}
 
 	TEST(AllScaleConversionTest, TreetureOps) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_treeture_ops.cpp");
+		runAllscaleTestOn("/inputs/allscale_treeture_ops.cpp");
 	}
 
 	TEST(AllScaleConversionTest, Types) {
-		runAllscaleTestOn(ALLSCALE_FRONTEND_TEST_DIR + "/inputs/allscale_types.cpp");
+		runAllscaleTestOn("/inputs/allscale_types.cpp");
 	}
 
 } // end namespace frontend

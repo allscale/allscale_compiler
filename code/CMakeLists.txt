@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(allscale LANGUAGES C CXX)
 
 # -- Module Path
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake ${PROJECT_SOURCE_DIR}/../insieme/cmake ${CMAKE_MODULE_PATH})
 
 # -- Prefix Path
 set(THIRD_PARTY_DIR ${CMAKE_BINARY_DIR}/third_party CACHE STRING "Third Party Library Directory")
@@ -21,7 +21,13 @@ include(doxygen)
 include(dependencies/pthread)
 include(dependencies/googletest)
 include(dependencies/boost)
+include(dependencies/stack)
 include(dependencies/valgrind)
+include(dependencies/gmp)
+include(dependencies/zlib)
+include(dependencies/cabal)
+include(dependencies/ghc)
+
 
 # -- CMake Modules
 include(add_module)
@@ -30,7 +36,9 @@ include(msvc_source_group)
 include(nproc)
 
 # -- Insieme
+set(ANALYSIS_HASKELL ON CACHE BOOL "Haskell-based Analysis Toolkit Switch" FORCE)
 set(BUILD_RUNTIME OFF CACHE BOOL "Insieme Runtime Switch" FORCE)
+set(HAT_PACKAGE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/compiler/src/analysis/allscale-hat/ ${HAT_PACKAGE_PATHS}")
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
 
 # -- AllScale Runtime
