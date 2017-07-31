@@ -13,7 +13,7 @@ if $RUNNING_ON_CI_SERVER; then
     git config url./ssd/git-mirrors/allscale_api.git.insteadOf     https://github.com/allscale/allscale_api.git
     git config url./ssd/git-mirrors/insieme_base.git.insteadOf     https://github.com/insieme/insieme.git
 
-    git submodule update --init --checkout
+    ( cd "$WORKSPACE"; git submodule update --init --checkout )
 fi
 
 # Create build directory if it does not exist.
