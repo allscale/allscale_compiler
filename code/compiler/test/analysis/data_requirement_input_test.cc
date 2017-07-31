@@ -107,8 +107,8 @@ namespace analysis {
 				expected = expected.substr(1,expected.size()-2);
 
 				// for now, we have to create a temporary context
-				ctxt = std::move(insieme::analysis::cba::haskell::Context());
-				auto requirements = getDataRequirements(ctxt,compound);
+				insieme::analysis::cba::haskell::Context ctxt_;
+				auto requirements = getDataRequirements(ctxt_, compound);
 
 				// TODO: check the actual value
 //				std::cout << "Expected requirements:   " << expected << "\n";
