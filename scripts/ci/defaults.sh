@@ -24,8 +24,7 @@ export IRT_NUM_WORKERS="3"
 export NUM_WORKERS="3"
 
 # Are we running on our CI server?
+export RUNNING_ON_CI_SERVER=${RUNNING_ON_CI_SERVER:-false}
 if [[ "$(hostname)" == "hudson.dps.uibk.ac.at" ]]; then
-	export RUNNING_ON_CI_SERVER="1"
-else
-	export RUNNING_ON_CI_SERVER=""
+	export RUNNING_ON_CI_SERVER=true
 fi

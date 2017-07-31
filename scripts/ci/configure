@@ -7,6 +7,13 @@ if [[ -z "${WORKSPACE+x}" ]]; then
 	source defaults.sh
 fi
 
+if $RUNNING_ON_CI_SERVER; then
+    git config url./ssd/git-mirrors/hpx.git.insteadOf              https://github.com/STEllAR-GROUP/hpx.git
+    git config url./ssd/git-mirrors/allscale_runtime.git.insteadOf https://github.com/allscale/allscale_runtime.git
+    git config url./ssd/git-mirrors/allscale_api.git.insteadOf     https://github.com/allscale/allscale_api.git
+    git config url./ssd/git-mirrors/insieme_base.git.insteadOf     https://github.com/insieme/insieme.git
+fi
+
 # Create build directory if it does not exist.
 mkdir -p "$BUILD_DIR"
 

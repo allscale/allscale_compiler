@@ -32,7 +32,7 @@ compiler/allscale_integration_tests --preprocess
 insieme/driver/integration_tests --preprocess "$WORKSPACE/test/allscale"
 
 # Setup restrictions and permissions for CI server.
-if [[ -n "$RUNNING_ON_CI_SERVER" ]]; then
+if $RUNNING_ON_CI_SERVER; then
 	# Set permissions for RAPL tests.
 	sudo /sbin/setcap cap_sys_rawio=ep runtime/ut_runtime_energy_test
 	sudo /sbin/setcap cap_sys_rawio=ep runtime/ut_runtime_instrumentation_regions_test
