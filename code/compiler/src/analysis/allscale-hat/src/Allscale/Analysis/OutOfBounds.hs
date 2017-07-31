@@ -20,11 +20,11 @@ import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
 import Insieme.Adapter (updateContext)
-import Insieme.Analysis.Arithmetic (arithmeticValue,SymbolicFormulaSet)
+import Insieme.Analysis.Arithmetic (arithmeticValue, SymbolicFormulaSet(..))
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
@@ -70,8 +70,8 @@ outOfBounds init addr = (result,ns')
                      $ elementCount
                      $ goDown 1 $ goDown 2 addr
 
-    arraySize :: SymbolicFormulaSet BSet.Unbound
-    arraySize = BSet.changeBound $ toValue arraySize'
+    arraySize :: BSet.UnboundSet SymbolicFormula
+    arraySize = BSet.changeBound $ unSFS $ toValue arraySize'
 
 -- * Array Index
 
@@ -83,6 +83,7 @@ convertArrayIndex :: Ref.ReferenceSet SimpleFieldIndex -> BSet.UnboundSet ArrayA
 convertArrayIndex = BSet.changeBound
                   . BSet.map (maybe InvalidArrayAccess ArrayAccess)
                   . BSet.map (toDataPath >=> toPath >=> toFormula)
+                  . Ref.unRS
   where
     toDataPath :: Ref.Reference i -> Maybe (DP.DataPath i)
     toDataPath (Ref.Reference _ dp) = Just dp
@@ -112,7 +113,7 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
       where
         cov a = isBuiltin a "ref_null"
         dep _ _ = []
-        val _ _ = toComposed $ BSet.singleton $ Ar.zero
+        val _ _ = toComposed $ SymbolicFormulaSet $ BSet.singleton $ Ar.zero
 
     noChange = OperatorHandler cov dep val
       where
@@ -120,7 +121,7 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
         dep _ _ = [Solver.toVar baseRefVar]
         val _ a = Solver.get a baseRefVar
 
-        baseRefVar   = elementCount $ goDown 1 $ goDown 2 addr
+        baseRefVar = elementCount $ goDown 1 $ goDown 2 addr
 
     creation = OperatorHandler cov dep val
       where
@@ -134,7 +135,7 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
       where
         cov a = any (isBuiltin a) ["ref_decl", "ref_new"] && not isRefArray
         dep _ _ = []
-        val _ _ = toComposed $ BSet.singleton $ Ar.one
+        val _ _ = toComposed $ SymbolicFormulaSet $ BSet.singleton $ Ar.one
 
     isRefArray = maybeToBool $ isArrayType <$> (getReferencedType $ goDown 0 addr)
 

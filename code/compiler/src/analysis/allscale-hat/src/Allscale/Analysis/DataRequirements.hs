@@ -19,7 +19,7 @@ import GHC.Generics (Generic)
 import Insieme.Adapter (CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
-import Insieme.Analysis.SymbolicValue (symbolicValue)
+import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
@@ -240,8 +240,8 @@ dataRequirements addr = case getNode addr of
             
             fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- BSet.toList toVals ]
           
-            fromVals = toValue $ Solver.get a beginValVar
-            toVals   = toValue $ Solver.get a endValVar
+            fromVals = unSVS $ toValue $ Solver.get a beginValVar
+            toVals   = unSVS $ toValue $ Solver.get a endValVar
     
     
     -- for everything else we aggregate the requirements of the child nodes

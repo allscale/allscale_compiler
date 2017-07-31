@@ -187,7 +187,7 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
     referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
 
-    referenceVal a = toValue $ Solver.get a referenceVar
+    referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 
     isUnknown = BSet.isUniverse . referenceVal
 
@@ -224,7 +224,7 @@ globalVariableDiagnosis addr = diagnosis diag addr
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
     referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
 
-    referenceVal a = toValue $ Solver.get a referenceVar
+    referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 
     globalAccess (Reference l _) = IR.Literal == getNodeType l
     globalAccess _ = False

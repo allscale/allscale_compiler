@@ -9,16 +9,16 @@ module Allscale.Analysis.DataItemElementReference (
     elementReferenceValue
 ) where
 
-import Allscale.Analysis.Entities.DataRange 
+import Allscale.Analysis.Entities.DataRange
 import Control.DeepSeq
 import Data.Typeable
 import GHC.Generics (Generic)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Framework.Dataflow
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed,toValue)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
-import Insieme.Analysis.SymbolicValue (SymbolicValueLattice,symbolicValue,genericSymbolicValue)
-import Insieme.Analysis.Reference (isMaterializingDeclaration,isMaterializingCall)
+import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), SymbolicValueLattice, symbolicValue, genericSymbolicValue)
+import Insieme.Analysis.Reference (isMaterializingDeclaration, isMaterializingCall)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 import Insieme.Adapter (pprintTree)
@@ -49,11 +49,11 @@ symbolicValueWithIterators = genericSymbolicValue analysis
 
     iterVarHandler iter = Solver.mkVariable varId [] val
       where
-      
+
         varId = mkVarIdentifier analysis iter
-        
-        val = toComposed $ BSet.singleton $ getNode iter 
-     
+
+        val = toComposed $ SymbolicValueSet $ BSet.singleton $ getNode iter
+
 
 
 --
@@ -63,7 +63,7 @@ symbolicValueWithIterators = genericSymbolicValue analysis
 data ElementReference = ElementReference {
             reference :: IR.Tree,
             range     :: DataRange
-        } 
+        }
     deriving (Eq,Ord,Show,Generic,NFData)
 
 --
@@ -114,7 +114,7 @@ elementReferenceValue addr = case getNodeType addr of
 
     -- default handling through data flow
     _ -> dataflowValue addr analysis opsHandler
-    
+
   where
 
     noReferenceGen a = Solver.mkVariable (idGen a) [] (compose $ ElementReferenceSet $ BSet.empty)
@@ -127,34 +127,34 @@ elementReferenceValue addr = case getNodeType addr of
     idGen = mkVarIdentifier analysis
 
     opsHandler = [ refElementHandler, refCreationHandler, refForwardHandler ]
-    
+
     refElementHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "data_item_element_access"
-        dep _ _ = Solver.toVar <$> [refVar,rangeVar] 
+        dep _ _ = Solver.toVar <$> [refVar,rangeVar]
         val _ a = compose $ ElementReferenceSet $ BSet.map go $ BSet.cartProduct (refVal a) (rangeVal a)
           where
             go (a,b) = ElementReference a (point b)
-        
+
         refVar = symbolicValue $ goDown 1 $ goDown 2 addr
-        refVal a = BSet.changeBound $ toValue $ Solver.get a refVar
-        
+        refVal a = BSet.changeBound $ unSVS $ toValue $ Solver.get a refVar
+
         rangeVar = symbolicValueWithIterators $ goDown 1 $ goDown 3 addr
-        rangeVal a = BSet.changeBound $ toValue $ Solver.get a rangeVar
-    
+        rangeVal a = BSet.changeBound $ unSVS $ toValue $ Solver.get a rangeVar
+
     refCreationHandler = OperatorHandler cov noDep val
       where
         cov a = any (isBuiltin a) [ "ref_decl", "ref_alloc" ]
         val _ _ = compose $ ElementReferenceSet $ BSet.empty
-        
+
     refForwardHandler = OperatorHandler cov dep val
       where
         cov a = any (isBuiltin a) [ "ref_member_access" ]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
-        
+
         refVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
-        
+
     noDep _ _ = []
-    
+
     compose = toComposed
