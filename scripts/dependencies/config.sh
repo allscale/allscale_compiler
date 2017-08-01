@@ -22,3 +22,16 @@ get_property() {
 	echo $(echo "load_package \"package_$1.sh\" && echo -n \$$2" | bash -)
 }
 export -f get_property
+
+# Returns the prefix of an installed package.
+get_pkg_prefix() {
+	(
+		load_package "package_$1.sh"
+		if pkg_is_globally_installed ; then
+			echo -n /usr
+		else
+			echo -n "$PREFIX/$PACKAGE"
+		fi
+	)
+}
+export -f get_pkg_prefix
