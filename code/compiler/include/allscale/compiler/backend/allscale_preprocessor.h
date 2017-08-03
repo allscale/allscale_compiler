@@ -21,19 +21,6 @@ namespace backend {
 
 
 	/**
-	 * A pre-processor step converting prec operator calls into code utilizing the runtimes
-	 * work and data item infrastructure.
-	 */
-	class PrecConverter : public insieme::backend::PreProcessor {
-	  public:
-
-		virtual insieme::core::NodePtr process(const insieme::backend::Converter& converter, const insieme::core::NodePtr& code) override;
-
-		virtual std::ostream& printTo(std::ostream& out) const override { return out << "PrecConverter"; }
-	};
-
-
-	/**
 	 * A pre-processor step ensuring that all records captured in a closure own a default
 	 * constructor.
 	 */
@@ -45,18 +32,6 @@ namespace backend {
 		virtual std::ostream& printTo(std::ostream& out) const override { return out << "ClosureDefaultConstructorEnforcer"; }
 	};
 
-
-	/**
-	 * A pre-processor converting lambda_to_closure calls into bind expressions.
-	 * TODO: this could be added as post-processing step to the frontend
-	 */
-	class CppLambdaToIRConverter : public insieme::backend::PreProcessor {
-	  public:
-
-		virtual insieme::core::NodePtr process(const insieme::backend::Converter& converter, const insieme::core::NodePtr& code) override;
-
-		virtual std::ostream& printTo(std::ostream& out) const override { return out << "CppLambdaToIRConverter"; }
-	};
 
 } // end namespace backend
 } // end namespace compiler

@@ -7,9 +7,9 @@ namespace compiler {
 namespace core {
 
 	/**
-	 * Converts all Cpp lambdas in the given program into IR construts.
+	 * Converts all Cpp lambdas in the given code fragment into IR constructs.
 	 */
-	insieme::core::ProgramPtr convertCppLambdaToIR(const insieme::core::ProgramPtr&);
+	insieme::core::NodePtr convertCppLambdaToIR(const insieme::core::NodePtr&);
 
 } // end namespace core
 } // end namespace compiler

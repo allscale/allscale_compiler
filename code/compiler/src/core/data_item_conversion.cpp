@@ -4,9 +4,9 @@ namespace allscale {
 namespace compiler {
 namespace core {
 
-	insieme::core::ProgramPtr convertDataItemReferences(const insieme::core::ProgramPtr& program, const ProgressCallback&) {
+	insieme::core::NodePtr convertDataItemReferences(const insieme::core::NodePtr& code, const ProgressCallback&) {
 		// TODO: implement this
-		return program;
+		return code;
 	}
 
 } // end namespace core

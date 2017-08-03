@@ -10,7 +10,7 @@
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/checks/allscale_checks.h"
-
+#include "allscale/compiler/core/allscale_core.h"
 
 #include "test_utils.inc"
 
@@ -50,6 +50,18 @@ namespace backend {
 		return res;
 	}
 
+	insieme::backend::TargetCodePtr convertCode(const insieme::core::NodePtr& code) {
+		// pass iput through the core ..
+		auto result = allscale::compiler::core::convert(code);
+
+		// check that it was a success
+		assert_true(result.successful())
+			<< "Conversion of input code failed in the core:\n" << result.report;
+
+		// .. and then through the backend
+		return convert(result.result);
+	}
+
 
 	TEST(CodeSnippet, EmptyMain) {
 		NodeManager mgr;
@@ -61,7 +73,7 @@ namespace backend {
 		ASSERT_TRUE(program);
 
 		// convert with allscale backend
-		auto code = convert(program);
+		auto code = convertCode(program);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -76,7 +88,7 @@ namespace backend {
 		ASSERT_TRUE(expr);
 
 		// convert with allscale backend
-		auto code = convert(expr);
+		auto code = convertCode(expr);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -91,7 +103,7 @@ namespace backend {
 		ASSERT_TRUE(expr);
 
 		// convert with allscale backend
-		auto code = convert(expr);
+		auto code = convertCode(expr);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -118,7 +130,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
+		auto code = convertCode(fib);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -145,7 +157,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
+		auto code = convertCode(fib);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -171,7 +183,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
+		auto code = convertCode(fib);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -197,7 +209,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
+		auto code = convertCode(fib);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -260,7 +272,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto code = convert(fib);
+		auto code = convertCode(fib);
 		ASSERT_TRUE(code);
 
 		// check that the resulting source is compiling
@@ -294,7 +306,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto trg = convert(fib);
+		auto trg = convertCode(fib);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -331,7 +343,7 @@ namespace backend {
 		ASSERT_TRUE(fib);
 
 		// convert with allscale backend
-		auto trg = convert(fib);
+		auto trg = convertCode(fib);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -362,7 +374,7 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 		auto trgCode = toString(*trg);
 
@@ -397,7 +409,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -424,7 +436,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 	}
 
@@ -447,7 +459,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -488,7 +500,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -528,7 +540,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -570,7 +582,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -626,7 +638,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -679,7 +691,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -714,7 +726,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -750,7 +762,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -786,7 +798,7 @@ namespace backend {
 		<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -822,7 +834,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -858,7 +870,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -894,7 +906,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -933,7 +945,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -972,7 +984,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1009,7 +1021,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1046,7 +1058,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1083,7 +1095,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1119,7 +1131,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1159,7 +1171,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1196,7 +1208,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling
@@ -1234,7 +1246,7 @@ namespace backend {
 			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
-		auto trg = convert(prog);
+		auto trg = convertCode(prog);
 		ASSERT_TRUE(trg);
 
 		// check that the resulting source is compiling

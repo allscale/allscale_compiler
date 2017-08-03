@@ -24,7 +24,7 @@ namespace core {
 
 		ConversionReport report;
 
-		insieme::core::ProgramPtr result;
+		insieme::core::NodePtr result;
 
 		bool successful() const {
 			return result;
@@ -51,7 +51,7 @@ namespace core {
 
 	inline void ignoreProgress(const ProgressUpdate&) {};
 
-	ConversionResult convert(const insieme::core::ProgramPtr& program, const ProgressCallback& callback = ignoreProgress);
+	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback = ignoreProgress);
 
 } // end namespace core
 } // end namespace compiler

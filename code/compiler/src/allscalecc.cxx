@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
 	}
 
 	// extract the converted program
-	program = summary.result;
+	program = summary.result.as<insieme::core::ProgramPtr>();
 
 	// report time usage
 	std::cout << "Converted to AllScale Runtime code in " << timer.step() << "s\n";

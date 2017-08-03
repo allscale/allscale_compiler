@@ -12,6 +12,8 @@ namespace utils {
 
 	insieme::core::FunctionTypePtr extractCallOperatorType(const insieme::core::NodePtr& node);
 
+	insieme::core::LambdaExprPtr getCallOperatorImplementation(const insieme::core::ExpressionPtr& lambda);
+
 }
 }
 }

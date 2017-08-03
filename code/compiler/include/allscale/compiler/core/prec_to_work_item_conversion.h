@@ -9,7 +9,7 @@ namespace core {
 	/**
 	 * Converts prec calls in the given input program to work item constructs.
 	 */
-	insieme::core::ProgramPtr convertPrecToWorkItem(const insieme::core::ProgramPtr&, const ProgressCallback&);
+	insieme::core::NodePtr convertPrecToWorkItem(const insieme::core::NodePtr&, const ProgressCallback&);
 
 } // end namespace core
 } // end namespace compiler

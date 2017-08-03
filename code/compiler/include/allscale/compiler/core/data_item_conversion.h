@@ -7,10 +7,10 @@ namespace compiler {
 namespace core {
 
 	/**
-	 * Converts the given program into a program utilizing the AllScale runtime's
+	 * Converts the given code into equivalent code utilizing the AllScale runtime's
 	 * data item infrastructure.
 	 */
-	insieme::core::ProgramPtr convertDataItemReferences(const insieme::core::ProgramPtr&, const ProgressCallback&);
+	insieme::core::NodePtr convertDataItemReferences(const insieme::core::NodePtr&, const ProgressCallback&);
 
 } // end namespace core
 } // end namespace compiler

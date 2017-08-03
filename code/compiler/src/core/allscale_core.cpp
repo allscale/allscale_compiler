@@ -32,14 +32,14 @@ namespace core {
 		return out;
 	}
 
-	ConversionResult convert(const insieme::core::ProgramPtr& program, const ProgressCallback& callback) {
+	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback) {
 
 		// Step 1: convert C++ lambdas to IR
-		auto res = convertCppLambdaToIR(program);
-		callback(ProgressUpdate { "C++ code simplifications ", 1, 1 });
+		auto res = convertCppLambdaToIR(code);
+		callback(ProgressUpdate("C++ code simplifications completed"));
 
 		// Step 2: introduce data item references
-		res = convertDataItemReferences(program, callback);
+		res = convertDataItemReferences(res, callback);
 
 		// Step 3: convert prec calls
 		res = convertPrecToWorkItem(res, callback);
