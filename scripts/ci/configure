@@ -7,13 +7,15 @@ if [[ -z "${WORKSPACE+x}" ]]; then
 	source defaults.sh
 fi
 
+# Ask git to rewrite submodule URLs so the CI jobs work 1) faster and 2) when
+# the internet is broken.
 if $RUNNING_ON_CI_SERVER; then
+    pushd "$WORKSPACE"
     git config url./ssd/git-mirrors/hpx.git.insteadOf              https://github.com/STEllAR-GROUP/hpx.git
     git config url./ssd/git-mirrors/allscale_runtime.git.insteadOf https://github.com/allscale/allscale_runtime.git
     git config url./ssd/git-mirrors/allscale_api.git.insteadOf     https://github.com/allscale/allscale_api.git
     git config url./ssd/git-mirrors/insieme_base.git.insteadOf     https://github.com/insieme/insieme.git
-
-    ( cd "$WORKSPACE"; git submodule update --init --checkout )
+    popd
 fi
 
 # Create build directory if it does not exist.
