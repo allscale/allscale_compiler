@@ -7,11 +7,6 @@ if [[ -z "${WORKSPACE+x}" ]]; then
 	source defaults.sh
 fi
 
-git config url./ssd/git-mirrors/hpx.git.insteadOf              https://github.com/STEllAR-GROUP/hpx.git
-git config url./ssd/git-mirrors/allscale_runtime.git.insteadOf https://github.com/allscale/allscale_runtime.git
-git config url./ssd/git-mirrors/allscale_api.git.insteadOf     https://github.com/allscale/allscale_api.git
-git config url./ssd/git-mirrors/insieme_base.git.insteadOf     https://github.com/insieme/insieme.git
-
 pushd "$WORKSPACE"
 git submodule update --recursive --init
 popd
