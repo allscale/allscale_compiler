@@ -11,9 +11,11 @@ namespace allscale {
 namespace compiler {
 namespace lang {
 
+	using namespace insieme::core;
+
 	TEST(AllscaleModule, Fib) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 		auto& as = nm.getLangExtension<AllscaleModule>();
 
 		auto fibIr = builder.parseExpr(R"I(
@@ -31,13 +33,13 @@ namespace lang {
 
 		EXPECT_TRUE(fibIr);
 
-		auto errs = core::checks::check(fibIr);
-		ASSERT_EQ(errs.getAll().size(), 0) << core::printer::dumpErrors(errs);
+		auto errs = checks::check(fibIr);
+		ASSERT_EQ(errs.getAll().size(), 0) << printer::dumpErrors(errs);
 	}
 
 	TEST(AllscaleModule, Mutual) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 		auto& as = nm.getLangExtension<AllscaleModule>();
 
 		auto evenIr = builder.parseExpr(R"I(
@@ -60,14 +62,14 @@ namespace lang {
 
 		EXPECT_TRUE(evenIr);
 
-		auto errs = core::checks::check(evenIr);
-		ASSERT_EQ(errs.getAll().size(), 0) << core::printer::dumpErrors(errs);
+		auto errs = checks::check(evenIr);
+		ASSERT_EQ(errs.getAll().size(), 0) << printer::dumpErrors(errs);
 	}
 
 
 	TEST(PrecOperation, Fib) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 		auto& as = nm.getLangExtension<AllscaleModule>();
 
 		auto fib = builder.parseExpr(R"I(
@@ -104,8 +106,8 @@ namespace lang {
 	}
 
 	TEST(TreetureType, Basic) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 
 		auto t1 = builder.parseType("treeture<int<4>,f>");
 		EXPECT_TRUE(t1);
@@ -129,8 +131,8 @@ namespace lang {
 	}
 
 	TEST(TreetureType, IsTreeture) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 
 		// correct treeture types
 		auto t1 = builder.parseType("treeture<int<4>,f>");
@@ -169,8 +171,8 @@ namespace lang {
 	}
 
 	TEST(RecFunType, IsRecFun) {
-		core::NodeManager nm;
-		core::IRBuilder builder(nm);
+		NodeManager nm;
+		IRBuilder builder(nm);
 
 		// correct recfun types
 		auto rf1 = builder.parseType("recfun<bool,bool>");

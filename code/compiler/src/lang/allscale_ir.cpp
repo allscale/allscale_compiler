@@ -14,11 +14,13 @@ namespace allscale {
 namespace compiler {
 namespace lang {
 
+	namespace ic = insieme::core;
+
 	/////////////////////////////// Dependencies
 
-	bool isDependencies(const core::NodePtr& node) {
-		auto type = node.isa<core::GenericTypePtr>();
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+	bool isDependencies(const ic::NodePtr& node) {
+		auto type = node.isa<ic::GenericTypePtr>();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
@@ -27,120 +29,120 @@ namespace lang {
 
 	/////////////////////////////// RecFun
 
-	RecOrPrecFunType::RecOrPrecFunType(const core::TypePtr& param, const core::TypePtr& ret) : param(param), ret(ret) {
-		assert_true(!core::lang::isReference(param) || core::lang::isConstCppReference(param));
+	RecOrPrecFunType::RecOrPrecFunType(const ic::TypePtr& param, const ic::TypePtr& ret) : param(param), ret(ret) {
+		assert_true(!ic::lang::isReference(param) || ic::lang::isConstCppReference(param));
 	}
 
-	RecOrPrecFunType::RecOrPrecFunType(const core::NodePtr& node) {
+	RecOrPrecFunType::RecOrPrecFunType(const ic::NodePtr& node) {
 		assert_true(node) << "Given node is null!";
 
-		core::TypePtr type = node.isa<core::TypePtr>();
+		ic::TypePtr type = node.isa<ic::TypePtr>();
 		// support expressions as input
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType();
 
 		assert_true(type) << "Given node " << *node << " is not an expression or a type";
 
-		if(auto tupleType = type.isa<core::TupleTypePtr>()) {
+		if(auto tupleType = type.isa<ic::TupleTypePtr>()) {
 			*this = RecOrPrecFunType(tupleType->getElement(0));
 			return;
 		}
 
 		// check given node type
-		auto genType = type.isa<core::GenericTypePtr>();
+		auto genType = type.isa<ic::GenericTypePtr>();
 		assert_true(genType) << "Given node " << *node << " is not a generic type";
 		assert_true(isRecFun(genType) || isPrecFun(genType)) << "Given node " << *node << " is not a RecFun nor a PrecFun type!\nType: " << *genType;
 
 		*this = RecOrPrecFunType(genType->getTypeParameter(0), genType->getTypeParameter(1));
 	}
 
-	core::GenericTypePtr RecFunType::toIRType() const {
-		core::IRBuilder builder(getParamType()->getNodeManager());
+	ic::GenericTypePtr RecFunType::toIRType() const {
+		ic::IRBuilder builder(getParamType()->getNodeManager());
 		return builder.genericType("recfun", toVector(getParamType(), getReturnType()));
 	}
 
-	RecFunType::operator core::GenericTypePtr() const {
+	RecFunType::operator ic::GenericTypePtr() const {
 		return toIRType();
 	}
 
 
-	core::GenericTypePtr PrecFunType::toIRType() const {
-		core::IRBuilder builder(getParamType()->getNodeManager());
+	ic::GenericTypePtr PrecFunType::toIRType() const {
+		ic::IRBuilder builder(getParamType()->getNodeManager());
 		return builder.genericType("precfun", toVector(getParamType(), getReturnType()));
 	}
 
-	PrecFunType::operator core::GenericTypePtr() const {
+	PrecFunType::operator ic::GenericTypePtr() const {
 		return toIRType();
 	}
 
-	bool isRecFun(const core::NodePtr& node) {
+	bool isRecFun(const ic::NodePtr& node) {
 		// a quick check
-		auto type = node.isa<core::GenericTypePtr>();
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		auto type = node.isa<ic::GenericTypePtr>();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
 		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "recfun";
 	}
 
-	bool isRecFunToFunCall(const core::NodePtr& node) {
+	bool isRecFunToFunCall(const ic::NodePtr& node) {
 		if (!node) return false;
 		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
 		return ext.isCallOfRecfunToFun(node);
 	}
 
-	bool isRecFunToDepFunCall(const core::NodePtr& node) {
+	bool isRecFunToDepFunCall(const ic::NodePtr& node) {
 		if (!node) return false;
 		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
 		return ext.isCallOfRecfunToDepFun(node);
 	}
 
-	bool isRecFunUnwrapperCall(const core::NodePtr& node) {
+	bool isRecFunUnwrapperCall(const ic::NodePtr& node) {
 		return isRecFunToFunCall(node) || isRecFunToDepFunCall(node);
 	}
 
-	bool isPrecFun(const core::NodePtr& node) {
+	bool isPrecFun(const ic::NodePtr& node) {
 		// a quick check
-		auto type = node.isa<core::GenericTypePtr>();
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		auto type = node.isa<ic::GenericTypePtr>();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
 		return type->getTypeParameter().size() == 2 && type->getParents().empty() && type->getName()->getValue() == "precfun";
 	}
 
-	bool isPrecFunToFunCall(const core::NodePtr& node) {
+	bool isPrecFunToFunCall(const ic::NodePtr& node) {
 		if (!node) return false;
 		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
 		return ext.isCallOfPrecfunToFun(node);
 	}
 
-	bool isPrecFunToDepFunCall(const core::NodePtr& node) {
+	bool isPrecFunToDepFunCall(const ic::NodePtr& node) {
 		if (!node) return false;
 		const AllscaleModule& ext = node->getNodeManager().getLangExtension<AllscaleModule>();
 		return ext.isCallOfPrecfunToDepFun(node);
 	}
 
-	bool isPrecFunUnwrapperCall(const core::NodePtr& node) {
+	bool isPrecFunUnwrapperCall(const ic::NodePtr& node) {
 		return isPrecFunToFunCall(node) || isPrecFunToDepFunCall(node);
 	}
 
 	/////////////////////////////// Treeture
 
-	TreetureType::TreetureType(const core::TypePtr& valueType, bool released) : valueType(valueType) {
+	TreetureType::TreetureType(const ic::TypePtr& valueType, bool released) : valueType(valueType) {
 		auto& mgr = valueType->getNodeManager();
-		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
+		const auto& boolExt = mgr.getLangExtension<ic::lang::BooleanMarkerExtension>();
 		this->released = boolExt.getMarkerType(released);
 	}
 
-	TreetureType::TreetureType(const core::TypePtr& valueType, const core::TypePtr& released)
+	TreetureType::TreetureType(const ic::TypePtr& valueType, const ic::TypePtr& released)
 		: valueType(valueType), released(released) {}
 
-	TreetureType::TreetureType(const core::NodePtr& node) {
+	TreetureType::TreetureType(const ic::NodePtr& node) {
 		assert_true(node) << "Given node is null!";
 
 		// support expressions as input
-		auto type = node.isa<core::GenericTypePtr>();
-		if (auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		auto type = node.isa<ic::GenericTypePtr>();
+		if (auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 
 		// check given node type
 		assert_true(isTreeture(type)) << "Given node " << *node << " is not a Treeture type!\nType: " << *type << std::endl;
@@ -150,56 +152,56 @@ namespace lang {
 
 	bool TreetureType::isReleased() const {
 		auto& mgr = valueType->getNodeManager();
-		const auto& boolExt = mgr.getLangExtension<core::lang::BooleanMarkerExtension>();
+		const auto& boolExt = mgr.getLangExtension<ic::lang::BooleanMarkerExtension>();
 		return boolExt.isTrueMarker(released);
 	}
 
-	core::GenericTypePtr TreetureType::toIRType() const {
-		core::IRBuilder builder(valueType->getNodeManager());
+	ic::GenericTypePtr TreetureType::toIRType() const {
+		ic::IRBuilder builder(valueType->getNodeManager());
 		return builder.genericType("treeture", toVector(valueType, released));
 	}
 
-	TreetureType::operator core::GenericTypePtr() const {
+	TreetureType::operator ic::GenericTypePtr() const {
 		return toIRType();
 	}
 
-	bool isTreeture(const core::NodePtr& node) {
+	bool isTreeture(const ic::NodePtr& node) {
 		// a quick check
-		auto type = node.isa<core::GenericTypePtr>();
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+		auto type = node.isa<ic::GenericTypePtr>();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 		if(!type) return false;
 
 		// check properties
 		if(type->getTypeParameter().size() != 2 || !type->getParents().empty() || type->getName()->getValue() != "treeture") { return false; }
 
-		const auto& boolExt = node.getNodeManager().getLangExtension<core::lang::BooleanMarkerExtension>();
+		const auto& boolExt = node.getNodeManager().getLangExtension<ic::lang::BooleanMarkerExtension>();
 		auto released = type->getTypeParameter(1);
-		bool isValidReleased = core::analysis::isGeneric(released) || boolExt.isTrueMarker(released) || boolExt.isFalseMarker(released);
+		bool isValidReleased = ic::analysis::isGeneric(released) || boolExt.isTrueMarker(released) || boolExt.isFalseMarker(released);
 
 		return isValidReleased;
 	}
 
-	bool isTaskReference(const core::NodePtr& node) {
+	bool isTaskReference(const ic::NodePtr& node) {
 		// support expressions
-		if(auto expr = node.isa<core::ExpressionPtr>()) return isTaskReference(expr->getType());
+		if(auto expr = node.isa<ic::ExpressionPtr>()) return isTaskReference(expr->getType());
 
 		// check that it is a generic type
-		auto type = node.isa<core::GenericTypePtr>();
+		auto type = node.isa<ic::GenericTypePtr>();
 		if (!type) return false;
 
 		// check properties
 		return type->getFamilyName() == "task_ref" && type->getParents().empty() && type->getTypeParameterList().empty();
 	}
 
-	bool isAllscaleType(const core::NodePtr& node) {
+	bool isAllscaleType(const ic::NodePtr& node) {
 		return isTreeture(node) || isDependencies(node) || isRecFun(node) || isPrecFun(node) || isTaskReference(node);
 	}
 
 	/////////////////////////////// Completed Task
 
-	bool isCompletedTask(const core::NodePtr& node) {
-		auto type = node.isa<core::GenericTypePtr>();
-		if(auto expr = node.isa<core::ExpressionPtr>()) type = expr->getType().isa<core::GenericTypePtr>();
+	bool isCompletedTask(const ic::NodePtr& node) {
+		auto type = node.isa<ic::GenericTypePtr>();
+		if(auto expr = node.isa<ic::ExpressionPtr>()) type = expr->getType().isa<ic::GenericTypePtr>();
 		if(!type) return false;
 
 		return type->getName()->getValue() == "completed_task" && type->getTypeParameter().size() == 1;
@@ -208,7 +210,7 @@ namespace lang {
 	/////////////////////////////// PrecOperation utility
 
 
-	PrecFunction::PrecFunction(const core::ExpressionPtr& baseCaseTest, const core::ExpressionList& baseCases, const core::ExpressionList& stepCases)
+	PrecFunction::PrecFunction(const ic::ExpressionPtr& baseCaseTest, const ic::ExpressionList& baseCases, const ic::ExpressionList& stepCases)
 		: baseCaseTest(baseCaseTest), baseCases(baseCases), stepCases(stepCases) {
 
 		// check that actual values are present
@@ -216,17 +218,17 @@ namespace lang {
 		assert_false(baseCases.empty());
 		assert_false(stepCases.empty());
 
-		assert_true(all(baseCases, id<core::ExpressionPtr>()));
-		assert_true(all(stepCases, id<core::ExpressionPtr>()));
+		assert_true(all(baseCases, id<ic::ExpressionPtr>()));
+		assert_true(all(stepCases, id<ic::ExpressionPtr>()));
 
 		// check that all cases have the same type
-		assert_true(all(baseCases, [&](const core::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
-		assert_true(all(stepCases, [&](const core::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
+		assert_true(all(baseCases, [&](const ic::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
+		assert_true(all(stepCases, [&](const ic::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
 
 		// check that they are all functions
-		assert_true(baseCaseTest->getType().isa<core::FunctionTypePtr>());
-		assert_true(baseCases[0]->getType().isa<core::FunctionTypePtr>());
-		assert_true(stepCases[0]->getType().isa<core::FunctionTypePtr>());
+		assert_true(baseCaseTest->getType().isa<ic::FunctionTypePtr>());
+		assert_true(baseCases[0]->getType().isa<ic::FunctionTypePtr>());
+		assert_true(stepCases[0]->getType().isa<ic::FunctionTypePtr>());
 
 		// check the write arity of those functions
 		assert_eq(1, getBaseCaseTestType()->getParameterTypes().size());
@@ -239,8 +241,8 @@ namespace lang {
 		assert_eq(*getParameterType(), *getStepCaseType()->getParameterTypes()[0]);
 
 		// check that cases have all the same type
-		assert_true(all(baseCases,[&](const core::ExpressionPtr& cur) { return *baseCases[0]->getType() == *cur->getType(); }));
-		assert_true(all(stepCases,[&](const core::ExpressionPtr& cur) { return *stepCases[0]->getType() == *cur->getType(); }));
+		assert_true(all(baseCases,[&](const ic::ExpressionPtr& cur) { return *baseCases[0]->getType() == *cur->getType(); }));
+		assert_true(all(stepCases,[&](const ic::ExpressionPtr& cur) { return *stepCases[0]->getType() == *cur->getType(); }));
 
 		// check the return type of those
 		assert_eq("bool", toString(*getBaseCaseTestType()->getReturnType()));
@@ -248,9 +250,9 @@ namespace lang {
 		assert_eq(getTreetureType().toIRType(), getStepCaseType()->getReturnType());
 
 		// check the recursive parameter of the step cases
-		assert_true(getStepCaseType()->getParameterType(1).isa<core::TupleTypePtr>());
-		assert_true(all(getRecursiveFunctionParameterTypes(),[&](const core::TypePtr& type){
-			auto genType = type.isa<core::GenericTypePtr>();
+		assert_true(getStepCaseType()->getParameterType(1).isa<ic::TupleTypePtr>());
+		assert_true(all(getRecursiveFunctionParameterTypes(),[&](const ic::TypePtr& type){
+			auto genType = type.isa<ic::GenericTypePtr>();
 			return genType && genType->getFamilyName() == "recfun" && genType->getTypeParameter()->size() == 2;
 		}));
 
@@ -259,29 +261,29 @@ namespace lang {
 
 	// -- getters and setters --
 
-	void PrecFunction::setBaseCaseTest(const core::ExpressionPtr& test) {
+	void PrecFunction::setBaseCaseTest(const ic::ExpressionPtr& test) {
 		assert_eq(*getBaseCaseTestType(), *test->getType());
 		baseCaseTest = test;
 	}
 
-	void PrecFunction::setBaseCases(const core::ExpressionList& cases) {
+	void PrecFunction::setBaseCases(const ic::ExpressionList& cases) {
 		assert_false(cases.empty());
-		assert_true(all(cases, [&](const core::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
+		assert_true(all(cases, [&](const ic::ExpressionPtr& cur) { return *getBaseCaseType() == *cur->getType(); }));
 		baseCases = cases;
 	}
 
-	void PrecFunction::addBaseCase(const core::ExpressionPtr& baseCase) {
+	void PrecFunction::addBaseCase(const ic::ExpressionPtr& baseCase) {
 		assert_eq(*getBaseCaseType(),*baseCase->getType());
 		baseCases.push_back(baseCase);
 	}
 
-	void PrecFunction::setStepCases(const core::ExpressionList& cases) {
+	void PrecFunction::setStepCases(const ic::ExpressionList& cases) {
 		assert_false(cases.empty());
-		assert_true(all(cases, [&](const core::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
+		assert_true(all(cases, [&](const ic::ExpressionPtr& cur) { return *getStepCaseType() == *cur->getType(); }));
 		stepCases = cases;
 	}
 
-	void PrecFunction::addStepCase(const core::ExpressionPtr& stepCase) {
+	void PrecFunction::addStepCase(const ic::ExpressionPtr& stepCase) {
 		assert_eq(*getStepCaseType(),*stepCase->getType());
 		stepCases.push_back(stepCase);
 	}
@@ -289,25 +291,25 @@ namespace lang {
 
 	// -- more observers --
 
-	core::FunctionTypePtr PrecFunction::getBaseCaseTestType() const {
-		return baseCaseTest->getType().as<core::FunctionTypePtr>();
+	ic::FunctionTypePtr PrecFunction::getBaseCaseTestType() const {
+		return baseCaseTest->getType().as<ic::FunctionTypePtr>();
 	}
 
-	core::FunctionTypePtr PrecFunction::getBaseCaseType() const {
+	ic::FunctionTypePtr PrecFunction::getBaseCaseType() const {
 		assert_false(baseCases.empty());
-		return baseCases.front()->getType().as<core::FunctionTypePtr>();
+		return baseCases.front()->getType().as<ic::FunctionTypePtr>();
 	}
 
-	core::FunctionTypePtr PrecFunction::getStepCaseType() const {
+	ic::FunctionTypePtr PrecFunction::getStepCaseType() const {
 		assert_false(stepCases.empty());
-		return stepCases.front()->getType().as<core::FunctionTypePtr>();
+		return stepCases.front()->getType().as<ic::FunctionTypePtr>();
 	}
 
-	core::TypePtr PrecFunction::getParameterType() const {
+	ic::TypePtr PrecFunction::getParameterType() const {
 		return getBaseCaseTestType()->getParameterTypes()[0];
 	}
 
-	core::TypePtr PrecFunction::getResultType() const {
+	ic::TypePtr PrecFunction::getResultType() const {
 		return getBaseCaseType()->getReturnType();
 	}
 
@@ -315,54 +317,54 @@ namespace lang {
 		return TreetureType(getResultType(), false);
 	}
 
-	core::TypePtr PrecFunction::getRecursiveFunctionType() const {
+	ic::TypePtr PrecFunction::getRecursiveFunctionType() const {
 		auto& mgr = baseCaseTest->getNodeManager();
-		return core::GenericType::get(mgr, "recfun", { getParameterType(), getResultType() });
+		return ic::GenericType::get(mgr, "recfun", { getParameterType(), getResultType() });
 	}
 
-	core::TypeList PrecFunction::getRecursiveFunctionParameterTypes() const {
-		return getStepCaseType()->getParameterType(1).as<core::TupleTypePtr>()->getElementTypes();
+	ic::TypeList PrecFunction::getRecursiveFunctionParameterTypes() const {
+		return getStepCaseType()->getParameterType(1).as<ic::TupleTypePtr>()->getElementTypes();
 	}
 
 
 	// -- encoder interface --
 
-	core::TypePtr PrecFunction::getEncodedType(core::NodeManager&) {
+	ic::TypePtr PrecFunction::getEncodedType(ic::NodeManager&) {
 		assert_fail() << "This object is encoded as a generic type, and thus has no general type!";
-		return core::TypePtr();
+		return ic::TypePtr();
 	}
 
-	bool PrecFunction::isEncoding(const core::ExpressionPtr& expr) {
+	bool PrecFunction::isEncoding(const ic::ExpressionPtr& expr) {
 		auto& mgr = expr->getNodeManager();
 		auto& ext = mgr.getLangExtension<AllscaleModule>();
 
 		// check that the given expression is a build_recfun call
-		if (!core::analysis::isCallOf(expr,ext.getBuildRecfun())) return false;
+		if (!ic::analysis::isCallOf(expr,ext.getBuildRecfun())) return false;
 
 		// check that the arguments are list encodings
-		auto recFunCall = expr.as<core::CallExprPtr>();
-		if (!core::encoder::isEncodingOf<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(1))) return false;
-		if (!core::encoder::isEncodingOf<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(2))) return false;
+		auto recFunCall = expr.as<ic::CallExprPtr>();
+		if (!ic::encoder::isEncodingOf<ic::ExpressionList,ic::encoder::DirectExprListConverter>(recFunCall->getArgument(1))) return false;
+		if (!ic::encoder::isEncodingOf<ic::ExpressionList,ic::encoder::DirectExprListConverter>(recFunCall->getArgument(2))) return false;
 
 		// ok, test passed
 		return true;
 	}
 
-	core::ExpressionPtr PrecFunction::toIR(core::NodeManager&) const {
+	ic::ExpressionPtr PrecFunction::toIR(ic::NodeManager&) const {
 		// build up the rec operator
 		return buildBuildRecFun(baseCaseTest, baseCases, stepCases);
 	}
 
-	PrecFunction PrecFunction::fromIR(const core::ExpressionPtr& expr) {
+	PrecFunction PrecFunction::fromIR(const ic::ExpressionPtr& expr) {
 		assert_pred1(isEncoding,expr);
 
 		// decompose the rec fun call
-		auto recFunCall = expr.as<core::CallExprPtr>();
+		auto recFunCall = expr.as<ic::CallExprPtr>();
 
 		// extract the parameters
 		auto baseCaseTest = recFunCall->getArgument(0);
-		auto baseCases = core::encoder::toValue<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(1));
-		auto stepCases = core::encoder::toValue<core::ExpressionList,core::encoder::DirectExprListConverter>(recFunCall->getArgument(2));
+		auto baseCases = ic::encoder::toValue<ic::ExpressionList,ic::encoder::DirectExprListConverter>(recFunCall->getArgument(1));
+		auto stepCases = ic::encoder::toValue<ic::ExpressionList,ic::encoder::DirectExprListConverter>(recFunCall->getArgument(2));
 
 		// build up result
 		return PrecFunction(baseCaseTest, baseCases, stepCases);
@@ -381,7 +383,7 @@ namespace lang {
 		assert_decl(
 			{
 				// assemble the recursive function parameter type
-				std::vector<core::TypePtr> types;
+				std::vector<ic::TypePtr> types;
 				for(const auto& cur : functions) {
 					types.push_back(cur.getRecursiveFunctionType());
 				}
@@ -395,18 +397,18 @@ namespace lang {
 
 	}
 
-	bool PrecOperation::isPrecOperation(const core::NodePtr& node) {
-		auto expr = node.isa<core::ExpressionPtr>();
+	bool PrecOperation::isPrecOperation(const ic::NodePtr& node) {
+		auto expr = node.isa<ic::ExpressionPtr>();
 		return expr && isEncoding(expr);
 	}
 
 	// -- more observers --
 
-	core::TypePtr PrecOperation::getParameterType() const {
+	ic::TypePtr PrecOperation::getParameterType() const {
 		return getFunction().getParameterType();
 	}
 
-	core::TypePtr PrecOperation::getResultType() const {
+	ic::TypePtr PrecOperation::getResultType() const {
 		return getFunction().getResultType();
 	}
 
@@ -417,24 +419,24 @@ namespace lang {
 
 	// -- encoder interface --
 
-	core::TypePtr PrecOperation::getEncodedType(core::NodeManager&) {
+	ic::TypePtr PrecOperation::getEncodedType(ic::NodeManager&) {
 		assert_fail() << "This object is encoded as a generic type, and thus has no general type!";
-		return core::TypePtr();
+		return ic::TypePtr();
 	}
 
-	bool PrecOperation::isEncoding(const core::ExpressionPtr& expr) {
+	bool PrecOperation::isEncoding(const ic::ExpressionPtr& expr) {
 		auto& mgr = expr->getNodeManager();
 		auto& ext = mgr.getLangExtension<AllscaleModule>();
 
 		// check that it is a prec call
-		if (!core::analysis::isCallOf(expr, ext.getPrec())) return false;
+		if (!ic::analysis::isCallOf(expr, ext.getPrec())) return false;
 
 		// check that the argument is a tuple
-		auto arg = expr.as<core::CallExprPtr>()->getArgument(0);
-		if (!arg.isa<core::TupleExprPtr>()) return false;
+		auto arg = expr.as<ic::CallExprPtr>()->getArgument(0);
+		if (!arg.isa<ic::TupleExprPtr>()) return false;
 
 		// check that all elements in the tuple are recursive functions
-		for(const auto& cur : arg.as<core::TupleExprPtr>()->getExpressions()) {
+		for(const auto& cur : arg.as<ic::TupleExprPtr>()->getExpressions()) {
 			if (!PrecFunction::isEncoding(cur)) return false;
 		}
 
@@ -442,10 +444,10 @@ namespace lang {
 		return true;
 	}
 
-	core::ExpressionPtr PrecOperation::toIR(core::NodeManager& mgr) const {
+	ic::ExpressionPtr PrecOperation::toIR(ic::NodeManager& mgr) const {
 
 		// convert the recursive functions
-		core::ExpressionList funs;
+		ic::ExpressionList funs;
 		for(const auto& cur : functions) {
 			funs.push_back(cur.toIR(mgr));
 		}
@@ -454,11 +456,11 @@ namespace lang {
 		return buildPrec(funs);
 	}
 
-	PrecOperation PrecOperation::fromIR(const core::ExpressionPtr& expr) {
+	PrecOperation PrecOperation::fromIR(const ic::ExpressionPtr& expr) {
 		assert_pred1(isEncoding,expr);
 
 		// decompose the prec call
-		auto encodedFuns = expr.as<core::CallExprPtr>()->getArgument(0).as<core::TupleExprPtr>()->getExpressions();
+		auto encodedFuns = expr.as<ic::CallExprPtr>()->getArgument(0).as<ic::TupleExprPtr>()->getExpressions();
 
 		// convert the encoded functions
 		std::vector<PrecFunction> funs;
@@ -473,167 +475,167 @@ namespace lang {
 
 	/////////////////////////////// Builders
 
-	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
-	                                     const core::ExpressionList& baseBinds,
-	                                     const core::ExpressionList& stepBinds) {
+	ic::ExpressionPtr buildBuildRecFun(const ic::ExpressionPtr& cutoffBind,
+	                                     const ic::ExpressionList& baseBinds,
+	                                     const ic::ExpressionList& stepBinds) {
 		assert_false(baseBinds.empty()) << "baseBinds must not be empty";
 		assert_false(stepBinds.empty()) << "stepBinds must not be empty";
 		auto& mgr = cutoffBind->getNodeManager();
-		core::IRBuilder builder(mgr);
-		const auto& firstBaseType = baseBinds.front()->getType().as<core::FunctionTypePtr>();
-		core::GenericTypePtr returnType = RecFunType(firstBaseType.getParameterType(0), firstBaseType.getReturnType());
+		ic::IRBuilder builder(mgr);
+		const auto& firstBaseType = baseBinds.front()->getType().as<ic::FunctionTypePtr>();
+		ic::GenericTypePtr returnType = RecFunType(firstBaseType.getParameterType(0), firstBaseType.getReturnType());
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getBuildRecfun(), cutoffBind,
-		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, baseBinds),
-		                        core::encoder::toIR<core::ExpressionList, core::encoder::DirectExprListConverter>(mgr, stepBinds));
+		                        ic::encoder::toIR<ic::ExpressionList, ic::encoder::DirectExprListConverter>(mgr, baseBinds),
+		                        ic::encoder::toIR<ic::ExpressionList, ic::encoder::DirectExprListConverter>(mgr, stepBinds));
 	}
 
-	core::ExpressionPtr buildPrec(const core::ExpressionPtr& recFunTuple) {
+	ic::ExpressionPtr buildPrec(const ic::ExpressionPtr& recFunTuple) {
 		assert_true(recFunTuple) << "recFunTuple must not be null";
-		assert_true(recFunTuple->getType().isa<core::TupleTypePtr>()) << "recFunTuple must be of TupleType";
+		assert_true(recFunTuple->getType().isa<ic::TupleTypePtr>()) << "recFunTuple must be of TupleType";
 		auto& mgr = recFunTuple->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto precfunType = PrecFunType(recFunTuple);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(precfunType.toIRType(), allS.getPrec(), recFunTuple);
 	}
 
-	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns) {
+	ic::ExpressionPtr buildPrec(const ic::ExpressionList& recFuns) {
 		assert_false(recFuns.empty()) << "recFuns must not be empty";
 		auto& firstRecFun = recFuns.front();
 		auto& mgr = firstRecFun->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto precfunType = PrecFunType(firstRecFun);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(precfunType.toIRType(), allS.getPrec(), builder.tupleExpr(recFuns));
 	}
 
 
-	core::ExpressionPtr buildNoDependencies(core::NodeManager& mgr) {
-		core::IRBuilder builder(mgr);
+	ic::ExpressionPtr buildNoDependencies(ic::NodeManager& mgr) {
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getDependencyAfter());
 	}
 
-	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildTreetureDone(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
-		core::GenericTypePtr returnType = TreetureType(param->getType(), false);
+		ic::IRBuilder builder(mgr);
+		ic::GenericTypePtr returnType = TreetureType(param->getType(), false);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureDone(), param);
 	}
 
-	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildTreetureRun(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto treetureType = TreetureType(param);
-		core::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
+		ic::GenericTypePtr returnType = TreetureType(treetureType.getValueType(), true);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureRun(), param);
 	}
 
-	core::ExpressionPtr buildTreetureCombine(const core::ExpressionPtr& a, const core::ExpressionPtr& b,
-	                                         const core::ExpressionPtr& combinerLambda, const core::ExpressionPtr& parallel) {
+	ic::ExpressionPtr buildTreetureCombine(const ic::ExpressionPtr& a, const ic::ExpressionPtr& b,
+	                                         const ic::ExpressionPtr& combinerLambda, const ic::ExpressionPtr& parallel) {
 		assert_true(a) << "Given parameter a is null!";
 		assert_true(b) << "Given parameter a is null!";
 		assert_true(combinerLambda) << "Given parameter combinerLambda is null!";
 		assert_true(parallel) << "Given parameter parallel is null!";
 		auto combinerLambdaType = combinerLambda->getType();
-		assert_true(combinerLambdaType.isa<core::FunctionTypePtr>()) << "Type of combinerLambda is not a FunctionType, but of type: " << combinerLambdaType;
+		assert_true(combinerLambdaType.isa<ic::FunctionTypePtr>()) << "Type of combinerLambda is not a FunctionType, but of type: " << combinerLambdaType;
 		auto& mgr = a->getNodeManager();
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto treetureTypeA = TreetureType(a);
 		auto treetureTypeB = TreetureType(b);
-		auto combinerType = combinerLambdaType.as<core::FunctionTypePtr>();
+		auto combinerType = combinerLambdaType.as<ic::FunctionTypePtr>();
 		auto combinerParamTypes = combinerType->getParameterTypeList();
 		assert_eq(combinerParamTypes.size(), 2) << "Given combinerLambda doesn't have two parameters";
 		assert_eq(treetureTypeA.getValueType(), combinerParamTypes[0]) << "Type of first parameter of combinerLambda: " << combinerParamTypes[0]
 				<< " doesn't match value type of parameter a: " << treetureTypeA.getValueType();
 		assert_eq(treetureTypeB.getValueType(), combinerParamTypes[1]) << "Type of second parameter of combinerLambda: " << combinerParamTypes[1]
 				<< " doesn't match value type of parameter b: " << treetureTypeB.getValueType();
-		core::GenericTypePtr returnType = TreetureType(combinerType->getReturnType(), false);
+		ic::GenericTypePtr returnType = TreetureType(combinerType->getReturnType(), false);
 		assert_true(parallel->getType() == builder.getLangBasic().getBool()) << "Given parallel parameter is not of boolean type, but: " << parallel->getType();
 		return builder.callExpr(returnType, allS.getTreetureCombine(), a, b, combinerLambda, parallel);
 	}
 
-	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildTreetureGet(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		TreetureType treeture(param);
 		auto returnType = treeture.getValueType();
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(returnType, allS.getTreetureGet(), param);
 	}
 
-	core::ExpressionPtr buildTreetureToRef(const core::ExpressionPtr& treetureExpr, const core::TypePtr& targetType) {
+	ic::ExpressionPtr buildTreetureToRef(const ic::ExpressionPtr& treetureExpr, const ic::TypePtr& targetType) {
 		assert_true(treetureExpr) << "Given treetureExpr is null!";
 		assert_true(targetType) << "Given targetType is null!";
 		auto& mgr = treetureExpr->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getTreetureToRef(), treetureExpr, builder.getTypeLiteral(targetType));
 	}
 
-	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr) {
+	ic::ExpressionPtr buildTreetureFromRef(const ic::ExpressionPtr& refTreetureExpr) {
 		assert_true(refTreetureExpr) << "Given refTreetureExpr is null!";
 		auto& mgr = refTreetureExpr->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getTreetureFromRef(), refTreetureExpr);
 	}
 
-	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildRecfunToFun(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getRecfunToFun(), param);
 	}
-	core::ExpressionPtr buildRecfunToDepFun(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildRecfunToDepFun(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getRecfunToDepFun(), param);
 	}
 
-	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildPrecfunToFun(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getPrecfunToFun(), param);
 	}
-	core::ExpressionPtr buildPrecfunToDepFun(const core::ExpressionPtr& param) {
+	ic::ExpressionPtr buildPrecfunToDepFun(const ic::ExpressionPtr& param) {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
-		core::IRBuilder builder(mgr);
+		ic::IRBuilder builder(mgr);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
 		return builder.callExpr(allS.getPrecfunToDepFun(), param);
 	}
 
-	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
+	ic::ExpressionPtr buildCppLambdaToClosure(const ic::ExpressionPtr& lambdaExpr, ic::FunctionTypePtr closureType) {
 		if(!closureType) {
 			assert_true(utils::hasCallOperator(lambdaExpr));
 			closureType = utils::extractCallOperatorType(lambdaExpr);
 		}
-		assert_eq(closureType.getKind(), core::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
-		core::IRBuilder builder(lambdaExpr->getNodeManager());
+		assert_eq(closureType.getKind(), ic::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
+		ic::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getCppLambdaToClosure(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}
 
-	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType) {
+	ic::ExpressionPtr buildCppLambdaToLambda(const ic::ExpressionPtr& lambdaExpr, ic::FunctionTypePtr closureType) {
 		if(!closureType) {
 			assert_true(utils::hasCallOperator(lambdaExpr));
 			closureType = utils::extractCallOperatorType(lambdaExpr);
 		}
-		assert_eq(closureType.getKind(), core::FK_PLAIN) << "Trying to build a lambda of non-plain type.";
-		core::IRBuilder builder(lambdaExpr->getNodeManager());
+		assert_eq(closureType.getKind(), ic::FK_PLAIN) << "Trying to build a lambda of non-plain type.";
+		ic::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
 		return builder.callExpr(closureType, allS.getCppLambdaToLambda(), lambdaExpr, builder.getTypeLiteral(closureType));
 	}

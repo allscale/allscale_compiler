@@ -59,7 +59,7 @@ namespace analysis {
 		prog = IRBuilder(mgr).normalize(prog);
 
 		// running semantic checks
-		auto res = core::checks::check(prog);
+		auto res = checks::check(prog);
 		EXPECT_TRUE(res.empty()) << res << "\n------\n" << printer::dumpErrors(res);
 
 		// create a CBA analysis context
@@ -67,7 +67,7 @@ namespace analysis {
 
 		// a utility to retrieve an instructions context
 		auto getScope = [](const NodeAddress& addr) {
-			auto compound = addr.getParentNode().isa<core::CompoundStmtPtr>();
+			auto compound = addr.getParentNode().isa<CompoundStmtPtr>();
 			EXPECT_TRUE(compound) << "Context has to be a compound statement!\n";
 			return compound;
 		};
@@ -97,11 +97,11 @@ namespace analysis {
 				// obtain expected value form user code
 				auto arg = call->getArgument(0).isa<CallExprPtr>();
 				assert_true(arg) << "Expected value is not a string literal!" << std::endl
-					<< *core::annotations::getLocation(call) << std::endl;
+					<< *annotations::getLocation(call) << std::endl;
 
 				auto lit = arg->getArgument(0).isa<LiteralPtr>();
 				assert_true(arg) << "Expected value is not a string literal!" << std::endl
-					<< *core::annotations::getLocation(call) << std::endl;
+					<< *annotations::getLocation(call) << std::endl;
 
 				auto expected = lit->getStringValue();
 				expected = expected.substr(1,expected.size()-2);
@@ -114,10 +114,10 @@ namespace analysis {
 //				std::cout << "Expected requirements:   " << expected << "\n";
 //				std::cout << "Identified requirements: " << requirements << "\n";
 				EXPECT_EQ(expected,toString(requirements))
-					<< *core::annotations::getLocation(call) << std::endl;
+					<< *annotations::getLocation(call) << std::endl;
 
 				EXPECT_FALSE(requirements.isUniverse())
-					<< *core::annotations::getLocation(call) << std::endl;
+					<< *annotations::getLocation(call) << std::endl;
 
 			// debugging
 			} else if (name == "cba_print_code") {
@@ -126,7 +126,7 @@ namespace analysis {
 
 			} else if (name == "cba_dump_json") {
 				// dump the code as a json file
-				core::dump::json::dumpIR("code.json", getScope(call));
+				dump::json::dumpIR("code.json", getScope(call));
 
 			} else if (name == "cba_dump_statistic") {
 				// dump the current statistic
@@ -137,11 +137,11 @@ namespace analysis {
 				ctxt.dumpSolution();
 
 				// dump the code as a json file (as it is required by inspyer)
-				core::dump::json::dumpIR("code.json", getScope(call));
+				dump::json::dumpIR("code.json", getScope(call));
 
 			// the rest
 			} else {
-				FAIL() << "Unsupported CBA expectation predicate: " << name << " - " << *core::annotations::getLocation(call);
+				FAIL() << "Unsupported CBA expectation predicate: " << name << " - " << *annotations::getLocation(call);
 			}
 		});
 

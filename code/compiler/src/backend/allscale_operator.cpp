@@ -60,7 +60,7 @@ namespace backend {
 				// resolve the work item, either by looking it up if it is a reference or by getting it from it's creation description
 				WorkItemDescriptionInfo info;
 				if(LANG_EXT(AllScaleBackendModule).isCallOfCreateWorkItemDescriptionReference(ARG(1))) {
-					const auto& lit = call->getArgument(1).as<core::CallExprPtr>()->getArgument(0).as<core::LiteralPtr>();
+					const auto& lit = call->getArgument(1).as<CallExprPtr>()->getArgument(0).as<LiteralPtr>();
 					info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, lit->getStringValue());
 				} else {
 					info = WorkItemDescriptions::getInstance(CONVERTER).getDescriptionType(context, ARG(1));
@@ -246,7 +246,7 @@ namespace backend {
 			};
 
 			table[ext.getTreetureCombine()] = OP_CONVERTER {
-				core::IRBuilder builder(call->getNodeManager());
+				IRBuilder builder(call->getNodeManager());
 
 				// add dependency to argument types
 				context.addDependency(GET_TYPE_INFO(call->getArgument(0)->getType()).definition);
@@ -374,18 +374,18 @@ namespace backend {
 				//		('a, uint<8>, type<'b>) -> 'b
 
 				// add a dependency to the accessed type definition before accessing the type
-				const core::TypePtr tupleType = ARG(0)->getType();
+				const TypePtr tupleType = ARG(0)->getType();
 				const TypeInfo& info = context.getConverter().getTypeManager().getTypeInfo(context, tupleType);
 				context.getDependencies().insert(info.definition);
 
 				// create member access
-				core::ExpressionPtr index = ARG(1);
-				while(index->getNodeType() == core::NT_CastExpr) {
-					index = static_pointer_cast<const core::CastExpr>(index)->getSubExpression();
+				ExpressionPtr index = ARG(1);
+				while(index->getNodeType() == NT_CastExpr) {
+					index = static_pointer_cast<const CastExpr>(index)->getSubExpression();
 				}
-				assert_eq(index->getNodeType(), core::NT_Literal);
+				assert_eq(index->getNodeType(), NT_Literal);
 				auto field = C_NODE_MANAGER->create<c_ast::NamedType>(
-						C_NODE_MANAGER->create(index.as<core::LiteralPtr>()->getStringValue())
+						C_NODE_MANAGER->create(index.as<LiteralPtr>()->getStringValue())
 				);
 
 				// access the component of the tuple
@@ -395,7 +395,7 @@ namespace backend {
 				);
 			};
 
-			auto& refExt = manager.getLangExtension<core::lang::ReferenceExtension>();
+			auto& refExt = manager.getLangExtension<insieme::core::lang::ReferenceExtension>();
 
 			table[refExt.getRefComponentAccess()] = OP_CONVERTER {
 
@@ -403,17 +403,17 @@ namespace backend {
 				//		(ref<'a>, uint<8>, type<'b>) -> ref<'b>
 
 				// add a dependency to the accessed type definition before accessing the type
-				const core::TypePtr tupleType = core::analysis::getReferencedType(ARG(0)->getType());
+				const TypePtr tupleType = analysis::getReferencedType(ARG(0)->getType());
 				const TypeInfo& info = context.getConverter().getTypeManager().getTypeInfo(context, tupleType);
 				context.getDependencies().insert(info.definition);
 
-				core::ExpressionPtr index = ARG(1);
-				while(auto cast = index.isa<core::CastExprPtr>()) {
+				ExpressionPtr index = ARG(1);
+				while(auto cast = index.isa<CastExprPtr>()) {
 					index = cast->getSubExpression();
 				}
-				assert_eq(index->getNodeType(), core::NT_Literal);
+				assert_eq(index->getNodeType(), NT_Literal);
 				auto field = C_NODE_MANAGER->create<c_ast::NamedType>(
-						C_NODE_MANAGER->create(index.as<core::LiteralPtr>()->getStringValue())
+						C_NODE_MANAGER->create(index.as<LiteralPtr>()->getStringValue())
 				);
 
 				// access the component of the tuple
@@ -423,7 +423,7 @@ namespace backend {
 				);
 
 				// check whether a ref operation is required
-				if (core::lang::isPlainReference(call)) {
+				if (insieme::core::lang::isPlainReference(call)) {
 					return c_ast::ref(access);
 				}
 

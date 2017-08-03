@@ -16,10 +16,13 @@
 
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/env_vars.h"
+
 #include "allscale/compiler/frontend/allscale_frontend.h"
-#include "allscale/compiler/checks/allscale_checks.h"
-#include "allscale/compiler/analysis/diagnostics.h"
+#include "allscale/compiler/core/allscale_core.h"
 #include "allscale/compiler/backend/allscale_backend.h"
+
+#include "allscale/compiler/checks/allscale_checks.h"
+//#include "allscale/compiler/analysis/diagnostics.h"
 
 namespace driver = insieme::driver;
 namespace core = insieme::core;
@@ -141,6 +144,33 @@ int main(int argc, char** argv) {
 		if(commonOptions.checkSemaOnly) { return errors.empty() ? 0 : 1; }
 	}
 
+
+	// Step 4: apply source-to-source conversions
+	std::cout << "Converting to AllScale Runtime code ... \n" << std::flush;
+	auto summary = allscale::compiler::core::convert(program,[&](const allscale::compiler::core::ProgressUpdate& update){
+		std::cout << "\t" << update.msg;
+		if (update.totalSteps > 0) {
+			std::cout << " ("<< update.completedSteps << "/" << update.totalSteps << ")";
+		}
+		std::cout << std::endl;
+	});
+
+	// print the reporting
+	// TODO: move this to a file
+	std::cout << summary.report << std::endl;
+
+	// abort if not successful so far
+	if (!summary.successful()) {
+		std::cout << "Conversion aborted.\n";
+		return EXIT_FAILURE;
+	}
+
+	// extract the converted program
+	program = summary.result;
+
+	// report time usage
+	std::cout << "Converted to AllScale Runtime code in " << timer.step() << "s\n";
+
 	// run diagnostics analysis
 	/*{
 		std::cout << "Running diagnostics ... " << std::flush;
@@ -156,7 +186,7 @@ int main(int argc, char** argv) {
 		}
 	}*/
 
-	// Step 4: convert src file to target code
+	// Step 5: convert transformed IR to target code
 	std::cout << "Producing target code ... " << std::flush;
 	auto code = allscale::compiler::backend::convert(program);
 	std::cout << timer.step() << "s\n";
@@ -172,7 +202,7 @@ int main(int argc, char** argv) {
 		if(!commonOptions.dumpTRGOnly.empty()) { return 0; }
 	}
 
-	// Step 5: built the resulting binary
+	// Step 6: built the resulting binary
 	std::cout << "Compiling target code (-O" << opt_level << ") ... " << std::flush;
 	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), opt_level);
 	std::cout << timer.step() << "s\n";

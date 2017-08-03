@@ -4,22 +4,20 @@
 #include "insieme/core/lang/extension.h"
 #include "insieme/core/encoder/encoder.h"
 
-namespace core = insieme::core;
-
 namespace allscale {
 namespace compiler {
 namespace lang {
 
-	class AllscaleModule : public core::lang::Extension {
+	class AllscaleModule : public insieme::core::lang::Extension {
 		/**
 		 * Allow the node manager to create instances of this class.
 		 */
-		friend class core::NodeManager;
+		friend class insieme::core::NodeManager;
 
 		/**
 		 * Creates a new instance based on the given node manager.
 		 */
-		AllscaleModule(core::NodeManager& manager) : core::lang::Extension(manager) {}
+		AllscaleModule(insieme::core::NodeManager& manager) : insieme::core::lang::Extension(manager) {}
 
 	  public:
 
@@ -86,25 +84,25 @@ namespace lang {
 	};
 
 	class RecOrPrecFunType {
-		core::TypePtr param, ret;
+		insieme::core::TypePtr param, ret;
 
 	  public:
-		RecOrPrecFunType(const core::TypePtr& param, const core::TypePtr& ret);
-		RecOrPrecFunType(const core::NodePtr& node);
+		RecOrPrecFunType(const insieme::core::TypePtr& param, const insieme::core::TypePtr& ret);
+		RecOrPrecFunType(const insieme::core::NodePtr& node);
 
-		core::TypePtr getParamType() const {
+		insieme::core::TypePtr getParamType() const {
 			return param;
 		}
 
-		void setParamType(const core::TypePtr& type) {
+		void setParamType(const insieme::core::TypePtr& type) {
 			param = type;
 		}
 
-		core::TypePtr getReturnType() const {
+		insieme::core::TypePtr getReturnType() const {
 			return ret;
 		}
 
-		void setReturnType(const core::TypePtr& type) {
+		void setReturnType(const insieme::core::TypePtr& type) {
 			ret = type;
 		}
 
@@ -121,9 +119,9 @@ namespace lang {
 
 		using RecOrPrecFunType::RecOrPrecFunType;
 
-		core::GenericTypePtr toIRType() const;
+		insieme::core::GenericTypePtr toIRType() const;
 
-		operator core::GenericTypePtr() const;
+		operator insieme::core::GenericTypePtr() const;
 
 	};
 
@@ -133,31 +131,31 @@ namespace lang {
 
 		using RecOrPrecFunType::RecOrPrecFunType;
 
-		core::GenericTypePtr toIRType() const;
+		insieme::core::GenericTypePtr toIRType() const;
 
-		operator core::GenericTypePtr() const;
+		operator insieme::core::GenericTypePtr() const;
 
 	};
 
 	class TreetureType {
-		core::TypePtr valueType, released;
+		insieme::core::TypePtr valueType, released;
 
 	  public:
-		TreetureType(const core::TypePtr& valueType, bool released);
-		TreetureType(const core::TypePtr& valueType, const core::TypePtr& released);
+		TreetureType(const insieme::core::TypePtr& valueType, bool released);
+		TreetureType(const insieme::core::TypePtr& valueType, const insieme::core::TypePtr& released);
 
-		TreetureType(const core::NodePtr& node);
+		TreetureType(const insieme::core::NodePtr& node);
 
-		core::TypePtr getValueType() const {
+		insieme::core::TypePtr getValueType() const {
 			return valueType;
 		}
 
 		// NOTE: unknown is treated as not released
 		bool isReleased() const;
 
-		core::GenericTypePtr toIRType() const;
+		insieme::core::GenericTypePtr toIRType() const;
 
-		operator core::GenericTypePtr() const;
+		operator insieme::core::GenericTypePtr() const;
 
 		TreetureType(const TreetureType&) = default;
 		TreetureType(TreetureType&&) = default;
@@ -168,75 +166,75 @@ namespace lang {
 	/**
 	 * A convenience wrapper for prec operation functions.
 	 */
-	class PrecFunction : public core::encoder::encodable {
+	class PrecFunction : public insieme::core::encoder::encodable {
 
-		core::ExpressionPtr baseCaseTest;
+		insieme::core::ExpressionPtr baseCaseTest;
 
-		core::ExpressionList baseCases;
+		insieme::core::ExpressionList baseCases;
 
-		core::ExpressionList stepCases;
+		insieme::core::ExpressionList stepCases;
 
 	public:
 
-		PrecFunction(const core::ExpressionPtr& baseCaseTest, const core::ExpressionList& baseCases, const core::ExpressionList& stepCases);
+		PrecFunction(const insieme::core::ExpressionPtr& baseCaseTest, const insieme::core::ExpressionList& baseCases, const insieme::core::ExpressionList& stepCases);
 
-		static bool isPrecOperation(const core::NodePtr&);
+		static bool isPrecOperation(const insieme::core::NodePtr&);
 
 
 		// -- getters and setters --
 
-		const core::ExpressionPtr& getBaseCaseTest() const {
+		const insieme::core::ExpressionPtr& getBaseCaseTest() const {
 			return baseCaseTest;
 		}
 
-		void setBaseCaseTest(const core::ExpressionPtr&);
+		void setBaseCaseTest(const insieme::core::ExpressionPtr&);
 
-		const core::ExpressionList& getBaseCases() const {
+		const insieme::core::ExpressionList& getBaseCases() const {
 			return baseCases;
 		}
 
-		void setBaseCases(const core::ExpressionList&);
+		void setBaseCases(const insieme::core::ExpressionList&);
 
-		void addBaseCase(const core::ExpressionPtr&);
+		void addBaseCase(const insieme::core::ExpressionPtr&);
 
-		const core::ExpressionList& getStepCases() const {
+		const insieme::core::ExpressionList& getStepCases() const {
 			return stepCases;
 		}
 
-		void setStepCases(const core::ExpressionList&);
+		void setStepCases(const insieme::core::ExpressionList&);
 
-		void addStepCase(const core::ExpressionPtr&);
+		void addStepCase(const insieme::core::ExpressionPtr&);
 
 
 		// -- more observers --
 
-		core::FunctionTypePtr getBaseCaseTestType() const;
+		insieme::core::FunctionTypePtr getBaseCaseTestType() const;
 
-		core::FunctionTypePtr getBaseCaseType() const;
+		insieme::core::FunctionTypePtr getBaseCaseType() const;
 
-		core::FunctionTypePtr getStepCaseType() const;
+		insieme::core::FunctionTypePtr getStepCaseType() const;
 
-		core::TypePtr getParameterType() const;
+		insieme::core::TypePtr getParameterType() const;
 
-		core::TypePtr getResultType() const;
+		insieme::core::TypePtr getResultType() const;
 
 		TreetureType getTreetureType() const;
 
-		core::TypePtr getRecursiveFunctionType() const;
+		insieme::core::TypePtr getRecursiveFunctionType() const;
 
-		core::TypeList getRecursiveFunctionParameterTypes() const;
+		insieme::core::TypeList getRecursiveFunctionParameterTypes() const;
 
 
 
 		// -- encoder interface --
 
-		static core::TypePtr getEncodedType(core::NodeManager&);
+		static insieme::core::TypePtr getEncodedType(insieme::core::NodeManager&);
 
-		static bool isEncoding(const core::ExpressionPtr&);
+		static bool isEncoding(const insieme::core::ExpressionPtr&);
 
-		core::ExpressionPtr toIR(core::NodeManager&) const;
+		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
-		static PrecFunction fromIR(const core::ExpressionPtr&);
+		static PrecFunction fromIR(const insieme::core::ExpressionPtr&);
 
 	};
 
@@ -244,7 +242,7 @@ namespace lang {
 	/**
 	 * A convenience wrapper for prec operations.
 	 */
-	class PrecOperation : public core::encoder::encodable {
+	class PrecOperation : public insieme::core::encoder::encodable {
 
 		std::vector<PrecFunction> functions;
 
@@ -252,7 +250,7 @@ namespace lang {
 
 		PrecOperation(const std::vector<PrecFunction>& functions);
 
-		static bool isPrecOperation(const core::NodePtr&);
+		static bool isPrecOperation(const insieme::core::NodePtr&);
 
 
 		// -- getters and setters --
@@ -268,88 +266,88 @@ namespace lang {
 
 		// -- more observers --
 
-		core::TypePtr getParameterType() const;
+		insieme::core::TypePtr getParameterType() const;
 
-		core::TypePtr getResultType() const;
+		insieme::core::TypePtr getResultType() const;
 
 		TreetureType getTreetureType() const;
 
 
 		// -- encoder interface --
 
-		static core::TypePtr getEncodedType(core::NodeManager&);
+		static insieme::core::TypePtr getEncodedType(insieme::core::NodeManager&);
 
-		static bool isEncoding(const core::ExpressionPtr&);
+		static bool isEncoding(const insieme::core::ExpressionPtr&);
 
-		core::ExpressionPtr toIR(core::NodeManager&) const;
+		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
-		static PrecOperation fromIR(const core::ExpressionPtr&);
+		static PrecOperation fromIR(const insieme::core::ExpressionPtr&);
 
 	};
 
-	bool isDependencies(const core::NodePtr& node);
+	bool isDependencies(const insieme::core::NodePtr& node);
 
-	bool isRecFun(const core::NodePtr& node);
+	bool isRecFun(const insieme::core::NodePtr& node);
 
-	bool isRecFunToFunCall(const core::NodePtr&);
+	bool isRecFunToFunCall(const insieme::core::NodePtr&);
 
-	bool isRecFunToDepFunCall(const core::NodePtr&);
+	bool isRecFunToDepFunCall(const insieme::core::NodePtr&);
 
-	bool isRecFunUnwrapperCall(const core::NodePtr&);
+	bool isRecFunUnwrapperCall(const insieme::core::NodePtr&);
 
-	bool isPrecFun(const core::NodePtr& node);
+	bool isPrecFun(const insieme::core::NodePtr& node);
 
-	bool isPrecFunToFunCall(const core::NodePtr&);
+	bool isPrecFunToFunCall(const insieme::core::NodePtr&);
 
-	bool isPrecFunToDepFunCall(const core::NodePtr&);
+	bool isPrecFunToDepFunCall(const insieme::core::NodePtr&);
 
-	bool isPrecFunUnwrapperCall(const core::NodePtr&);
+	bool isPrecFunUnwrapperCall(const insieme::core::NodePtr&);
 
-	bool isTreeture(const core::NodePtr& node);
+	bool isTreeture(const insieme::core::NodePtr& node);
 
-	bool isTaskReference(const core::NodePtr& node);
+	bool isTaskReference(const insieme::core::NodePtr& node);
 
-	bool isCompletedTask(const core::NodePtr& node);
+	bool isCompletedTask(const insieme::core::NodePtr& node);
 
-	bool isAllscaleType(const core::NodePtr& node);
+	bool isAllscaleType(const insieme::core::NodePtr& node);
 
-	core::ExpressionPtr buildBuildRecFun(const core::ExpressionPtr& cutoffBind,
-	                                     const core::ExpressionList& baseBinds,
-	                                     const core::ExpressionList& stepBinds);
+	insieme::core::ExpressionPtr buildBuildRecFun(const insieme::core::ExpressionPtr& cutoffBind,
+	                                     const insieme::core::ExpressionList& baseBinds,
+	                                     const insieme::core::ExpressionList& stepBinds);
 
-	core::ExpressionPtr buildPrec(const core::ExpressionPtr& recFunTuple);
-	core::ExpressionPtr buildPrec(const core::ExpressionList& recFuns);
+	insieme::core::ExpressionPtr buildPrec(const insieme::core::ExpressionPtr& recFunTuple);
+	insieme::core::ExpressionPtr buildPrec(const insieme::core::ExpressionList& recFuns);
 
 	// dependencies
 
-	core::ExpressionPtr buildNoDependencies(core::NodeManager&);
+	insieme::core::ExpressionPtr buildNoDependencies(insieme::core::NodeManager&);
 
 	// treeture
 
-	core::ExpressionPtr buildTreetureDone(const core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildTreetureDone(const insieme::core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildTreetureRun(const core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildTreetureRun(const insieme::core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildTreetureCombine(const core::ExpressionPtr& a, const core::ExpressionPtr& b,
-	                                         const core::ExpressionPtr& combinerLambda, const core::ExpressionPtr& parallel);
+	insieme::core::ExpressionPtr buildTreetureCombine(const insieme::core::ExpressionPtr& a, const insieme::core::ExpressionPtr& b,
+	                                         const insieme::core::ExpressionPtr& combinerLambda, const insieme::core::ExpressionPtr& parallel);
 
-	core::ExpressionPtr buildTreetureGet(const core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildTreetureGet(const insieme::core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildTreetureToRef(const core::ExpressionPtr& treetureExpr, const core::TypePtr& targetType);
+	insieme::core::ExpressionPtr buildTreetureToRef(const insieme::core::ExpressionPtr& treetureExpr, const insieme::core::TypePtr& targetType);
 
-	core::ExpressionPtr buildTreetureFromRef(const core::ExpressionPtr& refTreetureExpr);
+	insieme::core::ExpressionPtr buildTreetureFromRef(const insieme::core::ExpressionPtr& refTreetureExpr);
 
-	core::ExpressionPtr buildRecfunToFun(const core::ExpressionPtr& param);
-	core::ExpressionPtr buildRecfunToDepFun(const core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildRecfunToFun(const insieme::core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildRecfunToDepFun(const insieme::core::ExpressionPtr& param);
 
-	core::ExpressionPtr buildPrecfunToFun(const core::ExpressionPtr& param);
-	core::ExpressionPtr buildPrecfunToDepFun(const core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildPrecfunToFun(const insieme::core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildPrecfunToDepFun(const insieme::core::ExpressionPtr& param);
 
 	// lambda utils
 
-	core::ExpressionPtr buildCppLambdaToClosure(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
+	insieme::core::ExpressionPtr buildCppLambdaToClosure(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType = nullptr);
 
-	core::ExpressionPtr buildCppLambdaToLambda(const core::ExpressionPtr& lambdaExpr, core::FunctionTypePtr closureType = nullptr);
+	insieme::core::ExpressionPtr buildCppLambdaToLambda(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType = nullptr);
 }
 }
 }

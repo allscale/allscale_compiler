@@ -393,8 +393,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -420,8 +420,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -443,8 +443,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -484,8 +484,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -524,8 +524,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -566,8 +566,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -622,8 +622,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -675,8 +675,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -710,8 +710,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -746,8 +746,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -782,8 +782,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-		<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+		<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -818,8 +818,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -854,8 +854,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -890,8 +890,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -929,8 +929,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -968,8 +968,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1005,8 +1005,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1042,8 +1042,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1079,8 +1079,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1115,8 +1115,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1155,8 +1155,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1192,8 +1192,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
@@ -1230,8 +1230,8 @@ namespace backend {
 		ASSERT_TRUE(prog);
 
 		// check for semantic errors
-		ASSERT_TRUE(core::checks::check(prog).empty())
-			<< core::printer::dumpErrors(core::checks::check(prog));
+		ASSERT_TRUE(checks::check(prog).empty())
+			<< printer::dumpErrors(checks::check(prog));
 
 		// convert with allscale backend
 		auto trg = convert(prog);
