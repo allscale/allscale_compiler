@@ -7,6 +7,7 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source defaults.sh
 
 nice -n "$NICE_LEVEL" ./configure
+nice -n "$NICE_LEVEL" ./checkout_submodules
 nice -n "$NICE_LEVEL" ./clean_cmake
 nice -n "$NICE_LEVEL" ./clean_analysis
 nice -n "$NICE_LEVEL" ./build_energy_opencl_valgrind

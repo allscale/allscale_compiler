@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -ex
+
+if [[ -z "${WORKSPACE+x}" ]]; then
+	cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	source defaults.sh
+fi
+
+pushd "$WORKSPACE"
+git submodule update --recursive --init
+popd
