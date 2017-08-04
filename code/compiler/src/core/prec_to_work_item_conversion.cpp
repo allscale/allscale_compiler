@@ -671,7 +671,7 @@ namespace core {
 
 		// -- Full Prec-to-WorkItem Conversion Procedure ---------------------------------------------------------------
 
-		core::NodePtr convertPrecOperator(int index, const core::NodePtr& code) {
+		core::ExpressionPtr convertPrecOperator(int index, const core::ExpressionPtr& code) {
 			const bool debug = false;
 
 			// -- Step 1: Preparation --
@@ -783,7 +783,6 @@ namespace core {
 
 			// get a name for the work item
 			std::string name = format("allscale_wi_%d",index);
-			std::cout << "Assigned name: " << name << "\n";
 
 			auto process = getProcessVariant(function);
 			auto split = getSplitVariant(name,function);
@@ -901,22 +900,63 @@ namespace core {
 	 * Converts prec calls in the given input program to work item constructs.
 	 */
 	NodePtr convertPrecToWorkItem(const NodePtr& code, const ProgressCallback& callback) {
-//return code;
+
 		// replace all prec calls with prec_operations and strip prec operator unwrapper
 		auto& mgr = code->getNodeManager();
 		const auto& ext = mgr.getLangExtension<backend::AllScaleBackendModule>();
 		core::IRBuilder builder(mgr);
 
-		// collect all prec calls in the program
 
-		// convert prec calls in a loop
+		// 1) collect all prec calls in the program
 
-		// convert program bottom-up with converted prec calls
+		// using a vector instead of a map to have a fixed order (for reporting progress)
+		std::vector<std::pair<CallExprPtr,ExpressionPtr>> precCalls;
+		visitDepthFirstOnce(code,[&](const CallExprPtr& call){
+
+			// check the type
+			if (!lang::isPrecFun(call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType())) return;
+
+			// first inline call
+			auto cur = core::transform::tryInlineToExpr(mgr,call);
+
+			// test whether it is a prec operator call
+			if (lang::PrecOperation::isPrecOperation(cur)) {
+				precCalls.push_back(std::make_pair(call,cur));
+			}
+
+		},false,true);
+
+		callback(ProgressUpdate(format("Start processing %d parallel regions ...",precCalls.size())));
 
 
-		int counter = 0;
+		// 2) convert prec calls in a loop
+		int index = 0;
+		for(auto& cur : precCalls) {
+
+			// keep counting
+			index++;
+
+			// provide progress reporting
+			callback(ProgressUpdate("Converting parallel region", index, precCalls.size()));
+
+			// convert this prec operator
+			cur.second = convertPrecOperator(index,cur.second);
+
+		}
 
 
+		// 3) convert program bottom-up with converted prec calls
+		callback(ProgressUpdate("Integrating parallel regions"));
+
+		// converting vector in map and support nested prec calls
+		NodeMap replacements;
+		for(const auto& cur : precCalls) {
+			// apply all other replacements on this replacement
+			auto replacement = core::transform::replaceAll(mgr,cur.second,replacements,core::transform::globalReplacement);
+			replacements[cur.first] = replacement;
+		}
+
+		// strip unwrapper and integrate converted prec calls into the full program
 		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur)->core::NodePtr {
 
 			// strip unwrapper
@@ -931,21 +971,13 @@ namespace core {
 				assert_fail() << "Unsupported prec-fun wrapper encountered: " << *call->getFunctionExpr();
 			}
 
-			// for the rest: only interested in calls producing precfun<'a,'b>
-			auto call = cur.isa<core::CallExprPtr>();
-			if (!call) return cur;
+			// for the rest, only interested in prec operators
+			auto pos = replacements.find(cur);
+			if (pos != replacements.end()) {
+				return pos->second;
+			}
 
-			// check the type
-			if (!lang::isPrecFun(call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType())) return cur;
-
-			// first inline call
-			auto res = core::transform::tryInlineToExpr(mgr,cur.as<core::CallExprPtr>());
-
-			// test whether it is a prec operator call
-			if (!lang::PrecOperation::isPrecOperation(res)) return res;
-
-			// convert the prec operator call
-			return convertPrecOperator(++counter,res);
+			return cur;
 
 		}, core::transform::globalReplacement);
 
