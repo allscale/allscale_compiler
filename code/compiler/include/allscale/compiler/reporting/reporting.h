@@ -16,6 +16,7 @@ namespace reporting {
 	enum class Severity : int {
 		Warning = 0,
 		Error = 1,
+		Info = 2
 	};
 
 	std::ostream& operator<<(std::ostream& out, Severity severity);

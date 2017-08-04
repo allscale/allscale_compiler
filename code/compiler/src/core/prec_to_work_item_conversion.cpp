@@ -899,18 +899,15 @@ namespace core {
 	/**
 	 * Converts prec calls in the given input program to work item constructs.
 	 */
-	NodePtr convertPrecToWorkItem(const NodePtr& code, const ProgressCallback& callback) {
+	ConversionResult convertPrecToWorkItem(const NodePtr& code, const ProgressCallback& callback) {
 
 		// replace all prec calls with prec_operations and strip prec operator unwrapper
 		auto& mgr = code->getNodeManager();
 		const auto& ext = mgr.getLangExtension<backend::AllScaleBackendModule>();
 		core::IRBuilder builder(mgr);
 
-
-		// 1) collect all prec calls in the program
-
-		// using a vector instead of a map to have a fixed order (for reporting progress)
-		std::vector<std::pair<CallExprPtr,ExpressionPtr>> precCalls;
+		// 1) collect prec operators
+		std::vector<NodePtr> precCalls;
 		visitDepthFirstOnce(code,[&](const CallExprPtr& call){
 
 			// check the type
@@ -921,42 +918,37 @@ namespace core {
 
 			// test whether it is a prec operator call
 			if (lang::PrecOperation::isPrecOperation(cur)) {
-				precCalls.push_back(std::make_pair(call,cur));
+				precCalls.push_back(call); 		// found one
 			}
 
 		},false,true);
 
+		// check whether there is something to do
+		ConversionReport report;
+		if (precCalls.empty()) return ConversionResult { report, code };
+
+
+		// provide some user info
 		callback(ProgressUpdate(format("Start processing %d parallel regions ...",precCalls.size())));
 
+		// tag prec calls with first address reaching them (and keep it over transformations)
+		struct FirstAddressTag : public core::value_annotation::copy_on_migration {
+			CallExprAddress addr;
+			FirstAddressTag(const CallExprAddress& addr) : addr(addr) {}
+			bool operator==(const FirstAddressTag& other) const {
+				return addr == other.addr;
+			}
+		};
 
-		// 2) convert prec calls in a loop
+		visitDepthFirstOnce(NodeAddress(code),[&](const CallExprAddress& cur) {
+			if (contains(precCalls,cur)) {
+				cur->attachValue<FirstAddressTag>(cur);
+			}
+		});
+
+
+		// 2) convert encountered prec operators bottom-up
 		int index = 0;
-		for(auto& cur : precCalls) {
-
-			// keep counting
-			index++;
-
-			// provide progress reporting
-			callback(ProgressUpdate("Converting parallel region", index, precCalls.size()));
-
-			// convert this prec operator
-			cur.second = convertPrecOperator(index,cur.second);
-
-		}
-
-
-		// 3) convert program bottom-up with converted prec calls
-		callback(ProgressUpdate("Integrating parallel regions"));
-
-		// converting vector in map and support nested prec calls
-		NodeMap replacements;
-		for(const auto& cur : precCalls) {
-			// apply all other replacements on this replacement
-			auto replacement = core::transform::replaceAll(mgr,cur.second,replacements,core::transform::globalReplacement);
-			replacements[cur.first] = replacement;
-		}
-
-		// strip unwrapper and integrate converted prec calls into the full program
 		auto res = core::transform::transformBottomUp(code, [&](const core::NodePtr& cur)->core::NodePtr {
 
 			// strip unwrapper
@@ -971,13 +963,41 @@ namespace core {
 				assert_fail() << "Unsupported prec-fun wrapper encountered: " << *call->getFunctionExpr();
 			}
 
-			// for the rest, only interested in prec operators
-			auto pos = replacements.find(cur);
-			if (pos != replacements.end()) {
-				return pos->second;
-			}
+			// for the rest: only interested in calls producing precfun<'a,'b>
+			auto call = cur.isa<core::CallExprPtr>();
+			if (!call) return cur;
 
-			return cur;
+			// check the type
+			if (!lang::isPrecFun(call->getFunctionExpr()->getType().as<core::FunctionTypePtr>()->getReturnType())) return cur;
+
+			// first inline call
+			auto res = core::transform::tryInlineToExpr(mgr,cur.as<core::CallExprPtr>());
+
+			// test whether it is a prec operator call
+			if (!lang::PrecOperation::isPrecOperation(res)) return res;
+
+			// provide progress reporting
+			index++;
+			callback(ProgressUpdate("Converting parallel region", index, precCalls.size()));
+
+			// convert the prec operator call
+			res = convertPrecOperator(index,res);
+
+			// also add info to conversion report
+			assert_true(call->hasAttachedValue<FirstAddressTag>());
+			auto firstAddress = call->getAttachedValue<FirstAddressTag>().addr;
+			report.addMessage(
+					firstAddress,
+					reporting::Issue(
+							firstAddress,
+							reporting::Severity::Info,
+							reporting::Category::Basic,
+							"Converted parallel region into shared-memory parallel runtime code."
+					)
+			);
+
+			// done
+			return res;
 
 		}, core::transform::globalReplacement);
 
@@ -986,7 +1006,7 @@ namespace core {
 			<< core::printer::dumpErrors(core::checks::check(res));
 
 		// return result
-		return res;
+		return ConversionResult { std::move(report), res };
 
 	}
 

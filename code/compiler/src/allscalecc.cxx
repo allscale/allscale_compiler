@@ -171,21 +171,6 @@ int main(int argc, char** argv) {
 	// report time usage
 	std::cout << "Converted to AllScale Runtime code in " << timer.step() << "s\n";
 
-	// run diagnostics analysis
-	/*{
-		std::cout << "Running diagnostics ... " << std::flush;
-		auto issues = allscale::compiler::analysis::runDiagnostics(core::NodeAddress(program));
-		if(issues.empty()) {
-			std::cout << "done\n";
-		} else {
-			std::cout << "\n";
-			bool printNodeAddresses = std::getenv(ALLSCALE_DIAG_NODE_ADDRESSES);
-			for(const auto& issue : issues) {
-				allscale::compiler::analysis::prettyPrintIssue(std::cout, issue, options.settings.noColor, printNodeAddresses);
-			}
-		}
-	}*/
-
 	// Step 5: convert transformed IR to target code
 	std::cout << "Producing target code ... " << std::flush;
 	auto code = allscale::compiler::backend::convert(program);

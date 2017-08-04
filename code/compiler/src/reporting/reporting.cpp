@@ -16,6 +16,7 @@ namespace reporting {
 		switch(severity) {
 		case Severity::Warning: return out << "Warning";
 		case Severity::Error:   return out << "Error";
+		case Severity::Info:   return out << "Info";
 		}
 		return out;
 	}

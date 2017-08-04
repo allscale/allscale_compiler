@@ -10,7 +10,15 @@ namespace core {
 
 	std::ostream& operator<<(std::ostream& out, const ConversionReport& report) {
 
+		out << "\n";
+		out << " ------ AllScale Code Generation Report ------\n";
+
+		out << "  Number of processed parallel regions: " << report.issues.size() << "\n";
+
+		out << " ---------------------------------------------\n";
+
 		// print issues, one after another
+		int counter = 0;
 		for(const auto& cur : report.issues) {
 			const auto& precCall = cur.first;
 			const auto& issues = cur.second;
@@ -18,15 +26,16 @@ namespace core {
 			// if there are no issues to report => skip this one
 			if (issues.empty()) continue;
 
-			out << "Processed parallel region ";
+			out << "Processed parallel region #" << (++counter) << ":\n";
 			reporting::prettyPrintLocation(out,precCall);
+			std::cout << "  Messages:\n";
 			for(const auto& cur : issues) {
-				out << "\t";
-				reporting::prettyPrintIssue(out,cur);
-				out << "\n";
+				out << "\t" << cur << "\n";
 			}
 			out << "\n";
 		}
+
+		out << " ---------------------------------------------\n";
 
 		// done
 		return out;
@@ -35,26 +44,23 @@ namespace core {
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback) {
 
 		// Step 1: convert C++ lambdas to IR
+		callback(ProgressUpdate("Pre-processing C++ lambdas ..."));
 		auto res = convertCppLambdaToIR(code);
-		callback(ProgressUpdate("C++ code simplifications completed"));
 
 		// Step 2: introduce data item references
 		res = convertDataItemReferences(res, callback);
 
 		// Step 3: convert prec calls
-		res = convertPrecToWorkItem(res, callback);
+		auto precConversionResult = convertPrecToWorkItem(res, callback);
+		res = precConversionResult.result;
 
 		// Step 4: convert the entry point into a work item
+		// TODO: move this step from the backend to the core
 
 		// Step 5: add default constructors to all closure types
+		// TODO: move this step from the backend to the core
 
-
-//		be::makePreProcessor<CppLambdaToIRConverter>(),
-//		be::makePreProcessor<PrecConverter>(),
-//		be::makePreProcessor<EntryPointWrapper>(),
-//		be::makePreProcessor<ClosureDefaultConstructorEnforcer>()
-
-		return { ConversionReport(), res };
+		return { precConversionResult.report, res };
 	}
 
 } // end namespace core
