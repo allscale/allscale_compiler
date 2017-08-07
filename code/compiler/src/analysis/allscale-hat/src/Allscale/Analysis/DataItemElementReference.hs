@@ -149,7 +149,7 @@ elementReferenceValue addr = case getNodeType addr of
 
     refForwardHandler = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) [ "ref_member_access" ]
+        cov a = any (isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast"]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
 

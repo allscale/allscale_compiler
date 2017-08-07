@@ -90,23 +90,18 @@ namespace backend {
 
 
 	bool WorkItemDescription::operator==(const WorkItemDescription& other) const {
-		return name == other.name && processVariant == other.processVariant &&
-				splitVariant == other.splitVariant && variants == other.variants;
+		return name == other.name && variants == other.variants;
 	}
 
 	bool WorkItemDescription::operator<(const WorkItemDescription& other) const {
 
 		// compare one field after the other
 		if (name != other.name)							return name < other.name;
-		if (processVariant != other.processVariant) 	return processVariant < other.processVariant;
-		if (splitVariant != other.splitVariant) 		return splitVariant < other.splitVariant;
 		return lexicographical_compare(variants, other.variants);
 	}
 
 	using work_item_description_tuple = std::tuple<
 			std::string,
-			WorkItemVariant,
-			WorkItemVariant,
 			std::vector<WorkItemVariant>
 	>;
 
@@ -128,7 +123,7 @@ namespace backend {
 
 		// encode the information stored within this description into a tuple
 		auto info = ie::toIR(mgr, work_item_description_tuple{
-			name, processVariant, splitVariant, variants
+			name, variants
 		});
 
 		// wrap this information into a work item description operator
@@ -151,9 +146,7 @@ namespace backend {
 		auto tuple = ie::toValue<work_item_description_tuple>(e.as<core::CallExprPtr>()->getArgument(0));
 		return WorkItemDescription(
 			std::get<0>(tuple),
-			std::get<1>(tuple),
-			std::get<2>(tuple),
-			std::get<3>(tuple)
+			std::get<1>(tuple)
 		);
 	}
 

@@ -12,11 +12,12 @@ module Allscale.Analysis.DataRequirements where
 import Allscale.Analysis.Entities.DataRange
 import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
+import Data.List
 import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext)
+import Insieme.Adapter (CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext,pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
@@ -46,24 +47,26 @@ data DataRequirement = DataRequirement {
                             range       :: DataRange,
                             accessMode  :: AccessMode
                         }
-    deriving (Eq,Ord,Generic,NFData)
-
-instance Show DataRequirement where
-    show (DataRequirement _ r a) = "Requirement{ir-tree," ++ (show r) ++ "," ++ (show a) ++ "}" 
-
-
-data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
     deriving (Eq,Ord,Show,Generic,NFData)
 
+
+printRequirement :: DataRequirement -> String
+printRequirement (DataRequirement i r a) = "Requirement{" ++ (pprintTree i) ++ "," ++ (printRange r) ++ "," ++ (show a) ++ "}"
 
 
 --
 -- * Data Requirements Lattice
 --
 
+data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
+    deriving (Eq,Ord,Show,Generic,NFData)
+
 instance Solver.Lattice DataRequirements where
     bot   = DataRequirements $ BSet.empty
     merge (DataRequirements a) (DataRequirements b) = DataRequirements $ BSet.union a b
+    
+    print (DataRequirements BSet.Universe) = "Universe"
+    print (DataRequirements b)             = "{" ++ (intercalate "," $ printRequirement <$> BSet.toList b) ++ "}"
 
 instance Solver.ExtLattice DataRequirements where
     top   = DataRequirements $ BSet.Universe

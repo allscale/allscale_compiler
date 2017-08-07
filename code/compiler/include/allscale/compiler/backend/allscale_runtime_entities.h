@@ -73,17 +73,7 @@ namespace backend {
 		std::string name;
 
 		/**
-		 * The variant processing the described work item.
-		 */
-		WorkItemVariant processVariant;
-
-		/**
-		 * The variant splitting the described work item.
-		 */
-		WorkItemVariant splitVariant;
-
-		/**
-		 * A list of additional variants.
+		 * A list of implementation variants.
 		 */
 		std::vector<WorkItemVariant> variants;
 
@@ -94,13 +84,24 @@ namespace backend {
 				const WorkItemVariant& process,
 				const WorkItemVariant& split,
 				const std::vector<WorkItemVariant>& variants = std::vector<WorkItemVariant>()
-			) : name(name), processVariant(process), splitVariant(split) {
+			) : name(name), variants({process,split}) {
 			assert_eq(process.getResultType(),split.getResultType());
 			assert_eq(process.getClosureType(),split.getClosureType());
 
 			// insert variants (and check types)
 			for(const auto& cur : variants) {
 				addVariant(cur);
+			}
+		}
+
+		WorkItemDescription(
+				const std::string& name,
+				const std::vector<WorkItemVariant>& variants
+			) : name(name), variants(variants) {
+			assert_le(2,variants.size());
+			for(const auto& cur : variants) {
+				assert_eq(getResultType(), cur.getResultType());
+				assert_eq(getClosureType(), cur.getClosureType());
 			}
 		}
 
@@ -112,22 +113,30 @@ namespace backend {
 		}
 
 		insieme::core::TypePtr getResultType() const {
-			return processVariant.getResultType();
+			return getProcessVariant().getResultType();
 		}
 
 		insieme::core::TupleTypePtr getClosureType() const {
-			return processVariant.getClosureType();
+			return getProcessVariant().getClosureType();
 		}
 
 		const WorkItemVariant& getProcessVariant() const {
-			return processVariant;
+			return variants[0];
 		}
 
 		const WorkItemVariant& getSplitVariant() const {
-			return splitVariant;
+			return variants[1];
 		}
 
-		const std::vector<WorkItemVariant>& getOptionalVariants() const {
+		std::vector<WorkItemVariant> getOptionalVariants() const {
+			return std::vector<WorkItemVariant>(variants.begin()+2,variants.end());
+		}
+
+		const std::vector<WorkItemVariant>& getVariants() const {
+			return variants;
+		}
+
+		std::vector<WorkItemVariant>& getVariants() {
 			return variants;
 		}
 

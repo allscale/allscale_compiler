@@ -5,11 +5,14 @@
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
 #include "insieme/core/types/return_type_deduction.h"
+#include "insieme/core/dump/json_dump.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 #include "allscale/compiler/backend/allscale_runtime_entities.h"
 #include "allscale/compiler/allscale_utils.h"
+
+#include "allscale/compiler/analysis/data_requirement.h"
 
 namespace allscale {
 namespace compiler {
@@ -893,6 +896,70 @@ namespace core {
 			return res;
 		}
 
+
+		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall) {
+			const bool debug = false;
+
+			// this feature is experimental for now
+			if (!std::getenv("RUN_ANALYSIS")) {
+				return precFun;
+			}
+
+			// locate outer-most work item description
+			ExpressionPtr workItemDesc;
+			visitDepthFirstOnceInterruptible(precFun,[&](const CallExprPtr& call) {
+				if (backend::WorkItemDescription::isEncoding(call)) {
+					workItemDesc = call;
+					return Action::Interrupt;
+				}
+				return Action::Continue;
+			});
+
+			// make sure a work item description has been found
+			assert_true(workItemDesc);
+
+			// de-code work item description
+			auto desc = backend::WorkItemDescription::fromIR(workItemDesc);
+			int counter = 0;
+			for(auto& variant : desc.getVariants()) {
+				counter++;
+				std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
+
+				// obtaining data requirements for the body of this variant
+				analysis::AnalysisContext context;
+				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
+
+				if (debug) {
+					std::cout << "Obtained dependencies: " << requirements << "\n";
+					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
+					context.dumpSolution();
+					context.dumpStatistics();
+					exit(1);
+				}
+
+				// if dependencies could not be narrowed down => report an warning
+				if (requirements.isUniverse()) {
+					report.addMessage(precCall, reporting::Issue(precCall,
+							reporting::Severity::Warning,
+							reporting::Category::Basic,
+							format("Unable to obtain data requirement for code variant #%d.", counter))
+					);
+				} else {
+					// otherwise report a summary info
+					report.addMessage(precCall, reporting::Issue(precCall,
+							reporting::Severity::Info,
+							reporting::Category::Basic,
+							format("Obtained data requirement for variant #%d: %s", counter, requirements))
+					);
+				}
+
+				// TODO: run diagnosis here!
+
+			}
+
+			return precFun;
+		}
+
 	} // end namespace
 
 
@@ -995,6 +1062,9 @@ namespace core {
 							"Converted parallel region into shared-memory parallel runtime code."
 					)
 			);
+
+			// add data requirement dependencies
+			res = integrateDataRequirements(res,report,firstAddress);
 
 			// done
 			return res;
