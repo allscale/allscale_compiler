@@ -8,7 +8,7 @@ extern "C" {
 	using namespace insieme::analysis::cba::haskell;
 	using namespace allscale::compiler::analysis;
 
-	DataRequirements* hat_hs_data_requirements(StablePtr ctx, const HaskellNodeAddress node_hs);
+	AnalysisResult<DataRequirements*>* hat_hs_data_requirements(StablePtr ctx, const HaskellNodeAddress node_hs);
 
 }
 
@@ -159,7 +159,8 @@ namespace analysis {
 
 	DataRequirements getDataRequirements(AnalysisContext& ctx, const StatementPtr& stmt) {
 		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
-		DataRequirements* res_ptr = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
+		auto result = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
+		DataRequirements* res_ptr = ctx.unwrapResult(result);
 		assert_true(res_ptr);
 
 		DataRequirements res = std::move(*res_ptr);

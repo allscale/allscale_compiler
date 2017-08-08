@@ -19,7 +19,7 @@ import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (updateContext)
+import Insieme.Adapter (AnalysisResultPtr,allocAnalysisResult)
 import Insieme.Analysis.Arithmetic (arithmeticValue, SymbolicFormulaSet(..))
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
@@ -153,14 +153,12 @@ tracePrefix prefix obj = traceShow (prefix ++ ": " ++ show obj) obj
 -- * FFI
 
 foreign export ccall "hat_out_of_bounds"
-  hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+  hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr CInt)
 
-hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr CInt)
 hsOutOfBounds ctx_hs expr_hs = do
     ctx  <- deRefStablePtr ctx_hs
     expr <- deRefStablePtr expr_hs
     let (result,ns) = outOfBounds (Ctx.getSolverState ctx) expr
-    let ctx_c = Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    updateContext ctx_c ctx_nhs
-    return $ fromIntegral $ fromEnum result
+    allocAnalysisResult ctx_nhs $ fromIntegral $ fromEnum result

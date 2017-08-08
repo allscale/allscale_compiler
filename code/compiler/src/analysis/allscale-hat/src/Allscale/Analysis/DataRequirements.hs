@@ -17,7 +17,7 @@ import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CSetPtr,CRepArr,dumpIrTree,passBoundSet,updateContext,pprintTree)
+import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,passBoundSet,pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
@@ -273,17 +273,17 @@ dataRequirements addr = case getNode addr of
 -- * FFI
 
 foreign export ccall "hat_hs_data_requirements"
-  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
+  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CRepPtr DataRequirements))
 
-hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (CRepPtr DataRequirements)
+hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CRepPtr DataRequirements))
 hsDataRequirements ctx_hs stmt_hs = do
     ctx  <- deRefStablePtr ctx_hs
     stmt <- deRefStablePtr stmt_hs
     let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (dataRequirements stmt)
     let ctx_c =  Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    updateContext ctx_c ctx_nhs
-    passDataRequirements ctx_c res
+    result <- passDataRequirements ctx_c res
+    allocAnalysisResult ctx_nhs result
 
 foreign import ccall "hat_c_mk_data_requirement"
   mkCDataRequirement :: CRepPtr IR.Tree -> CRepPtr DataRange -> CInt -> IO (CRepPtr DataRequirement)

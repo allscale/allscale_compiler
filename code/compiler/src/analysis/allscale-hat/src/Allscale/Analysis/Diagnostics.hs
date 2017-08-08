@@ -15,7 +15,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CRepArr,updateContext,passNodeAddress,withArrayUnsignedLen)
+import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CRepArr,allocAnalysisResult,passNodeAddress,withArrayUnsignedLen)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
@@ -239,17 +239,17 @@ globalVariableDiagnosis addr = diagnosis diag addr
 type DiagnosisFlags = CULong
 
 foreign export ccall "hat_hs_diagnostics"
-  hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (CRepPtr Issues)
+  hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (AnalysisResultPtr (CRepPtr Issues))
 
-hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (CRepPtr Issues)
+hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (AnalysisResultPtr (CRepPtr Issues))
 hsDiagnostics ctx_hs addr_hs diags = do
     ctx  <- deRefStablePtr ctx_hs
     addr <- deRefStablePtr addr_hs
     let (res,ns) = runDiagnostics (Ctx.getSolverState ctx) addr (selectDiags diags)
     let (ctx_c) = Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    updateContext ctx_c ctx_nhs
-    passIssues ctx_c res
+    result <- passIssues ctx_c res
+    allocAnalysisResult ctx_nhs result
 
 foreign import ccall "hat_c_mk_issue"
   mkCIssue :: CRepPtr NodeAddress -> CInt -> CInt -> CString -> IO (CRepPtr Issue)
