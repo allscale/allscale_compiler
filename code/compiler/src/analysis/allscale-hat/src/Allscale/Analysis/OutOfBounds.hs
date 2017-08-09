@@ -13,6 +13,7 @@ module Allscale.Analysis.OutOfBounds (
 import Debug.Trace
 
 import Control.DeepSeq
+import Control.Exception.Base (evaluate)
 import Control.Monad
 import Data.Foldable (or)
 import Data.Typeable
@@ -28,6 +29,7 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toVal
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
+import System.Timeout (timeout)
 
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
@@ -161,4 +163,9 @@ hsOutOfBounds ctx_hs expr_hs = do
     expr <- deRefStablePtr expr_hs
     let (result,ns) = outOfBounds (Ctx.getSolverState ctx) expr
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    allocAnalysisResult ctx_nhs $ fromIntegral $ fromEnum result
+    result <- timeout (Ctx.getTimelimit ctx) $ serialize result
+    case result of
+        Just r  -> allocAnalysisResult ctx_nhs False r
+        Nothing -> allocAnalysisResult ctx_hs  True =<< serialize MayBeOutOfBounds
+  where
+    serialize = evaluate . fromIntegral . fromEnum

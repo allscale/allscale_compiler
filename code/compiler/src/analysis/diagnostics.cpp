@@ -45,11 +45,14 @@ extern "C" {
 		return new Issue(*target, static_cast<Severity>(severity), category, message);
 	}
 
+	void hat_c_del_issue(Issue* i) {
+		delete i;
+	}
+
 	Issues* hat_c_mk_issues(Issue* issues[], size_t size) {
 		auto ret = new Issues;
 		for(size_t i = 0; i < size; i++) {
 			ret->emplace(std::move(*issues[i]));
-			delete issues[i];
 		}
 		return ret;
 	}

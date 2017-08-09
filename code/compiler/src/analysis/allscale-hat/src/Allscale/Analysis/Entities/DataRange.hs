@@ -10,13 +10,15 @@ module Allscale.Analysis.Entities.DataRange(
     point,
     defineIteratorRange,
     passDataRange,
+    delCDataRange,
     printRange,
 ) where
 
 import Control.DeepSeq
+import Control.Exception (bracket)
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,passBoundSet,pprintTree)
+import Insieme.Adapter (CRepPtr,CRepArr,CSetPtr,dumpIrTree,delCIrTree,passBoundSet,pprintTree)
 import Insieme.Inspire.Transform (substitute)
 
 import qualified Data.Map as Map
@@ -80,28 +82,39 @@ printRange (DataRange set) = concat $ go <$> BSet.toList set
 foreign import ccall "hat_c_mk_data_point"
   mkCDataPoint :: CRepPtr IR.Tree -> IO (CRepPtr DataPoint)
 
+foreign import ccall "hat_c_del_data_point"
+  delCDataPoint :: CRepPtr DataPoint -> IO ()
+
 foreign import ccall "hat_c_mk_data_span"
   mkCDataSpan :: CRepPtr DataPoint -> CRepPtr DataPoint -> IO (CRepPtr DataSpan)
 
 foreign import ccall "hat_c_mk_data_span_set"
   mkCDataSpanSet :: CRepArr DataSpan -> CLLong -> IO (CSetPtr DataSpan)
 
+foreign import ccall "hat_c_del_data_span_set"
+  delCDataSpanSet :: CSetPtr DataSpan -> IO ()
+
 foreign import ccall "hat_c_mk_data_range"
   mkCDataRange :: CSetPtr DataSpan -> IO (CRepPtr DataRange)
 
+foreign import ccall "hat_c_del_data_range"
+  delCDataRange :: CRepPtr DataRange -> IO ()
+
 passDataRange :: Ctx.CContext -> DataRange -> IO (CRepPtr DataRange)
-passDataRange ctx (DataRange s) = do
-    s_c <- passBoundSet passDataSpan mkCDataSpanSet s
-    mkCDataRange s_c
+passDataRange ctx (DataRange s) = bracket
+    (passBoundSet passDataSpan mkCDataSpanSet s)
+    (delCDataSpanSet)
+    (mkCDataRange)
   where
 
     passDataSpan :: DataSpan -> IO (CRepPtr DataSpan)
-    passDataSpan (DataSpan f t) = do
-        f_c <- passDataPoint f
-        t_c <- passDataPoint t
-        mkCDataSpan f_c t_c
+    passDataSpan (DataSpan f t) = bracket
+        ((,) <$> passDataPoint f <*> passDataPoint t)
+        (\(f_c, t_c) -> delCDataPoint f_c >> delCDataPoint t_c)
+        (\(f_c, t_c) -> mkCDataSpan f_c t_c)
 
     passDataPoint :: DataPoint -> IO (CRepPtr DataPoint)
-    passDataPoint (DataPoint irtree) = do
-        irtree_c <- dumpIrTree ctx irtree
-        mkCDataPoint irtree_c
+    passDataPoint (DataPoint irtree) = bracket
+        (dumpIrTree ctx irtree)
+        (delCIrTree)
+        (mkCDataPoint)

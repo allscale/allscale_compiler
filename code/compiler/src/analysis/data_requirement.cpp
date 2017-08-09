@@ -181,35 +181,37 @@ extern "C" {
 
 	DataPoint* hat_c_mk_data_point(NodePtr* node) {
 		DataPoint* dp = new DataPoint(std::move(node->as<ExpressionPtr>()));
-		delete node;
 		return dp;
+	}
+
+	void hat_c_del_data_point(DataPoint* d) {
+		delete d;
 	}
 
 	DataSpan* hat_c_mk_data_span(DataPoint* from, DataPoint* to) {
 		DataSpan* ds = new DataSpan(std::move(*from), std::move(*to));
-		delete from;
-		delete to;
 		return ds;
 	}
 
-	DataRange::set_type* hat_c_mk_data_span_set(const DataSpan* spans[], long long size) {
-		if(size < 0) {
-			return new DataRange::set_type(DataRange::set_type::getUniversal());
-		}
+	void hat_c_del_data_span(DataSpan* d) {
+		delete d;
+	}
 
-		auto dss = new DataRange::set_type();
-		for(int i = 0; i < size; i++) {
-			dss->insert(std::move(*spans[i]));
-			delete spans[i];
-		}
+	DataRange::set_type* hat_c_mk_data_span_set(DataSpan* spans[], long long size) {
+		return DataRange::set_type::fromArray(spans, size);
+	}
 
-		return dss;
+	void hat_c_del_data_span_set(DataRange::set_type* s) {
+		delete s;
 	}
 
 	DataRange* hat_c_mk_data_range(DataRange::set_type* dss) {
 		DataRange* dr = new DataRange(std::move(*dss));
-		delete dss;
 		return dr;
+	}
+
+	void hat_c_del_data_range(DataRange* d) {
+		delete d;
 	}
 
 	DataRequirement* hat_c_mk_data_requirement(NodePtr* node, DataRange* range, int accessMode) {
@@ -218,28 +220,19 @@ extern "C" {
 			std::move(*range),
 			static_cast<AccessMode>(accessMode)
 		);
-		delete node;
-		delete range;
 		return dr;
 	}
 
-	DataRequirements::set_type* hat_c_mk_data_requirement_set(const DataRequirement* reqs[], long long size) {
-		if(size < 0) {
-			return new DataRequirements::set_type(DataRequirements::set_type::getUniversal());
-		}
+	DataRequirements::set_type* hat_c_mk_data_requirement_set(DataRequirement* reqs[], long long size) {
+		return DataRequirements::set_type::fromArray(reqs, size);
+	}
 
-		auto drs = new DataRequirements::set_type();
-		for(int i = 0; i < size; i++) {
-			drs->insert(std::move(*reqs[i]));
-			delete reqs[i];
-		}
-
-		return drs;
+	void hat_c_del_data_requirement_set(DataRequirements::set_type* d) {
+		delete d;
 	}
 
 	DataRequirements* hat_c_mk_data_requirements(DataRequirements::set_type* drs) {
 		DataRequirements* dr = new DataRequirements(std::move(*drs));
-		delete drs;
 		return dr;
 	}
 

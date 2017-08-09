@@ -12,17 +12,19 @@ module Allscale.Analysis.DataRequirements where
 import Allscale.Analysis.Entities.DataRange
 import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
+import Control.Exception (bracket)
 import Data.List
 import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,passBoundSet,pprintTree)
+import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,delCIrTree,passBoundSet,pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
+import System.Timeout (timeout)
 
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Context as Ctx
@@ -282,8 +284,10 @@ hsDataRequirements ctx_hs stmt_hs = do
     let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (dataRequirements stmt)
     let ctx_c =  Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    result <- passDataRequirements ctx_c res
-    allocAnalysisResult ctx_nhs result
+    result <- timeout (Ctx.getTimelimit ctx) $ passDataRequirements ctx_c res
+    case result of
+        Just r  -> allocAnalysisResult ctx_nhs False r
+        Nothing -> allocAnalysisResult ctx_hs  True =<< passDataRequirements ctx_c Solver.top
 
 foreign import ccall "hat_c_mk_data_requirement"
   mkCDataRequirement :: CRepPtr IR.Tree -> CRepPtr DataRange -> CInt -> IO (CRepPtr DataRequirement)
@@ -291,19 +295,24 @@ foreign import ccall "hat_c_mk_data_requirement"
 foreign import ccall "hat_c_mk_data_requirement_set"
   mkCDataRequirementSet :: CRepArr DataRequirement -> CLLong -> IO (CSetPtr DataRequirement)
 
+foreign import ccall "hat_c_del_data_requirement_set"
+  delCDataRequirementSet :: CSetPtr DataRequirement -> IO ()
+
 foreign import ccall "hat_c_mk_data_requirements"
   mkCDataRequirements :: CSetPtr DataRequirement -> IO (CRepPtr DataRequirements)
 
 passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (CRepPtr DataRequirements)
-passDataRequirements ctx (DataRequirements s) = do
-    s_c <- passBoundSet passDataRequirement mkCDataRequirementSet s
-    mkCDataRequirements s_c
+passDataRequirements ctx (DataRequirements s) = bracket
+    (passBoundSet passDataRequirement mkCDataRequirementSet s)
+    (delCDataRequirementSet)
+    (mkCDataRequirements)
   where
+
     passDataRequirement :: DataRequirement -> IO (CRepPtr DataRequirement)
-    passDataRequirement (DataRequirement d r a) = do
-        d_c <- dumpIrTree ctx d
-        r_c <- passDataRange ctx r
-        mkCDataRequirement d_c r_c (convertAccessMode a)
+    passDataRequirement (DataRequirement d r a) = bracket
+        ((,) <$> dumpIrTree ctx d <*> passDataRange ctx r)
+        (\(d_c, r_c) -> delCIrTree d_c >> delCDataRange r_c)
+        (\(d_c, r_c) -> mkCDataRequirement d_c r_c (convertAccessMode a))
 
     convertAccessMode :: AccessMode -> CInt
     convertAccessMode ReadOnly = 0
