@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <vector>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -24,6 +25,7 @@ namespace analysis {
 
 	using namespace std;
 	using namespace insieme::core;
+	using namespace std::literals::chrono_literals;
 
 	namespace fs = boost::filesystem;
 
@@ -107,16 +109,19 @@ namespace analysis {
 				expected = expected.substr(1,expected.size()-2);
 
 				// for now, we have to create a temporary context
-				insieme::analysis::cba::haskell::Context ctxt_;
+				insieme::analysis::cba::haskell::Context ctxt_(compound);
+				ctxt_.setTimelimit(60s);
 				auto requirements = getDataRequirements(ctxt_, compound);
+
+				ASSERT_TRUE(requirements);
 
 				// TODO: check the actual value
 //				std::cout << "Expected requirements:   " << expected << "\n";
 //				std::cout << "Identified requirements: " << requirements << "\n";
-				EXPECT_EQ(expected,toString(requirements))
+				EXPECT_EQ(expected,toString(*requirements))
 					<< *annotations::getLocation(call) << std::endl;
 
-				EXPECT_FALSE(requirements.isUniverse())
+				EXPECT_FALSE(requirements->isUniverse())
 					<< *annotations::getLocation(call) << std::endl;
 
 			// debugging

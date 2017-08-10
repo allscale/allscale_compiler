@@ -25,13 +25,13 @@ namespace analysis {
 	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlagsAll */) {
 		auto node_hs = ctx.resolveNodeAddress(node);
 		auto result = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs, flags);
-		Issues* res_ptr = ctx.unwrapResult(result);
-		assert_true(res_ptr);
+		auto value = ctx.unwrapResult(result);
 
-		Issues res = std::move(*res_ptr);
-		delete res_ptr;
+		if(!value) {
+			return {Issue::timeout(node)};
+		}
 
-		return res;
+		return *value;
 	}
 
 } // end namespace analysis

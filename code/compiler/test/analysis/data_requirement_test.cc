@@ -161,7 +161,8 @@ namespace analysis {
 				ctxt.dumpSolution();
 			}
 
-			return res;
+			// exception on timeout
+			return *res;
 		}
 
 		bool isEmpty(const DataRequirements& req) {

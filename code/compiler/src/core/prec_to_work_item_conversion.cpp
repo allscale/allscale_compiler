@@ -930,15 +930,22 @@ namespace core {
 				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
 
 				if (debug) {
-					std::cout << "Obtained dependencies: " << requirements << "\n";
+					std::cout << "Obtained dependencies: ";
+					if(requirements) {
+						std::cout << *requirements << "\n";
+					} else {
+						std::cout << "-timeout-\n";
+					}
 					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
 					context.dumpSolution();
 					context.dumpStatistics();
 					exit(1);
 				}
 
-				// if dependencies could not be narrowed down => report an warning
-				if (requirements.isUniverse()) {
+				if (!requirements) {
+					report.addMessage(precCall, reporting::Issue::timeout(precCall));
+				} else if (requirements->isUniverse()) {
+					// if dependencies could not be narrowed down => report a warning
 					report.addMessage(precCall, reporting::Issue(precCall,
 							reporting::Severity::Warning,
 							reporting::Category::Basic,
@@ -949,7 +956,7 @@ namespace core {
 					report.addMessage(precCall, reporting::Issue(precCall,
 							reporting::Severity::Info,
 							reporting::Category::Basic,
-							format("Obtained data requirement for variant #%d: %s", counter, requirements))
+							format("Obtained data requirement for variant #%d: %s", counter, *requirements))
 					);
 				}
 

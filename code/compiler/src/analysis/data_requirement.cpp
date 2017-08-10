@@ -152,21 +152,15 @@ namespace analysis {
 
 	// -- Data Requirement Analysis --
 
-	DataRequirements getDataRequirements(const StatementPtr& stmt) {
+	boost::optional<DataRequirements> getDataRequirements(const StatementPtr& stmt) {
 		AnalysisContext context;
 		return getDataRequirements(context, stmt);
 	}
 
-	DataRequirements getDataRequirements(AnalysisContext& ctx, const StatementPtr& stmt) {
+	boost::optional<DataRequirements> getDataRequirements(AnalysisContext& ctx, const StatementPtr& stmt) {
 		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
 		auto result = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
-		DataRequirements* res_ptr = ctx.unwrapResult(result);
-		assert_true(res_ptr);
-
-		DataRequirements res = std::move(*res_ptr);
-		delete res_ptr;
-
-		return res;
+		return ctx.unwrapResult(result);
 	}
 
 } // end namespace analysis
