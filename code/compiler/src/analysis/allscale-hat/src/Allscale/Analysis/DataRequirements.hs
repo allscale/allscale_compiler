@@ -18,7 +18,7 @@ import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,delCIrTree,passBoundSet,pprintTree)
+import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,delCIrTree,getTimelimit,passBoundSet,pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
@@ -281,10 +281,11 @@ hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (Anal
 hsDataRequirements ctx_hs stmt_hs = do
     ctx  <- deRefStablePtr ctx_hs
     stmt <- deRefStablePtr stmt_hs
+    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
     let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (dataRequirements stmt)
     let ctx_c =  Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    result <- timeout (Ctx.getTimelimit ctx) $ passDataRequirements ctx_c res
+    result <- timeout timelimit $ passDataRequirements ctx_c res
     case result of
         Just r  -> allocAnalysisResult ctx_nhs False r
         Nothing -> allocAnalysisResult ctx_hs  True =<< passDataRequirements ctx_c Solver.top

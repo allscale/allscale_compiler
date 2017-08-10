@@ -16,7 +16,7 @@ import Foreign
 import Foreign.C.String
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CRepArr,allocAnalysisResult,passNodeAddress,delCNodeAddress,withArrayUnsignedLen)
+import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CRepArr,allocAnalysisResult,passNodeAddress,delCNodeAddress,getTimelimit,withArrayUnsignedLen)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
@@ -247,10 +247,11 @@ hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlag
 hsDiagnostics ctx_hs addr_hs diags = do
     ctx  <- deRefStablePtr ctx_hs
     addr <- deRefStablePtr addr_hs
+    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
     let (res,ns) = runDiagnostics (Ctx.getSolverState ctx) addr (selectDiags diags)
     let (ctx_c) = Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    result <- timeout (Ctx.getTimelimit ctx) $ passIssues ctx_c res
+    result <- timeout timelimit $ passIssues ctx_c res
     case result of
         Just r  -> allocAnalysisResult ctx_nhs False r
         Nothing -> allocAnalysisResult ctx_hs  True =<< passIssues ctx_c (mkIssues [])
