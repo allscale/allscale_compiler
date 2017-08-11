@@ -6,6 +6,7 @@
 #include "insieme/core/transform/manipulation.h"
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/dump/json_dump.h"
+#include "insieme/core/dump/binary_haskell.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -898,7 +899,7 @@ namespace core {
 
 
 		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall) {
-			const bool debug = false;
+			const bool debug = true;
 
 			// this feature is experimental for now
 			if (!std::getenv("RUN_ANALYSIS")) {
@@ -925,6 +926,12 @@ namespace core {
 				counter++;
 				std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
 
+				if(debug) {
+					std::cout << "DEBUG: dumping stuff" << std::endl;
+					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
+					core::dump::binary::haskell::dumpIR("code.irbh", variant.getImplementation()->getBody());
+				}
+
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
 				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
@@ -936,7 +943,6 @@ namespace core {
 					} else {
 						std::cout << "-timeout-\n";
 					}
-					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
 					context.dumpSolution();
 					context.dumpStatistics();
 					exit(1);
