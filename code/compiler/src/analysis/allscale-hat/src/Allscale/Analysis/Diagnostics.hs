@@ -6,17 +6,10 @@ module Allscale.Analysis.Diagnostics where
 --import Debug.Trace
 
 import Control.DeepSeq (NFData)
-import Control.Exception (bracket)
-import Control.Monad
 import Data.Maybe
-import Data.Bits.Bitwise (toListLE)
 import Data.Set (Set)
 import Data.Typeable (Typeable)
-import Foreign
-import Foreign.C.String
-import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CRepArr,allocAnalysisResult,passNodeAddress,delCNodeAddress,getTimelimit,withArrayUnsignedLen)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
@@ -24,12 +17,10 @@ import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.Reference
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
-import System.Timeout (timeout)
 
 import qualified Data.Set as Set
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -235,58 +226,3 @@ globalVariableDiagnosis addr = diagnosis diag addr
     handleOp access a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
                                    then [Issue addr Error Basic (access ++ " access to global")]
                                    else []
-
--- * FFI
-
-type DiagnosisFlags = CULong
-
-foreign export ccall "hat_hs_diagnostics"
-  hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (AnalysisResultPtr (CRepPtr Issues))
-
-hsDiagnostics :: StablePtr Ctx.Context -> StablePtr NodeAddress -> DiagnosisFlags -> IO (AnalysisResultPtr (CRepPtr Issues))
-hsDiagnostics ctx_hs addr_hs diags = do
-    ctx  <- deRefStablePtr ctx_hs
-    addr <- deRefStablePtr addr_hs
-    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
-    let (res,ns) = runDiagnostics (Ctx.getSolverState ctx) addr (selectDiags diags)
-    let (ctx_c) = Ctx.getCContext ctx
-    ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    result <- timeout timelimit $ passIssues ctx_c res
-    case result of
-        Just r  -> allocAnalysisResult ctx_nhs False r
-        Nothing -> allocAnalysisResult ctx_hs  True =<< passIssues ctx_c (mkIssues [])
-
-foreign import ccall "hat_c_mk_issue"
-  mkCIssue :: CRepPtr NodeAddress -> CInt -> CInt -> CString -> IO (CRepPtr Issue)
-
-foreign import ccall "hat_c_del_issue"
-  delCIssue :: CRepPtr Issue -> IO ()
-
-foreign import ccall "hat_c_mk_issues"
-  mkCIssues :: CRepArr Issue -> CSize -> IO (CRepPtr Issues)
-
-passIssues :: Ctx.CContext -> Issues -> IO (CRepPtr Issues)
-passIssues ctx (Issues is) = bracket
-    (forM (Set.toList is) passIssue)
-    (mapM_ delCIssue)
-    (\is_c -> withArrayUnsignedLen is_c mkCIssues)
-  where
-    passIssue :: Issue -> IO (CRepPtr Issue)
-    passIssue (Issue t s c m) = bracket
-        (passNodeAddress ctx t)
-        (delCNodeAddress)
-        (\t_c -> withCString m $ mkCIssue t_c (convertSeverity s) (convertCategory c))
-
-    convertCategory :: Categroy -> CInt
-    convertCategory Basic = 0
-
-    convertSeverity :: Severity -> CInt
-    convertSeverity Warning = 0
-    convertSeverity Error = 1
-
-selectDiags :: DiagnosisFlags -> [DiagnosisFunction]
-selectDiags = catMaybes . map sel . zip [0..] . toListLE
-  where
-    sel (0, True) = Just unknownReferenceDiagnosis
-    sel (1, True) = Just globalVariableDiagnosis
-    sel _         = Nothing

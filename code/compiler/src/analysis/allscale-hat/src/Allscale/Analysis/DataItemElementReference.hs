@@ -21,7 +21,6 @@ import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), SymbolicValueLattic
 import Insieme.Analysis.Reference (isMaterializingDeclaration, isMaterializingCall)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
-import Insieme.Adapter (pprintTree)
 
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Inspire as IR
@@ -86,7 +85,8 @@ printReferenceSet :: ElementReferenceSet -> String
 printReferenceSet (ElementReferenceSet BSet.Universe) = "{ - all - }"
 printReferenceSet (ElementReferenceSet set) = "{" ++ (concat $ go <$> BSet.toList set) ++ "}"
   where
-    go (ElementReference ref range) = (pprintTree ref) ++ "[" ++ (printRange range) ++ "]"
+    --go (ElementReference ref range) = (pprintTree ref) ++ "[" ++ (printRange range) ++ "]"
+    go (ElementReference ref range) = "-omitted for profiling- [" ++ (printRange range) ++ "]"
 
 --
 -- * Element Reference Analysis token

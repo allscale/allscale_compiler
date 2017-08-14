@@ -12,22 +12,16 @@ module Allscale.Analysis.DataRequirements where
 import Allscale.Analysis.Entities.DataRange
 import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
-import Control.Exception (bracket)
 import Data.List
 import Data.Typeable
-import Foreign
-import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (AnalysisResultPtr,CRepPtr,CSetPtr,CRepArr,allocAnalysisResult,dumpIrTree,delCIrTree,getTimelimit,passBoundSet,pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
-import System.Timeout (timeout)
 
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -53,7 +47,7 @@ data DataRequirement = DataRequirement {
 
 
 printRequirement :: DataRequirement -> String
-printRequirement (DataRequirement i r a) = "Requirement{" ++ (pprintTree i) ++ "," ++ (printRange r) ++ "," ++ (show a) ++ "}"
+printRequirement (DataRequirement i r a) = "Requirement{-omitted for profiling-," ++ (printRange r) ++ "," ++ (show a) ++ "}"
 
 
 --
@@ -267,54 +261,3 @@ dataRequirements addr = case getNode addr of
     idGen = Solver.mkIdentifierFromExpression analysis
     
     varId = idGen addr
-
-
-
-
-
--- * FFI
-
-foreign export ccall "hat_hs_data_requirements"
-  hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CRepPtr DataRequirements))
-
-hsDataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CRepPtr DataRequirements))
-hsDataRequirements ctx_hs stmt_hs = do
-    ctx  <- deRefStablePtr ctx_hs
-    stmt <- deRefStablePtr stmt_hs
-    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
-    let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (dataRequirements stmt)
-    let ctx_c =  Ctx.getCContext ctx
-    ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    result <- timeout timelimit $ passDataRequirements ctx_c res
-    case result of
-        Just r  -> allocAnalysisResult ctx_nhs False r
-        Nothing -> allocAnalysisResult ctx_hs  True =<< passDataRequirements ctx_c Solver.top
-
-foreign import ccall "hat_c_mk_data_requirement"
-  mkCDataRequirement :: CRepPtr IR.Tree -> CRepPtr DataRange -> CInt -> IO (CRepPtr DataRequirement)
-
-foreign import ccall "hat_c_mk_data_requirement_set"
-  mkCDataRequirementSet :: CRepArr DataRequirement -> CLLong -> IO (CSetPtr DataRequirement)
-
-foreign import ccall "hat_c_del_data_requirement_set"
-  delCDataRequirementSet :: CSetPtr DataRequirement -> IO ()
-
-foreign import ccall "hat_c_mk_data_requirements"
-  mkCDataRequirements :: CSetPtr DataRequirement -> IO (CRepPtr DataRequirements)
-
-passDataRequirements :: Ctx.CContext -> DataRequirements -> IO (CRepPtr DataRequirements)
-passDataRequirements ctx (DataRequirements s) = bracket
-    (passBoundSet passDataRequirement mkCDataRequirementSet s)
-    (delCDataRequirementSet)
-    (mkCDataRequirements)
-  where
-
-    passDataRequirement :: DataRequirement -> IO (CRepPtr DataRequirement)
-    passDataRequirement (DataRequirement d r a) = bracket
-        ((,) <$> dumpIrTree ctx d <*> passDataRange ctx r)
-        (\(d_c, r_c) -> delCIrTree d_c >> delCDataRange r_c)
-        (\(d_c, r_c) -> mkCDataRequirement d_c r_c (convertAccessMode a))
-
-    convertAccessMode :: AccessMode -> CInt
-    convertAccessMode ReadOnly = 0
-    convertAccessMode ReadWrite = 1
