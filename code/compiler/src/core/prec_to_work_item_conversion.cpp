@@ -923,24 +923,22 @@ namespace core {
 			int counter = 0;
 			for(auto& variant : desc.getVariants()) {
 				counter++;
-				std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
+//				std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
 
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
 				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
 
-				std::cout << "Obtained dependencies: ";
-				if(requirements) {
-					std::cout << *requirements << "\n";
-				} else {
-					std::cout << "-timeout-\n";
-				}
-				context.dumpStatistics();
-
 				if (debug) {
+					std::cout << "Obtained dependencies: ";
+					if(requirements) {
+						std::cout << *requirements << "\n";
+					} else {
+						std::cout << "-timeout-\n";
+					}
+					context.dumpStatistics();
 					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
 					context.dumpSolution();
-					exit(1);
 				}
 
 				if (!requirements) {
