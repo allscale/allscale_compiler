@@ -26,6 +26,10 @@ namespace frontend {
 		runAllscaleTestOn("/inputs/allscale_di_sema_templated.cpp", true);
 	}
 
+	TEST(AllScaleDiSemaConversionTest, WithCleanups) {
+		runAllscaleTestOn("/inputs/allscale_di_sema_with_cleanups.cpp", true);
+	}
+
 } // end namespace frontend
 } // end namespace compiler
 } // end namespace allscale

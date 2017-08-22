@@ -71,11 +71,20 @@ namespace frontend {
 					auto lastChild = llvm::dyn_cast_or_null<clang::ReturnStmt>(extractLastChild(funcDecl));
 					if(!lastChild) return irExpr;
 
+					// extract the part of the expression we are actually interested in
+					const clang::Expr* returnExpr = lastChild->getRetValue();
+					if(auto clangExprWithCleanups = llvm::dyn_cast<clang::ExprWithCleanups>(returnExpr)) {
+						returnExpr = clangExprWithCleanups->getSubExpr();
+					}
+					if(auto clangCXXBindTempExpr = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(returnExpr)) {
+						returnExpr = clangCXXBindTempExpr->getSubExpr();
+					}
+
 					// get the call - stripping LValueToRValue cast
 					bool deref = false;
-					auto semaCall = llvm::dyn_cast<clang::CallExpr>(lastChild->getRetValue());
+					auto semaCall = llvm::dyn_cast<clang::CallExpr>(returnExpr);
 					if(!semaCall) {
-						if(auto clangCast = llvm::dyn_cast<clang::CastExpr>(lastChild->getRetValue())) {
+						if(auto clangCast = llvm::dyn_cast<clang::CastExpr>(returnExpr)) {
 							if(clangCast->getCastKind() == clang::CK_LValueToRValue) {
 								deref = true;
 								semaCall = llvm::dyn_cast<clang::CallExpr>(clangCast->getSubExpr());
