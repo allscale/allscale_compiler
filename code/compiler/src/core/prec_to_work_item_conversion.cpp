@@ -929,12 +929,15 @@ namespace core {
 				analysis::AnalysisContext context;
 				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
 
+				std::cout << "Obtained dependencies: " << requirements << "\n";
+				context.dumpStatistics();
+
 				if (debug) {
-					std::cout << "Obtained dependencies: " << requirements << "\n";
-					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
-					context.dumpSolution();
-					context.dumpStatistics();
-					exit(1);
+					if (requirements.isUniverse()) {
+						core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
+						context.dumpSolution();
+						exit(1);
+					}
 				}
 
 				// if dependencies could not be narrowed down => report an warning
