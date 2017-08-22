@@ -8,5 +8,5 @@ if [[ -z "${WORKSPACE+x}" ]]; then
 fi
 
 pushd "$WORKSPACE"
-git submodule update --recursive --init
+$RUNNING_ON_CI_SERVER && git submodule update --recursive --init
 popd

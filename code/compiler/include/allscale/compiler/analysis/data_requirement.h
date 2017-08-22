@@ -2,6 +2,8 @@
 
 #include <ostream>
 
+#include <boost/optional.hpp>
+
 #include "insieme/core/ir.h"
 #include "insieme/analysis/cba/common/set.h"
 #include "insieme/analysis/cba/haskell/context.h"
@@ -255,15 +257,15 @@ namespace analysis {
 	 * @param stmt the statement to be analyzed
 	 * @return the list of data requirements obtained for the given statement
 	 */
-	DataRequirements getDataRequirements(AnalysisContext& context, const insieme::core::StatementPtr& stmt);
+	boost::optional<DataRequirements> getDataRequirements(AnalysisContext& context, const insieme::core::StatementPtr& stmt);
 
 	/**
 	 * A convenience entry for the data requirement analysis, producing a temporary analysis context.
 	 *
 	 * @param stmt the statement to be analyzed
-	 * @return the list of data requirements obtained for the given statement
+	 * @return the list of data requirements obtained for the given statement unless timed
 	 */
-	DataRequirements getDataRequirements(const insieme::core::StatementPtr& stmt);
+	boost::optional<DataRequirements> getDataRequirements(const insieme::core::StatementPtr& stmt);
 
 } // end namespace analysis
 } // end namespace compiler

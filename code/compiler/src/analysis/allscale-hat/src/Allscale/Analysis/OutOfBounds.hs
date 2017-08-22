@@ -13,13 +13,14 @@ module Allscale.Analysis.OutOfBounds (
 import Debug.Trace
 
 import Control.DeepSeq
+import Control.Exception.Base (evaluate)
 import Control.Monad
 import Data.Foldable (or)
 import Data.Typeable
 import Foreign
 import Foreign.C.Types
 import GHC.Generics (Generic)
-import Insieme.Adapter (updateContext)
+import Insieme.Adapter (AnalysisResultPtr,allocAnalysisResult,getTimelimit)
 import Insieme.Analysis.Arithmetic (arithmeticValue, SymbolicFormulaSet(..))
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
@@ -28,6 +29,7 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toVal
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
+import System.Timeout (timeout)
 
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
@@ -153,14 +155,18 @@ tracePrefix prefix obj = traceShow (prefix ++ ": " ++ show obj) obj
 -- * FFI
 
 foreign export ccall "hat_out_of_bounds"
-  hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+  hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr CInt)
 
-hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO CInt
+hsOutOfBounds :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr CInt)
 hsOutOfBounds ctx_hs expr_hs = do
     ctx  <- deRefStablePtr ctx_hs
     expr <- deRefStablePtr expr_hs
+    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
     let (result,ns) = outOfBounds (Ctx.getSolverState ctx) expr
-    let ctx_c = Ctx.getCContext ctx
     ctx_nhs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
-    updateContext ctx_c ctx_nhs
-    return $ fromIntegral $ fromEnum result
+    result <- timeout timelimit $ serialize result
+    case result of
+        Just r  -> allocAnalysisResult ctx_nhs False r
+        Nothing -> allocAnalysisResult ctx_hs  True =<< serialize MayBeOutOfBounds
+  where
+    serialize = evaluate . fromIntegral . fromEnum

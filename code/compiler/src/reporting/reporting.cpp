@@ -54,6 +54,9 @@ namespace reporting {
 				   << issue.message;
 	}
 
+	Issue Issue::timeout(const NodeAddress& node) {
+		return Issue(node, Severity::Warning, Category::Basic, "Timeout");
+	}
 
 	void prettyPrintLocation(std::ostream& out, const NodeAddress& target, bool disableColorization, bool printNodeAddress) {
 

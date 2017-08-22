@@ -5,10 +5,12 @@
 
 extern "C" {
 
+	using namespace allscale::compiler::analysis;
+
 	namespace hat = insieme::analysis::cba::haskell;
 
 	// Analysis
-	int hat_out_of_bounds(hat::StablePtr ctx, const hat::HaskellNodeAddress expr_hs);
+	hat::AnalysisResult<OutOfBoundsResult>* hat_out_of_bounds(hat::StablePtr ctx, const hat::HaskellNodeAddress expr_hs);
 
 }
 
@@ -24,9 +26,10 @@ namespace analysis {
 		assert_true(refext.isCallOfRefDeref(call));
 
 		auto call_hs = ctxt.resolveNodeAddress(call);
-		int res = hat_out_of_bounds(ctxt.getHaskellContext(), call_hs);
-
-		return static_cast<OutOfBoundsResult>(res);
+		auto result = hat_out_of_bounds(ctxt.getHaskellContext(), call_hs);
+		auto value = ctxt.unwrapResult(result);
+		assert_true(value);
+		return *value;
 	}
 
 } // end namespace analysis

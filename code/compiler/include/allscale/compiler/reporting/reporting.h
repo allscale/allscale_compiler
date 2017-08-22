@@ -67,6 +67,11 @@ namespace reporting {
 
 		friend std::ostream& operator<<(std::ostream& out, const Issue& issue);
 
+		/**
+		 * Returns an issue representing a timeout.
+		 */
+		static Issue timeout(const insieme::core::NodeAddress& node);
+
 	};
 
 	using Issues = std::set<Issue>;
