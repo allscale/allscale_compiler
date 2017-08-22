@@ -121,7 +121,8 @@ elementReferenceValue addr = case getNodeType addr of
     noReference = noReferenceGen addr
 
     analysis = (mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue) {
-        freeVariableHandler = noReferenceGen
+        freeVariableHandler = noReferenceGen,
+        unknownOperatorHandler = \_ -> Solver.bot       -- all unknown targets are considered non-reference sources
     }
 
     idGen = mkVarIdentifier analysis
@@ -154,6 +155,7 @@ elementReferenceValue addr = case getNodeType addr of
         val _ a = Solver.get a refVar
 
         refVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+
 
     noDep _ _ = []
 
