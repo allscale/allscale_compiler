@@ -148,6 +148,7 @@ namespace backend {
 
 			}
 
+
 			TypeInfo createVariantImplementation(backend::ConversionContext& context, const WorkItemVariant& variant, const std::string& name, int i) {
 
 				// get the C-Node Manager
@@ -163,42 +164,6 @@ namespace backend {
 				// build the struct
 				auto strct = mgr->create<backend::c_ast::StructType>(structName);
 
-				// add valid constant
-				strct->others.push_back(
-						opaque("static constexpr bool valid = true;")
-				);
-
-				// create a function forwarding the call to the implementation in IR (execute function)
-				auto impl = variant.getImplementation();
-
-				// resolve the implementation function
-				auto& implInfo = context.getConverter().getFunctionManager().getInfo(context, impl);
-
-				// build wrapper function
-				auto wrapper = mgr->create<backend::c_ast::Function>();
-				wrapper->returnType = implInfo.function->returnType;
-				wrapper->name = mgr->create("execute");
-				wrapper->parameter = implInfo.function->parameter;
-				wrapper->body = backend::c_ast::ret(backend::c_ast::call(
-						implInfo.function->name,
-						wrapper->parameter[0]
-				));
-
-				// wrap up wrapper as a static member function
-				auto memberFun = mgr->create<backend::c_ast::MemberFunction>(structName, wrapper);
-				memberFun->isStatic = true;
-
-				// create code fragment for definition of member function
-				auto wrapperFragment = fragmentManager->create<backend::c_ast::CCodeFragment>(
-						getCNodeManager(),
-						memberFun
-				);
-				wrapperFragment->addDependency(implInfo.prototype);
-
-				// add wrapper to resulting struct
-				strct->members.push_back(mgr->create<backend::c_ast::MemberFunctionPrototype>(memberFun));
-
-
 				// get the struct declaration and definition
 				auto strctDec = mgr->create<backend::c_ast::TypeDeclaration>(strct);
 				auto strctDef = mgr->create<backend::c_ast::TypeDefinition>(strct);
@@ -211,8 +176,56 @@ namespace backend {
 				dec->addRequirement(def);
 				def->addDependency(dec);
 
-				def->addDependency(implInfo.prototype);
-				def->addRequirement(wrapperFragment);
+
+				// add valid constant
+				strct->others.push_back(
+						opaque("static constexpr bool valid = true;")
+				);
+
+				// a utility for creating static wrapper functions
+				auto addStaticMemberFunction = [&](const core::LambdaExprPtr& fun, const std::string& name) {
+
+					// resolve the implementation function
+					auto& funInfo = context.getConverter().getFunctionManager().getInfo(context, fun);
+
+					// build wrapper function
+					auto wrapper = mgr->create<backend::c_ast::Function>();
+					wrapper->returnType = funInfo.function->returnType;
+					wrapper->name = mgr->create(name);
+					wrapper->parameter = funInfo.function->parameter;
+					wrapper->body = backend::c_ast::ret(backend::c_ast::call(
+							funInfo.function->name,
+							wrapper->parameter[0]
+					));
+
+					// wrap up wrapper as a static member function
+					auto memberFun = mgr->create<backend::c_ast::MemberFunction>(structName, wrapper);
+					memberFun->isStatic = true;
+
+					// create code fragment for definition of member function
+					auto wrapperFragment = fragmentManager->create<backend::c_ast::CCodeFragment>(
+							getCNodeManager(),
+							memberFun
+					);
+					wrapperFragment->addDependency(funInfo.prototype);
+
+					// add wrapper to resulting struct
+					strct->members.push_back(mgr->create<backend::c_ast::MemberFunctionPrototype>(memberFun));
+
+					// connect execution member to struct definition
+					def->addDependency(funInfo.prototype);
+					def->addRequirement(wrapperFragment);
+
+				};
+
+				// add execute function
+				addStaticMemberFunction(variant.getImplementation(),"execute");
+
+				// add data requirement function
+				const auto& dataRequirements = variant.getDataRequirements();
+				if (dataRequirements.valid()) {
+					addStaticMemberFunction(dataRequirements.getImplementation(),"get_requirements");
+				}
 
 				// return result
 				return TypeInfo{ strct, dec, def };
