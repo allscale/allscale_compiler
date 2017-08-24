@@ -16,6 +16,7 @@
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
+#include "allscale/compiler/core/data_item_annotation.h"
 
 namespace iu = insieme::utils;
 
@@ -98,6 +99,9 @@ namespace frontend {
 					if(auto namedSemaCalleeDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(semaCalleeDecl)) {
 						auto semaCalleeName = namedSemaCalleeDecl->getNameAsString();
 						if(boost::contains(semaCalleeName, "data_item_element_access")) {
+							// first, we tag the generic type as a data item
+							allscale::compiler::core::markAsDataItem(insieme::core::analysis::getReferencedType(calleeType->getParameterType(0)));
+
 							// we replace the resulting IR with a custom built lambda
 							core::VariableList params;
 
