@@ -900,8 +900,8 @@ namespace core {
 		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall) {
 			const bool debug = false;
 
-			// this feature is experimental for now
-			if (!std::getenv("RUN_ANALYSIS")) {
+			// this feature may be skipped for now
+			if (std::getenv("ALLSCALE_SKIP_ANALYSIS")) {
 				return precFun;
 			}
 
