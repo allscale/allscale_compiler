@@ -896,6 +896,26 @@ namespace core {
 			return res;
 		}
 
+		namespace {
+
+
+			core::ExpressionPtr removeDataItemGet(const core::ExpressionPtr& dataItemRef) {
+
+				auto& mgr = dataItemRef->getNodeManager();
+				const auto& ext = mgr.getLangExtension<backend::AllScaleBackendModule>();
+
+				return core::transform::transformBottomUpGen(dataItemRef,[&](const CallExprPtr& call)->core::ExpressionPtr {
+					// filter out getDataItem calls
+					if (call->getFunctionExpr() == ext.getGetDataItem()) {
+						return call->getArgument(0);
+					}
+					return call;
+				});
+
+			}
+
+		}
+
 
 		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall) {
 			const bool debug = false;
@@ -927,7 +947,8 @@ namespace core {
 			int counter = 0;
 			for(auto& variant : desc.getVariants()) {
 				counter++;
-//				std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
+
+				if (debug) std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
 
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
@@ -950,26 +971,27 @@ namespace core {
 					// create a requirement function
 					auto param = variant.getImplementation().getParameterList()[0];
 
-					// get the list of requirements			TODO: fill this list of requirements
-					auto requirementTuple = builder.tupleExpr();
+					ExpressionList reqs;
+					for(const auto& cur : *requirements) {
+
+						// get the data item reference
+						auto ref = removeDataItemGet(cur.getDataItem());
+
+						// get the range
+						auto range = cur.getRange().toIR(mgr);
+
+						// add a new requirement
+						reqs.push_back(backend::createDataItemRequirement(ref,range,cur.getMode()));
+					}
+
+					// get the list of requirements
+					auto requirementTuple = builder.tupleExpr(reqs);
 
 					// create the function type
 					auto funType = builder.functionType({ param->getType() }, requirementTuple->getType());
 
 					// create the body
 					auto body = builder.compoundStmt(builder.returnStmt(requirementTuple));
-
-					// for development -- TODO: remove
-					{
-
-						core::StatementList stmts;
-						for (const auto& cur : *requirements) {
-							stmts.push_back(cur.getDataItem());
-						}
-						stmts.push_back(body);
-
-						body = builder.compoundStmt(stmts);
-					}
 
 					// build the lambda
 					auto dataRequirementFun = builder.lambdaExpr(funType,{param},body);

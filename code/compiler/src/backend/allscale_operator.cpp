@@ -136,6 +136,56 @@ namespace backend {
 				return c_ast::deref(CONVERT_ARG(0));
 
 			};
+
+			table[ext.getCreateDataItem()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// convert the data item type
+				auto& dataItemInfo = GET_TYPE_INFO(insieme::core::analysis::getRepresentedType(ARG(0)));
+				context.addDependency(dataItemInfo.definition);
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::DataItemManager::create");
+				trg = c_ast::instantiate(trg,dataItemInfo.rValueType);
+
+				// call the create function
+				auto res = c_ast::call(trg);
+
+				// forward all other parameters
+				for(std::size_t i=1; i<call->getNumArguments(); ++i) {
+					res->arguments.push_back(CONVERT_EXPR(call->getArgument(i)));
+				}
+
+				// done
+				return res;
+			};
+
+			table[ext.getGetDataItem()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::DataItemManager::get");
+
+				// call the get function
+				return c_ast::call(trg, CONVERT_ARG(0));
+			};
+
+			table[ext.getCreateDataItemRequirement()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::createDataItemRequirement");
+
+				// just forward parameters
+				return c_ast::call(trg,CONVERT_ARG(0),CONVERT_ARG(1), CONVERT_ARG(2));
+
+			};
 		}
 
 
@@ -403,7 +453,7 @@ namespace backend {
 				//		(ref<'a>, uint<8>, type<'b>) -> ref<'b>
 
 				// add a dependency to the accessed type definition before accessing the type
-				const TypePtr tupleType = analysis::getReferencedType(ARG(0)->getType());
+				const TypePtr tupleType = insieme::core::analysis::getReferencedType(ARG(0)->getType());
 				const TypeInfo& info = context.getConverter().getTypeManager().getTypeInfo(context, tupleType);
 				context.getDependencies().insert(info.definition);
 

@@ -5,6 +5,7 @@
 #include "insieme/backend/c_ast/c_ast_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/backend/allscale_extension.h"
 
 namespace allscale {
 namespace compiler {
@@ -130,6 +131,45 @@ namespace backend {
 			return type_info_utils::createInfo(namedType);
 		}
 
+		const TypeInfo* handleDataItemReferenceType(ConversionContext& context, const insieme::core::TypePtr& type) {
+			assert_pred1(isDataItemReference, type);
+
+			auto& converter = context.getConverter();
+			auto& mgr = converter.getCNodeManager();
+
+			// this type should be mapped to
+			//		allscale::runtime::DataItemReference<A>
+
+			// resolve
+			auto dataItemTypeInfo = converter.getTypeManager().getTypeInfo(context, getReferencedDataItemType(type));
+
+			// convert the type
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::runtime::DataItemReference"));
+			namedType->parameters.push_back(dataItemTypeInfo.rValueType);
+
+			// create resulting code fragment
+			return type_info_utils::createInfo(namedType, dataItemTypeInfo.declaration);
+		}
+
+		const TypeInfo* handleDataItemRequirementType(ConversionContext& context, const insieme::core::TypePtr& type) {
+			assert_pred1(isDataItemRequirement, type);
+
+			auto& converter = context.getConverter();
+			auto& mgr = converter.getCNodeManager();
+
+			// this type should be mapped to
+			//		allscale::runtime::DataItemRequirement<A>
+
+			// resolve
+			auto dataItemTypeInfo = converter.getTypeManager().getTypeInfo(context, getRequiredDataItemType(type));
+
+			// convert the type
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::runtime::DataItemRequirement"));
+			namedType->parameters.push_back(dataItemTypeInfo.rValueType);
+
+			// create resulting code fragment
+			return type_info_utils::createInfo(namedType, dataItemTypeInfo.declaration);
+		}
 
 		const TypeInfo* handleType(ConversionContext& context, const TypePtr& type) {
 
@@ -156,6 +196,16 @@ namespace backend {
 			// intercept the prec operator type
 			if (lang::isPrecFun(type)) {
 				return handlePrecFunType(context,lang::PrecFunType(type));
+			}
+
+			// intercept the data item reference type
+			if (isDataItemReference(type)) {
+				return handleDataItemReferenceType(context,type);
+			}
+
+			// intercept the data item requirement type
+			if (isDataItemRequirement(type)) {
+				return handleDataItemRequirementType(context,type);
 			}
 
 			// it is not a special runtime type => let somebody else try

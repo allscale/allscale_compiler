@@ -40,6 +40,10 @@ namespace analysis {
 			assert_true(expr);
 		}
 
+		insieme::core::ExpressionPtr toIR() const {
+			return expr;
+		}
+
 		bool operator==(const DataPoint& other) const;
 
 		bool operator<(const DataPoint& other) const;
@@ -65,6 +69,8 @@ namespace analysis {
 
 		DataSpan(const DataPoint& from, const DataPoint& to)
 			: from(from), to(to) {}
+
+		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
 		bool operator==(const DataSpan& other) const;
 
@@ -136,6 +142,8 @@ namespace analysis {
 		bool isUnknown() const {
 			return spans.isUniversal();
 		}
+
+		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
 
 		bool operator==(const DataRange& other) const;
 
