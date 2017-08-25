@@ -3,6 +3,10 @@
 #include "insieme/analysis/cba/haskell/context.h"
 #include "insieme/analysis/cba/common/set.h"
 
+#include "insieme/core/ir_builder.h"
+
+#include "allscale/compiler/backend/allscale_extension.h"
+
 extern "C" {
 
 	using namespace insieme::analysis::cba::haskell;
@@ -46,6 +50,19 @@ namespace analysis {
 
 	// - DataSpan -
 
+	ExpressionPtr DataSpan::toIR(NodeManager& mgr) const {
+
+		// special handling of single-element span
+		if (from == to) {
+			return from.toIR();
+		}
+
+		// create span of entries
+		IRBuilder builder(mgr);
+		const auto& ext = mgr.getLangExtension<backend::AllScaleBackendModule>();
+		return builder.callExpr(ext.getDataItemRangeSpan(), from.toIR(), to.toIR());
+	}
+
 	bool DataSpan::operator==(const DataSpan& other) const {
 		if (this == &other) return true;
 		return from == other.from && to == other.to;
@@ -66,6 +83,27 @@ namespace analysis {
 
 
 	// - DataRange -
+
+	ExpressionPtr DataRange::toIR(NodeManager& mgr) const {
+		assert_false(spans.isUniversal());
+
+		// special treatment of a single entry
+		if (spans.size() == 1) {
+			return spans.begin()->toIR(mgr);
+		}
+
+		// create union of entries
+		IRBuilder builder(mgr);
+		const auto& ext = mgr.getLangExtension<backend::AllScaleBackendModule>();
+
+		ExpressionList args;
+		for(const auto& cur : spans) {
+			args.push_back(cur.toIR(mgr));
+		}
+
+		return builder.callExpr(ext.getDataItemRangeUnion(), args);
+	}
+
 
 	bool DataRange::operator==(const DataRange& other) const {
 		if (this == &other) return true;
