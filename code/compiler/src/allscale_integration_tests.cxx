@@ -10,6 +10,6 @@ int main(int argc, char** argv) {
 			allscale::compiler::getAllscaleBuildRootDir(),
 			"allscale_integration_test_config"
 	};
-	return insieme::driver::integration::handleIntegrationTests(argc, argv, "Allscale Integration Test Driver", allscale::compiler::getVersion(),
+	return insieme::driver::integration::handleIntegrationTests(argc, argv, "AllScale Integration Test Driver", allscale::compiler::getVersion(),
 	                                                            defaultPaths);
 }

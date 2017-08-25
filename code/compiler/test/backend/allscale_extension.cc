@@ -47,7 +47,7 @@ namespace backend {
 		EXPECT_EQ(builder.parseType("int<4>"), getReferencedDataItemType(getDataItemReferenceType(builder.parseType("int<4>"))));
 
 		// some negative cases
-		EXPECT_FALSE(getReferencedDataItemType(builder.parseType("dummy")));
+		EXPECT_DEBUG_DEATH(getReferencedDataItemType(builder.parseType("dummy")),".*Not a data item reference type.*");
 	}
 
 
@@ -77,7 +77,7 @@ namespace backend {
 		EXPECT_EQ(builder.parseType("int<4>"), getRequiredDataItemType(getDataItemRequirementType(builder.parseType("int<4>"))));
 
 		// some negative cases
-		EXPECT_FALSE(getRequiredDataItemType(builder.parseType("dummy")));
+		EXPECT_DEBUG_DEATH(getRequiredDataItemType(builder.parseType("dummy")),".*Not a data item requirement type.*");
 	}
 
 } // end namespace backend

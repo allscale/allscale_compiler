@@ -69,7 +69,7 @@ namespace backend {
 			return toType(node).as<GenericTypePtr>()->getTypeParameter(0);
 		}
 		// otherwise return a null pointer
-		assert_fail() << "Not a data item reference type: " << *node;
+		assert_fail() << "Not a data item requirement type: " << *node;
 		return {};
 	}
 

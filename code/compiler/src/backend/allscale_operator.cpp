@@ -186,6 +186,39 @@ namespace backend {
 				return c_ast::call(trg,CONVERT_ARG(0),CONVERT_ARG(1), CONVERT_ARG(2));
 
 			};
+
+			table[ext.getDataItemRangeSpan()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/api/core/data.h");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::api::core::span");
+
+				// just forward parameters
+				return c_ast::call(trg,CONVERT_ARG(0),CONVERT_ARG(1));
+
+			};
+
+			table[ext.getDataItemRangeUnion()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/api/core/data.h");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::api::core::merge");
+
+				// create call
+				auto res = c_ast::call(trg);
+
+				// add parameters
+				for(const auto& cur : call->getArgumentList()) {
+					res->arguments.push_back(CONVERT_EXPR(cur));
+				}
+
+				// done
+				return res;
+			};
 		}
 
 

@@ -906,12 +906,43 @@ namespace core {
 
 				return core::transform::transformBottomUpGen(dataItemRef,[&](const CallExprPtr& call)->core::ExpressionPtr {
 					// filter out getDataItem calls
-					if (call->getFunctionExpr() == ext.getGetDataItem()) {
+					if (ext.isCallOfGetDataItem(call)) {
 						return call->getArgument(0);
 					}
 					return call;
 				});
 
+			}
+
+			core::ExpressionPtr cleanSymbolicValue(const core::ExpressionPtr& value) {
+
+				auto& mgr = value->getNodeManager();
+				const auto& ext = mgr.getLangExtension<core::lang::ReferenceExtension>();
+
+
+				// some simple cleanup steps
+				auto res = core::transform::transformBottomUpGen(value,[&](CallExprPtr call)->core::ExpressionPtr {
+					// filter out ref decl calls
+					if (ext.isCallOfRefDecl(call)) {
+						// replace by ref temp and reference cast call
+						return core::lang::buildRefTemp(call->getType());
+					}
+
+					// skip creation of memory if immediately dereferenced
+					if (ext.isCallOfRefDeref(call)) {
+						auto arg = call->getArgument(0);
+
+						// skip ref-temp-init calls
+						if (ext.isCallOfRefTempInit(arg)) {
+							return arg.as<CallExprPtr>()->getArgument(0);
+						}
+
+					}
+
+					return call;
+				});
+
+				return res;
 			}
 
 		}
@@ -975,10 +1006,10 @@ namespace core {
 					for(const auto& cur : *requirements) {
 
 						// get the data item reference
-						auto ref = removeDataItemGet(cur.getDataItem());
+						auto ref = cleanSymbolicValue(removeDataItemGet(cur.getDataItem()));
 
 						// get the range
-						auto range = cur.getRange().toIR(mgr);
+						auto range = cleanSymbolicValue(cur.getRange().toIR(mgr));
 
 						// add a new requirement
 						reqs.push_back(backend::createDataItemRequirement(ref,range,cur.getMode()));
