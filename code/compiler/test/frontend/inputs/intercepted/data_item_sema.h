@@ -13,6 +13,24 @@ const T& data_item_element_access(const DataItem& item, const typename DataItem:
 	return ref;
 }
 
+struct NonTrivialDestructor {
+	int *p;
+
+	NonTrivialDestructor() {
+		p = new int();
+	}
+
+	~NonTrivialDestructor() {
+		delete p;
+	}
+
+	double v() {
+		return 0.0;
+	}
+
+};
+
+
 // The simplest imaginable data item
 
 class SimplestDI {
@@ -26,6 +44,10 @@ public:
 
 	double get() const {
 		return data_item_element_access(*this, 0, data[0]);
+	}
+
+	double getInvolvingCleanups() const {
+		return data_item_element_access(*this, 0, NonTrivialDestructor().v());
 	}
 
 	const double& operator[](int i) const {

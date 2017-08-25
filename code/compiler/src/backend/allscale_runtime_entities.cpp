@@ -24,11 +24,33 @@ namespace backend {
 	namespace ie = insieme::core::encoder;
 
 
+	// -- WorkItemVariantDataRequirement --
+
+	using work_item_variant_data_requirement_tuple = std::tuple<core::LambdaExprPtr>;
+
+	insieme::core::TypePtr WorkItemVariantDataRequirement::getEncodedType(insieme::core::NodeManager& mgr) {
+		return ie::getTypeFor<work_item_variant_data_requirement_tuple>(mgr);
+	}
+
+	bool WorkItemVariantDataRequirement::isEncoding(const insieme::core::ExpressionPtr& e) {
+		return ie::isEncodingOf<work_item_variant_data_requirement_tuple>(e);
+	}
+
+	insieme::core::ExpressionPtr WorkItemVariantDataRequirement::toIR(insieme::core::NodeManager& mgr) const {
+		return ie::toIR(mgr, work_item_variant_data_requirement_tuple { implementation });
+	}
+
+	WorkItemVariantDataRequirement WorkItemVariantDataRequirement::fromIR(const insieme::core::ExpressionPtr& e) {
+		auto tuple = ie::toValue<work_item_variant_data_requirement_tuple>(e);
+		return WorkItemVariantDataRequirement(std::get<0>(tuple));
+	}
+
+
 	// -- WorkItemVariant --
 
 
-	WorkItemVariant::WorkItemVariant(const core::LambdaExprPtr& implementation)
-		: implementation(implementation) {
+	WorkItemVariant::WorkItemVariant(const core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements)
+		: implementation(implementation), dataRequirements(requirements) {
 
 		// check that the implementation is actually present
 		assert_true(implementation) << "Implementation must not be null!";
@@ -54,6 +76,11 @@ namespace backend {
 		// make sure the result type is a treeture
 		assert_pred1(lang::isTreeture,implementation->getFunctionType()->getReturnType());
 
+		// make sure the data requirements accept the same type of closure
+		if (dataRequirements.valid()) {
+			assert_eq(implementation->getFunctionType()->getParameterType(0),requirements.getImplementation()->getFunctionType()->getParameterType(0));
+		}
+
 	}
 
 	core::TypePtr WorkItemVariant::getResultType() const {
@@ -64,8 +91,14 @@ namespace backend {
 		return core::lang::ReferenceType(implementation->getFunctionType()->getParameterType(0)).getElementType().as<core::TupleTypePtr>();
 	}
 
+	void WorkItemVariant::setDataRequirements(const WorkItemVariantDataRequirement& requirements) {
+		dataRequirements = requirements;
+		if (dataRequirements.valid()) {
+			assert_eq(implementation->getFunctionType()->getParameterType(0),dataRequirements.getImplementation()->getFunctionType()->getParameterType(0));
+		}
+	}
 
-	using work_item_variant_tuple = std::tuple<core::LambdaExprPtr>;
+	using work_item_variant_tuple = std::tuple<core::LambdaExprPtr,WorkItemVariantDataRequirement>;
 
 	core::TypePtr WorkItemVariant::getEncodedType(core::NodeManager& mgr) {
 		return ie::getTypeFor<work_item_variant_tuple>(mgr);
@@ -77,12 +110,12 @@ namespace backend {
 
 	core::ExpressionPtr WorkItemVariant::toIR(core::NodeManager& mgr) const {
 		// convert this work item into a tuple
-		return ie::toIR(mgr, work_item_variant_tuple{ implementation });
+		return ie::toIR(mgr, work_item_variant_tuple{ implementation, dataRequirements });
 	}
 
 	WorkItemVariant WorkItemVariant::fromIR(const core::ExpressionPtr& e) {
 		auto tuple = ie::toValue<work_item_variant_tuple>(e);
-		return WorkItemVariant(std::get<0>(tuple));
+		return WorkItemVariant(std::get<0>(tuple),std::get<1>(tuple));
 	}
 
 

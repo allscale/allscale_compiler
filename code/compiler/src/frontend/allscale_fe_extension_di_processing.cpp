@@ -16,6 +16,7 @@
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/frontend/allscale_fe_extension_exprs.h"
+#include "allscale/compiler/core/data_item_annotation.h"
 
 namespace iu = insieme::utils;
 
@@ -71,11 +72,20 @@ namespace frontend {
 					auto lastChild = llvm::dyn_cast_or_null<clang::ReturnStmt>(extractLastChild(funcDecl));
 					if(!lastChild) return irExpr;
 
+					// extract the part of the expression we are actually interested in
+					const clang::Expr* returnExpr = lastChild->getRetValue();
+					if(auto clangExprWithCleanups = llvm::dyn_cast<clang::ExprWithCleanups>(returnExpr)) {
+						returnExpr = clangExprWithCleanups->getSubExpr();
+					}
+					if(auto clangCXXBindTempExpr = llvm::dyn_cast<clang::CXXBindTemporaryExpr>(returnExpr)) {
+						returnExpr = clangCXXBindTempExpr->getSubExpr();
+					}
+
 					// get the call - stripping LValueToRValue cast
 					bool deref = false;
-					auto semaCall = llvm::dyn_cast<clang::CallExpr>(lastChild->getRetValue());
+					auto semaCall = llvm::dyn_cast<clang::CallExpr>(returnExpr);
 					if(!semaCall) {
-						if(auto clangCast = llvm::dyn_cast<clang::CastExpr>(lastChild->getRetValue())) {
+						if(auto clangCast = llvm::dyn_cast<clang::CastExpr>(returnExpr)) {
 							if(clangCast->getCastKind() == clang::CK_LValueToRValue) {
 								deref = true;
 								semaCall = llvm::dyn_cast<clang::CallExpr>(clangCast->getSubExpr());
@@ -89,6 +99,9 @@ namespace frontend {
 					if(auto namedSemaCalleeDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(semaCalleeDecl)) {
 						auto semaCalleeName = namedSemaCalleeDecl->getNameAsString();
 						if(boost::contains(semaCalleeName, "data_item_element_access")) {
+							// first, we tag the generic type as a data item
+							allscale::compiler::core::markAsDataItem(insieme::core::analysis::getReferencedType(calleeType->getParameterType(0)));
+
 							// we replace the resulting IR with a custom built lambda
 							core::VariableList params;
 

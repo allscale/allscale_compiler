@@ -13,8 +13,8 @@ cd "$BUILD_DIR"
 compiler/allscale_integration_tests -w "$NPROC"
 
 # Insieme.
-insieme/driver/integration_tests "$WORKSPACE/test/allscale"
+#insieme/driver/integration_tests "$WORKSPACE/test/allscale"
 
 # Cleanup.
 compiler/allscale_integration_tests --postprocessing
-insieme/driver/integration_tests --postprocessing "$WORKSPACE/test/allscale"
+#insieme/driver/integration_tests --postprocessing "$WORKSPACE/test/allscale"

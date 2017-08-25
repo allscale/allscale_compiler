@@ -17,6 +17,57 @@ namespace allscale {
 namespace compiler {
 namespace backend {
 
+	/**
+	 * The class representing data requirement functions of work item variants.
+	 */
+	class WorkItemVariantDataRequirement : public insieme::core::encoder::encodable, public insieme::utils::less_than_comparable<WorkItemVariantDataRequirement> {
+
+		/**
+		 * The lambda implementing the computation of this data requirements.
+		 */
+		insieme::core::LambdaExprPtr implementation;
+
+	public:
+
+		WorkItemVariantDataRequirement(const insieme::core::LambdaExprPtr& implementation = insieme::core::LambdaExprPtr())
+			: implementation(implementation) {}
+
+		const insieme::core::LambdaExprPtr& getImplementation() const {
+			assert_true(valid());
+			return implementation;
+		}
+
+		bool valid() const {
+			return implementation;
+		}
+
+		bool operator==(const WorkItemVariantDataRequirement& other) const {
+			if (this == &other) return true;
+			if (!valid() && !other.valid()) return true;
+			if (!valid() || !other.valid()) return false;
+			assert_true(valid());
+			assert_true(other.valid());
+			return *implementation == *other.implementation;
+		}
+
+		bool operator<(const WorkItemVariantDataRequirement& other) const {
+			// invalid requirements are the smallest element
+			if (!valid()) return other.valid();
+			if (!other.valid()) return false;
+			return *implementation < *other.implementation;
+		}
+
+		// --- encoder interface ---
+
+		static insieme::core::TypePtr getEncodedType(insieme::core::NodeManager&);
+
+		static bool isEncoding(const insieme::core::ExpressionPtr&);
+
+		insieme::core::ExpressionPtr toIR(insieme::core::NodeManager&) const;
+
+		static WorkItemVariantDataRequirement fromIR(const insieme::core::ExpressionPtr&);
+
+	};
 
 	/**
 	 * The class utilized for modeling a work item variant.
@@ -28,9 +79,14 @@ namespace backend {
 		 */
 		insieme::core::LambdaExprPtr implementation;
 
+		/**
+		 * The data item requirement of this variant.
+		 */
+		WorkItemVariantDataRequirement dataRequirements;
+
 	public:
 
-		WorkItemVariant(const insieme::core::LambdaExprPtr& implementation);
+		WorkItemVariant(const insieme::core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements = WorkItemVariantDataRequirement());
 
 		insieme::core::LambdaExprPtr getImplementation() const {
 			return implementation;
@@ -40,13 +96,18 @@ namespace backend {
 
 		insieme::core::TupleTypePtr getClosureType() const;
 
+		const WorkItemVariantDataRequirement& getDataRequirements() const {
+			return dataRequirements;
+		}
+
+		void setDataRequirements(const WorkItemVariantDataRequirement& requirements);
 
 		bool operator==(const WorkItemVariant& other) const {
-			return *implementation == *other.implementation;
+			return *implementation == *other.implementation && dataRequirements == other.dataRequirements;
 		}
 
 		bool operator<(const WorkItemVariant& other) const {
-			return *implementation < *other.implementation;
+			return *implementation < *other.implementation || (*implementation == *other.implementation && dataRequirements < other.dataRequirements);
 		}
 
 		// --- encoder interface ---

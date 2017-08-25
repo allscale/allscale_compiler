@@ -169,6 +169,18 @@ namespace analysis {
 			assert_true(dataItem) << "Data item reference must not be null!";
 		}
 
+		const insieme::core::ExpressionPtr& getDataItem() const {
+			return dataItem;
+		}
+
+		const DataRange& getRange() const {
+			return range;
+		}
+
+		AccessMode getMode() const {
+			return mode;
+		}
+
 		bool operator==(const DataRequirement& other) const {
 			// shortcut for the same object id
 			if (this == &other) return true;
