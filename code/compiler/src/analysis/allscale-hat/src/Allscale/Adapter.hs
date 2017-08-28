@@ -99,6 +99,7 @@ selectDiags = catMaybes . map sel . zip [0..] . toListLE
   where
     sel (0, True) = Just Diag.unknownReferenceDiagnosis
     sel (1, True) = Just Diag.globalVariableDiagnosis
+    sel (2, True) = Just Diag.uncertainAccessDiagnosis
     sel _         = Nothing
 
 -- * Data Range

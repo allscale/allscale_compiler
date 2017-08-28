@@ -123,13 +123,13 @@ See `scripts/license`.
 
 ### Visual Studio Solution
 
-    $ cmake -G "Visual Studio 14 Win64" -DBUILD_SHARED_LIBS=OFF Z:\path\to\project
+    $ cmake -G "Visual Studio 14 Win64" -DBUILD_SHARED_LIBS=OFF Z:\path\to\project\code
 
 Add path for third-party libraries when needed.
 
 ### Eclipse Project
 
-    $ cmake -G "Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_VERSION=4.4 /path/to/project
+    $ cmake -G "Eclipse CDT4 - Unix Makefiles" -DCMAKE_ECLIPSE_VERSION=4.4 /path/to/project/code
     $ sed '/__cplusplus/d' -i .cproject
 
 After this, you can import this project using "Existing Projects into Workspace".
