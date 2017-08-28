@@ -14,6 +14,7 @@ module Allscale.Analysis.Entities.DataRange (
 
 import Control.DeepSeq
 import GHC.Generics (Generic)
+import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Inspire.Transform (substitute)
 
 import qualified Data.Map as Map
@@ -29,8 +30,7 @@ data DataPoint = DataPoint IR.Tree
     deriving (Eq,Ord,Show,Generic,NFData)
 
 printPoint :: DataPoint -> String
---printPoint (DataPoint t) = pprintTree t
-printPoint = const "-omitted for profiling-"
+printPoint (DataPoint t) = pprintTree t
 
     
 data DataSpan = DataSpan {

@@ -13,6 +13,7 @@ import Allscale.Analysis.Entities.DataRange
 import Control.DeepSeq
 import Data.Typeable
 import GHC.Generics (Generic)
+import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue)
@@ -85,8 +86,7 @@ printReferenceSet :: ElementReferenceSet -> String
 printReferenceSet (ElementReferenceSet BSet.Universe) = "{ - all - }"
 printReferenceSet (ElementReferenceSet set) = "{" ++ (concat $ go <$> BSet.toList set) ++ "}"
   where
-    --go (ElementReference ref range) = (pprintTree ref) ++ "[" ++ (printRange range) ++ "]"
-    go (ElementReference ref range) = "-omitted for profiling- [" ++ (printRange range) ++ "]"
+    go (ElementReference ref range) = (pprintTree ref) ++ "[" ++ (printRange range) ++ "]"
 
 --
 -- * Element Reference Analysis token
