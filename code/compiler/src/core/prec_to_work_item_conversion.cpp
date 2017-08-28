@@ -7,6 +7,7 @@
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/dump/json_dump.h"
 
+#include "allscale/compiler/analysis/diagnostics.h"
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 #include "allscale/compiler/backend/allscale_runtime_entities.h"
@@ -978,12 +979,13 @@ namespace core {
 			int counter = 0;
 			for(auto& variant : desc.getVariants()) {
 				counter++;
+				auto target = variant.getImplementation()->getBody();
 
-				if (debug) std::cout << "Analyzing variant implementation\n" << dumpReadable(variant.getImplementation()->getBody()) << "\n";
+				if (debug) std::cout << "Analyzing variant implementation\n" << dumpReadable(target) << "\n";
 
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
-				auto requirements = analysis::getDataRequirements(context,variant.getImplementation()->getBody());
+				auto requirements = analysis::getDataRequirements(context,target);
 
 				if (debug) {
 					std::cout << "Obtained dependencies: ";
@@ -993,7 +995,7 @@ namespace core {
 						std::cout << "-timeout-\n";
 					}
 					context.dumpStatistics();
-					core::dump::json::dumpIR("code.json",variant.getImplementation()->getBody());
+					core::dump::json::dumpIR("code.json",target);
 					context.dumpSolution();
 				}
 
@@ -1051,7 +1053,9 @@ namespace core {
 					);
 				}
 
-				// TODO: run diagnosis here!
+				// run diagnosis
+				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
+				report.addMessages(precCall, issues);
 
 			}
 

@@ -70,6 +70,10 @@ namespace core {
 			issues[prec].insert(issue);
 		}
 
+		void addMessages(const PrecCall& prec, const reporting::Issues& is) {
+			issues[prec].insert(is.begin(), is.end());
+		}
+
 		friend std::ostream& operator<<(std::ostream& out, const ConversionReport& report);
 	};
 
