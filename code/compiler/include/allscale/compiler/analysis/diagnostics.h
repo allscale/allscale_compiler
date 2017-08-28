@@ -15,9 +15,10 @@ namespace compiler {
 namespace analysis {
 
 	enum DiagnosisFlags : unsigned long {
-		DiagnosisFlagsAll              = ~0u,
+		DiagnosisFlagsAll              = ~0ul,
 		DiagnosisFlagsUnknownReference = (1ul << 0),
 		DiagnosisFlagsGlobalVariable   = (1ul << 1),
+		DiagnosisFlagsUncertainAccess  = (1ul << 2),
 	};
 
 	// a context object for re-using partial results of analysis calls

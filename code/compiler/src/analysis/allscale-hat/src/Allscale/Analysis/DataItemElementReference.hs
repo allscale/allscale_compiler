@@ -70,7 +70,7 @@ data ElementReference = ElementReference {
 -- * A lattice for the data item reference analysis
 --
 
-data ElementReferenceSet = ElementReferenceSet (BSet.UnboundSet ElementReference)
+data ElementReferenceSet = ElementReferenceSet { unERS :: BSet.UnboundSet ElementReference }
     deriving (Eq,Ord,Show,Generic,NFData)
 
 instance Solver.Lattice ElementReferenceSet where
@@ -122,7 +122,7 @@ elementReferenceValue addr = case getNodeType addr of
 
     analysis = (mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue) {
         freeVariableHandler = noReferenceGen,
-        unknownOperatorHandler = \_ -> Solver.bot       -- all unknown targets are considered non-reference sources
+        unknownOperatorHandler = const Solver.top       -- all unknown targets are considered non-reference sources
     }
 
     idGen = mkVarIdentifier analysis
@@ -150,7 +150,7 @@ elementReferenceValue addr = case getNodeType addr of
 
     refForwardHandler = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast"]
+        cov a = any (isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast", "ref_narrow", "ref_expand"]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
 
