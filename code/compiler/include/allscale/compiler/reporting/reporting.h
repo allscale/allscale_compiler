@@ -3,6 +3,8 @@
 #include <set>
 #include <ostream>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "insieme/core/ir.h"
 #include "insieme/core/ir_address.h"
 
@@ -79,6 +81,10 @@ namespace reporting {
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
 	void prettyPrintLocation(std::ostream& out, const insieme::core::NodeAddress& target, bool disableColorization = false, bool printNodeAddress = false);
+
+	boost::property_tree::ptree toPropertyTree(const Issue& issue);
+
+	boost::property_tree::ptree toPropertyTree(const Issues& issues);
 
 } // end namespace reporting
 } // end namespace compiler

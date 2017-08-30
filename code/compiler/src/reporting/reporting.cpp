@@ -1,6 +1,9 @@
 #include "allscale/compiler/reporting/reporting.h"
 
+#include <boost/property_tree/json_parser.hpp>
+
 #include "insieme/utils/name_mangling.h"
+#include "insieme/utils/string_utils.h"
 
 #include "insieme/core/annotations/naming.h"
 #include "insieme/core/annotations/source_location.h"
@@ -92,7 +95,6 @@ namespace reporting {
 		}
 	}
 
-
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */, bool printNodeAddress /* = false */) {
 		out << issue << "\n";
 
@@ -102,6 +104,32 @@ namespace reporting {
 
 		// print target nesting information
 		prettyPrintLocation(out, issue.getTarget(),disableColorization,printNodeAddress);
+	}
+
+	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
+		boost::property_tree::ptree ret;
+		ret.put<string>("target", toString(issue.getTarget()));
+		ret.put<string>("severity", toString(issue.getSeverity()));
+		ret.put<string>("category", toString(issue.getCategory()));
+		ret.put<string>("message", issue.getMessage());
+
+		if(auto location = annotations::getLocation(issue.getTarget())) {
+			ret.put<string>("loc_short", toString(*location));
+
+			std::stringstream ss;
+			annotations::prettyPrintLocation(ss, *location, true);
+			ret.put<string>("loc_pretty", ss.str());
+		}
+
+		return ret;
+	}
+
+	boost::property_tree::ptree toPropertyTree(const Issues & issues) {
+		boost::property_tree::ptree ret;
+		for(const auto& issue : issues) {
+			ret.push_back(make_pair("", toPropertyTree(issue)));
+		}
+		return ret;
 	}
 
 } // end namespace reporting

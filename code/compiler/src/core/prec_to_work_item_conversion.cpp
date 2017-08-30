@@ -1059,6 +1059,9 @@ namespace core {
 
 			}
 
+			// create HTML report
+			toHTML("report.html", report);
+
 			// update work item description
 			auto newWorkItemDesc = desc.toIR(mgr);
 
