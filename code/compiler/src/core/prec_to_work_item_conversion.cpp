@@ -1040,15 +1040,13 @@ namespace core {
 				} else if (requirements->isUniverse()) {
 					// if dependencies could not be narrowed down => report a warning
 					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::Severity::Warning,
-							reporting::Category::Basic,
+							reporting::ErrorCode::UnobtainableDataRequirement,
 							format("Unable to obtain data requirement for code variant #%d.", counter))
 					);
 				} else {
 					// otherwise report a summary info
 					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::Severity::Info,
-							reporting::Category::Basic,
+							reporting::ErrorCode::UnobtainableDataRequirement,
 							format("Obtained data requirement for variant #%d: %s", counter, *requirements))
 					);
 				}
@@ -1167,12 +1165,7 @@ namespace core {
 			auto firstAddress = call->getAttachedValue<FirstAddressTag>().addr;
 			report.addMessage(
 					firstAddress,
-					reporting::Issue(
-							firstAddress,
-							reporting::Severity::Info,
-							reporting::Category::Basic,
-							"Converted parallel region into shared-memory parallel runtime code."
-					)
+					reporting::Issue(firstAddress, reporting::ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode)
 			);
 
 			// add data requirement dependencies

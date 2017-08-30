@@ -19,7 +19,7 @@ namespace reporting {
 		switch(severity) {
 		case Severity::Warning: return out << "Warning";
 		case Severity::Error:   return out << "Error";
-		case Severity::Info:   return out << "Info";
+		case Severity::Info:    return out << "Info";
 		}
 		return out;
 	}
@@ -31,9 +31,27 @@ namespace reporting {
 		return out;
 	}
 
+	namespace detail {
+
+		IssueDetails lookupDetails(ErrorCode error_code) {
+			switch(error_code) {
+			case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
+			case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
+			case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
+			case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
+			case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
+			case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
+			case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+			case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+			case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+			default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
+			};
+		}
+
+	}
+
 	bool Issue::operator==(const Issue& other) const {
-		return category == other.category
-			&& severity == other.severity
+		return error_code == other.error_code
 			&& target == other.target
 			&& message == other.message;
 	}
@@ -42,23 +60,20 @@ namespace reporting {
 		if (target < other.target) return true;
 		if (!(target == other.target)) return false;
 
-		if (severity < other.severity) return true;
-		if (!(severity == other.severity)) return false;
-
-		if (category < other.category) return true;
-		if (!(category == other.category)) return false;
+		if (error_code < other.error_code) return true;
+		if (!(error_code == other.error_code)) return false;
 
 		return message < other.message;
 	}
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
-		return out << toString(issue.severity) << ": "
-				   << "[" << toString(issue.category) << "] "
-				   << issue.message;
+		return out << toString(issue.details.severity) << ": "
+				   << "[" << toString(issue.details.category) << "] "
+				   << issue.getMessage();
 	}
 
 	Issue Issue::timeout(const NodeAddress& node) {
-		return Issue(node, Severity::Warning, Category::Basic, "Timeout");
+		return Issue(node, ErrorCode::Timeout);
 	}
 
 	void prettyPrintLocation(std::ostream& out, const NodeAddress& target, bool disableColorization, bool printNodeAddress) {

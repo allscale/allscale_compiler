@@ -1,5 +1,6 @@
 #include "allscale/compiler/analysis/diagnostics.h"
 
+#include <cstring>
 
 using namespace insieme::core;
 using namespace insieme::analysis::cba::haskell;
@@ -41,8 +42,12 @@ namespace analysis {
 
 extern "C" {
 
-	Issue* hat_c_mk_issue(NodeAddress* target, Severity severity, Category category, const char* message) {
-		return new Issue(*target, static_cast<Severity>(severity), category, message);
+	Issue* hat_c_mk_issue(NodeAddress* target, ErrorCode err, const char* message) {
+		if(strlen(message) == 0) {
+			return new Issue(*target, err);
+		} else {
+			return new Issue(*target, err, message);
+		}
 	}
 
 	void hat_c_del_issue(Issue* i) {
