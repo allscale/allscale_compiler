@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Conversion Report</title>
+
+	<!-- Glyphicons Halflings -->
+	<style>
+		@font-face {
+			font-family: 'Glyphicons Halflings';
+			src: url('fonts/glyphicons-halflings-regular.eot')   format('embedded-opentype'),
+			     url('fonts/glyphicons-halflings-regular.ttf')   format('truetype'),
+			     url('fonts/glyphicons-halflings-regular.woff')  format('woff'),
+			     url('fonts/glyphicons-halflings-regular.woff2') format('woff2')
+		}
+	</style>
+
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/custom.css" rel="stylesheet">
+</head>
+<body>
+	<div class="container">
+		<h1 class="title">Conversion Report</h1>
+		<div id="main"></div>
+		<div class="panel panel-default">
+			<div class="panel-body row footer">
+				<div class="col-xs-6 date">%DATETIME%</div>
+				<div class="col-xs-6 about"><a>About</a></div>
+			</div>
+		</div>
+	</div>
+	<img class="logo" src="gfx/allscale.png">
+
+	<script>var report = %REPORT%;</script>
+
+	<script src="js/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/report.js"></script>
+</body>
+</html>
