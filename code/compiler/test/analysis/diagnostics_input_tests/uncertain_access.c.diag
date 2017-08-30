@@ -1,0 +1,10 @@
+Error: [Basic] Unable to determine data item element reference targeted by write operation
+                from: "main"
+<input_filepath>@3:5-3:10
+    *p = 12;
+    ^~~~~~
+Error: [Basic] Unable to determine data item element reference targeted by read operation
+                from: "main"
+<input_filepath>@5:10-5:11
+    12 + *p;
+         ^~

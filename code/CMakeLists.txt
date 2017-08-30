@@ -37,7 +37,7 @@ include(nproc)
 # -- Insieme
 set(ANALYSIS_HASKELL ON CACHE BOOL "Haskell-based Analysis Toolkit Switch" FORCE)
 set(BUILD_RUNTIME OFF CACHE BOOL "Insieme Runtime Switch" FORCE)
-set(HAT_PACKAGE_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/compiler/src/analysis/allscale-hat/ ${HAT_PACKAGE_PATHS}")
+list(APPEND HAT_PACKAGE_PATHS_LIST "${CMAKE_CURRENT_SOURCE_DIR}/compiler/src/analysis/allscale-hat/")
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
 
 # -- AllScale Runtime

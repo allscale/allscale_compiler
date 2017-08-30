@@ -15,6 +15,7 @@ import Control.DeepSeq
 import Data.List
 import Data.Typeable
 import GHC.Generics (Generic)
+import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
@@ -47,8 +48,7 @@ data DataRequirement = DataRequirement {
 
 
 printRequirement :: DataRequirement -> String
-printRequirement (DataRequirement i r a) = "Requirement{-omitted for profiling-," ++ (printRange r) ++ "," ++ (show a) ++ "}"
-
+printRequirement (DataRequirement i r a) = "Requirement{" ++ (pprintTree i) ++ "," ++ (printRange r) ++ "," ++ (show a) ++ "}"
 
 --
 -- * Data Requirements Lattice

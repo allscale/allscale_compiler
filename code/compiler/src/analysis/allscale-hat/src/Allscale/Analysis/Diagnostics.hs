@@ -10,6 +10,7 @@ import Data.Maybe
 import Data.Set (Set)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
+import Allscale.Analysis.DataItemElementReference
 import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
@@ -226,3 +227,45 @@ globalVariableDiagnosis addr = diagnosis diag addr
     handleOp access a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
                                    then [Issue addr Error Basic (access ++ " access to global")]
                                    else []
+
+data UncertainAccessDiagnosis = UncertainAccessDiagnosis
+  deriving (Typeable)
+
+uncertainAccessDiagnosis :: NodeAddress -> Solver.TypedVar Issues
+uncertainAccessDiagnosis addr = diagnosis diag addr
+  where
+    diag = Diagnosis uncertainAccessDiagnosis analysis ops ut
+    analysis = Solver.mkAnalysisIdentifier UncertainAccessDiagnosis "DIAG_uncAcc"
+
+    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
+
+    ops = [readHandler, writeHandler]
+
+    readHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_deref"
+        val _ = handleOp "read"
+
+    writeHandler = OperatorHandler cov dep val
+      where
+        cov a = isBuiltin a "ref_assign"
+        val _ = handleOp "write"
+
+    dep _ _ = [Solver.toVar diReferenceVar, Solver.toVar referenceVar]
+
+    diReferenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex ElementReferenceSet)
+    diReferenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+
+    diReferenceVal a = unERS $ toValue $ Solver.get a diReferenceVar
+
+    referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
+    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+
+    referenceVal a = unRS $ toValue $ Solver.get a referenceVar
+
+    handleOp _      a | referenceValIsUnknown   a = mkIssues []
+    handleOp access a | diReferenceValIsUnknown a = mkOneIssue $ Issue addr Error Basic ("Unable to determine data item element reference targeted by " ++ access ++ " operation")
+    handleOp _      _ = mkIssues []
+
+    referenceValIsUnknown   = BSet.isUniverse . referenceVal
+    diReferenceValIsUnknown = BSet.isUniverse . diReferenceVal
