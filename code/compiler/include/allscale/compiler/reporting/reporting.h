@@ -28,6 +28,8 @@ namespace reporting {
 		ConvertParRegionToSharedMemoryParRuntimeCode,
 	};
 
+	std::ostream& operator<<(std::ostream& out, ErrorCode err);
+
 	/**
 	 * Severity of the Diagnostics Message
 	 */
@@ -48,17 +50,19 @@ namespace reporting {
 
 	std::ostream& operator<<(std::ostream& out, Category category);
 
-	namespace detail {
 
-		struct IssueDetails {
-			Severity severity;
-			Category category;
-			std::string defaultMessage;
-		};
+	/**
+	 * Details of a specific error code
+	 */
+	struct ErrorDetails {
+		Severity severity;
+		Category category;
+		std::string defaultMessage;
+	};
 
-		IssueDetails lookupDetails(ErrorCode error_code);
+	ErrorDetails lookupDetails(ErrorCode err);
 
-	}
+	boost::optional<std::string> lookupHelpMessage(ErrorCode err);
 
 	class Issue {
 
@@ -66,12 +70,12 @@ namespace reporting {
 
 		insieme::core::NodeAddress target;
 		ErrorCode error_code;
-		detail::IssueDetails details;
+		ErrorDetails error_details;
 
 		boost::optional<std::string> message;
 
 		Issue(insieme::core::NodeAddress target, ErrorCode error_code, boost::optional<std::string> message)
-			: target(target), error_code(error_code), details(detail::lookupDetails(error_code)), message(message) {
+			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message) {
 			assert_true(target);
 		}
 
@@ -87,17 +91,21 @@ namespace reporting {
 			return target;
 		}
 
+		ErrorCode getErrorCode() const {
+			return error_code;
+		}
+
 		Severity getSeverity() const {
-			return details.severity;
+			return error_details.severity;
 		}
 
 		Category getCategory() const {
-			return details.category;
+			return error_details.category;
 		}
 
 		std::string getMessage() const {
 			if(!message) {
-				return details.defaultMessage;
+				return error_details.defaultMessage;
 			}
 			return *message;
 		}

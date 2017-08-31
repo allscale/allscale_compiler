@@ -1,5 +1,7 @@
 #include "allscale/compiler/reporting/reporting.h"
 
+#include <iomanip>
+
 #include <boost/property_tree/json_parser.hpp>
 
 #include "insieme/utils/name_mangling.h"
@@ -14,6 +16,14 @@ using namespace insieme::core;
 namespace allscale {
 namespace compiler {
 namespace reporting {
+
+	std::ostream& operator<<(std::ostream& out, ErrorCode err) {
+		auto flags = out.flags();
+		out << toString(lookupDetails(err).severity)[0]
+		    << std::setfill('0') << std::setw(3) << static_cast<int>(err);
+		out.flags(flags);
+		return out;
+	}
 
 	std::ostream& operator<<(std::ostream& out, Severity severity) {
 		switch(severity) {
@@ -31,23 +41,26 @@ namespace reporting {
 		return out;
 	}
 
-	namespace detail {
+	ErrorDetails lookupDetails(ErrorCode err) {
+		switch(err) {
+		case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
+		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
+		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
+		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+		default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
+		};
+	}
 
-		IssueDetails lookupDetails(ErrorCode error_code) {
-			switch(error_code) {
-			case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
-			case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
-			case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
-			case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
-			case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
-			case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
-			case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
-			case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
-			case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
-			default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
-			};
+	boost::optional<std::string> lookupHelpMessage(ErrorCode err) {
+		switch (err) {
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode: return {{"dummy help text"}};
+		default: return {};
 		}
-
 	}
 
 	bool Issue::operator==(const Issue& other) const {
@@ -67,8 +80,8 @@ namespace reporting {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
-		return out << toString(issue.details.severity) << ": "
-				   << "[" << toString(issue.details.category) << "] "
+		return out << toString(issue.error_details.severity) << ": "
+				   << "[" << toString(issue.error_details.category) << "] "
 				   << issue.getMessage();
 	}
 
@@ -123,6 +136,7 @@ namespace reporting {
 
 	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
 		boost::property_tree::ptree ret;
+		ret.put<string>("error_code", toString(issue.getErrorCode()));
 		ret.put<string>("target", toString(issue.getTarget()));
 		ret.put<string>("severity", toString(issue.getSeverity()));
 		ret.put<string>("category", toString(issue.getCategory()));

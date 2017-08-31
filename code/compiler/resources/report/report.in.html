@@ -23,7 +23,20 @@
 <body>
 	<div class="container">
 		<h1 class="title">Conversion Report</h1>
+
+		<div id="progress" class="row">
+			<div class="col-xs-1 col-xs-offset-1">
+				<div id="progress-num">0 / 0</div>
+			</div>
+			<div class="col-xs-8">
+				<div class="progress">
+					<div class="progress-bar"></div>
+				</div>
+			</div>
+		</div>
+
 		<div id="main"></div>
+
 		<div class="panel panel-default">
 			<div class="panel-body row footer">
 				<div class="col-xs-6 date">%DATETIME%</div>
@@ -31,6 +44,7 @@
 			</div>
 		</div>
 	</div>
+
 	<img class="logo" src="gfx/allscale.png">
 
 	<script>var report = %REPORT%;</script>

@@ -7,6 +7,14 @@ h1.title {
     margin-bottom: 15px;
 }
 
+#progress #progress-num {
+    text-align: right;
+}
+
+#progress .progress-bar {
+    min-width: 2em;
+}
+
 .entry > .panel-heading {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     word-wrap: break-word;
@@ -16,16 +24,35 @@ h1.title {
     font-size: 9pt;
 }
 
+.entry div.entry-issue-error-code {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-size: 12px;
+    display: inline-block;
+    width: 4%;
+    vertical-align: top;
+    padding-top: 3px;
+}
+
 .entry div.entry-issue-message {
     display: inline-block;
-    width: 89%;
+    width: 80%;
 }
 
 .entry div.entry-issue-category {
     text-align: right;
     display: inline-block;
-    width: 10%;
+    width: 16%;
     vertical-align: top;
+}
+
+.entry div.entry-issue-help {
+    border-top: solid 2px lightgrey;
+    padding: 5px;
+    margin-top: 10px;
+}
+
+.entry div.entry-issue-help:empty {
+    display: none;
 }
 
 img.logo {
@@ -34,13 +61,7 @@ img.logo {
 }
 
 .container {
-    width: 970px;
-}
-
-@media (min-width: 1200px) {
-    .container {
-        width: 1170px;
-    }
+    width: 1170px;
 }
 
 pre {

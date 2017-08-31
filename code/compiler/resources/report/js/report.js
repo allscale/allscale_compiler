@@ -22,8 +22,53 @@ function determineLevelForIssue(issue) {
 	}
 }
 
-for (var addr in report) {
-	var entry = report[addr];
+function getHelpMessage(error_code) {
+	if (error_code in report.help_messages) {
+		return report.help_messages[error_code];
+	} else {
+		return ""
+	}
+}
+
+function setProgress() {
+	var noWarnings = true;
+	var success = 0;
+	var count = Object.keys(report.conversions).length;
+	for (var addr in report.conversions) {
+		var entry = report.conversions[addr];
+		var level = determineLevelForEntry(entry);
+		if (level != 'danger') {
+			success++;
+		}
+		if (level == 'warning') {
+			noWarnings = false;
+		}
+	}
+
+	$('#progress-num').text(`${success} / ${count}`);
+
+	var bar = $('#progress .progress-bar');
+
+	if (success == count && count > 0 && noWarnings) {
+		bar.addClass('progress-bar-success');
+	} else if (success == count && count > 0) {
+		bar.addClass('progress-bar-warning');
+	} else if (count > 0) {
+		bar.addClass('progress-bar-danger');
+	}
+
+	var percent = 100.0;
+	if (count > 0) {
+		percent = 100.0 * (success / count);
+	}
+	bar.attr('style', `width: ${percent}%`).text(`${percent.toFixed(0)}%`)
+}
+
+setProgress();
+
+// add entries
+for (var addr in report.conversions) {
+	var entry = report.conversions[addr];
 	$('#main').append(
 		$('<div>')
 			.addClass(`entry panel panel-${determineLevelForEntry(entry)}`)
@@ -54,6 +99,9 @@ for (var addr in report) {
 												.addClass('panel-heading')
 												.append(
 													$('<div>')
+														.addClass('entry-issue-error-code')
+														.text(issue.error_code),
+													$('<div>')
 														.addClass('entry-issue-message')
 														.append(
 															$('<a>')
@@ -77,7 +125,10 @@ for (var addr in report) {
 													$('<div>')
 														.addClass('panel-body')
 														.append(
-															$('<pre>').text(issue.loc_pretty)
+															$('<pre>').text(issue.loc_pretty),
+															$('<div>')
+																.addClass('entry-issue-help')
+																.text(getHelpMessage(issue.error_code))
 														)
 												)
 										)

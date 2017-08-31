@@ -20,8 +20,8 @@ namespace compiler {
 namespace core {
 
 	boost::property_tree::ptree toPropertyTree(const ConversionReport& report) {
-		boost::property_tree::ptree ret;
-
+		// conversions + issues
+		boost::property_tree::ptree conversions;
 		for(const auto& p : report.issues) {
 			boost::property_tree::ptree entry;
 			auto target = p.first;
@@ -36,9 +36,29 @@ namespace core {
 				entry.put<string>("loc_pretty", ss.str());
 			}
 
-			ret.push_back(make_pair(toString(target), entry));
+			conversions.push_back(make_pair(toString(target), entry));
 		}
 
+		// collect help messages
+		boost::property_tree::ptree help_messages;
+		{
+			std::set<reporting::ErrorCode> errors;
+			for(const auto& p : report.issues) {
+				for (const auto& issue : p.second) {
+					errors.insert(issue.getErrorCode());
+				}
+			}
+
+			for (const auto& err : errors) {
+				if (auto msg = reporting::lookupHelpMessage(err)) {
+					help_messages.put<string>(toString(err), *msg);
+				}
+			}
+		}
+
+		boost::property_tree::ptree ret;
+		ret.push_back(make_pair("conversions", conversions));
+		ret.push_back(make_pair("help_messages", help_messages));
 		return ret;
 	}
 
