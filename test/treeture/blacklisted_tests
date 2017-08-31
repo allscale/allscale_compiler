@@ -9,7 +9,6 @@
 default
 move
 void
-done
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
