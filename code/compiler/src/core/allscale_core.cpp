@@ -1,6 +1,9 @@
 #include "allscale/compiler/core/allscale_core.h"
 
+#include <ctime>
+
 #include <fstream>
+#include <sstream>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -59,11 +62,18 @@ namespace core {
 		std::stringstream report_buffer;
 		write_json(report_buffer, toPropertyTree(report));
 
+		std::stringstream timestamp;
+		{
+			std::time_t t = std::time(nullptr);
+			timestamp << std::asctime(std::localtime(&t));
+		}
+
 		while(in) {
 			std::string line;
 			std::getline(in, line);
 
-			boost::replace_all(line, "%REPORT%", report_buffer.str());
+			boost::replace_all(line, "%REPORT%",   report_buffer.str());
+			boost::replace_all(line, "%DATETIME%", timestamp.str());
 
 			out << line << "\n";
 		}
