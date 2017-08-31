@@ -62,6 +62,7 @@ namespace lang {
 		LANG_EXT_LITERAL(TaskRefLeft, "task_ref_left", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefRight, "task_ref_right", "(task_ref) -> task_ref")
 		LANG_EXT_LITERAL(TaskRefWait, "task_ref_wait", "(task_ref) -> unit")
+		LANG_EXT_LITERAL(TaskRefValid, "task_ref_valid", "(task_ref) -> bool")
 
 		LANG_EXT_LITERAL(TreetureToTaskRef, "treeture_to_task_ref", "(treeture<'a,'r>) -> task_ref")
 
