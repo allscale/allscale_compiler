@@ -51,6 +51,19 @@ configure_file(../allscale_integration_test_config.in ${PROJECT_BINARY_DIR}/alls
 # integration test driver requires allscalecc
 add_dependencies(compiler_allscale_integration_tests compiler_allscalecc)
 
+# Generate HTML report template
+set(report_template ${PROJECT_BINARY_DIR}/report.out.html)
+file(GLOB_RECURSE report_template_srcs LIST_DIRECTORIES false resources/report/*)
+add_custom_command(
+	OUTPUT ${report_template}
+	COMMAND ./generate > ${report_template}
+	DEPENDS ${report_template_srcs}
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources/report
+	COMMENT "Generate HTML report template"
+)
+add_custom_target(html_report_template DEPENDS ${report_template})
+add_dependencies(compiler_allscalecc html_report_template)
+
 # add test input sources
 if(MSVC)
 	glob_headers(allscale_frontend_test_input_incs test/frontend/inputs)
