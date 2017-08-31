@@ -6,8 +6,6 @@
 #                    Test cases known to be not yet supported.                     #
 ####################################################################################
 
-sync_one_on_one_2d
-sync_neighbor_2d
 sync_after
 sync_after_2d
 

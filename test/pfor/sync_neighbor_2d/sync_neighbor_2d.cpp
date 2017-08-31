@@ -40,7 +40,7 @@ int main() {
 			if (p.x != N-2 && (*A)[p.x+1][p.y] != t) {
 				std::cout << p.x << std::endl;
 			}
-			if (p.x != N-2 && p.y != N-2 && (*A)[p.x+1][p.y+1]) {
+			if (p.x != N-2 && p.y != N-2 && (*A)[p.x+1][p.y+1] != t) {
 				std::cout << p.x << std::endl;
 			}
 			if (p.y != 1 && (*A)[p.x][p.y-1] != t) {
