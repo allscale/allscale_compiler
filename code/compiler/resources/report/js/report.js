@@ -125,6 +125,7 @@ for (var addr in report.conversions) {
 													$('<div>')
 														.addClass('panel-body')
 														.append(
+															$('<p>').addClass('nodeaddress').text(issue.target),
 															$('<pre>').text(issue.loc_pretty),
 															$('<div>')
 																.addClass('entry-issue-help')
@@ -133,7 +134,7 @@ for (var addr in report.conversions) {
 												)
 										)
 								}),
-
+								$('<p>').addClass('nodeaddress').text(addr),
 								$('<pre>').text(entry.loc_pretty)
 							)
 					)

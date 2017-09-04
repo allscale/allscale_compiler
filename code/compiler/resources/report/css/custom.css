@@ -51,6 +51,12 @@ h1.title {
     margin-top: 10px;
 }
 
+.entry .nodeaddress {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    font-size: 12px;
+    margin-left: 15px;
+}
+
 .entry div.entry-issue-help:empty {
     display: none;
 }
