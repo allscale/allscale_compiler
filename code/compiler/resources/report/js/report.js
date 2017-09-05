@@ -63,18 +63,17 @@ function setProgress() {
 	if (count > 0) {
 		percent = 100.0 * (success / count);
 	}
-	bar.attr('style', `width: ${percent}%`).text(`${percent.toFixed(0)}%`)
+	bar.attr('style', `width: ${percent}%`)
 }
 
 function create_source(addr, source) {
 	return $('<pre>').append(
-		$('<span>').addClass('nodeaddress').text(`${addr}:`),
-		"\n",
+		$('<div>').addClass('nodeaddress').text(`${addr}`),
 		source
 	);
 }
 
-function create_trace(addr, issue_index, issue, trace, index) {
+function createTrace(addr, issue_index, issue, trace, index) {
 	var id = `entry-${addr}-issue-${issue_index}-backtrace-${index}`;
 
 	var title = trace.address;
@@ -95,6 +94,7 @@ function create_trace(addr, issue_index, issue, trace, index) {
 
 	return $('<div>')
 		.addClass('panel panel-default')
+		.addClass(!trace.location ? 'internal' : '')
 		.append(
 			$('<div>')
 				.addClass('panel-heading')
@@ -112,7 +112,7 @@ function create_trace(addr, issue_index, issue, trace, index) {
 		);
 }
 
-function create_issue(addr, issue, index) {
+function createIssue(addr, issue, index) {
 	return $('<div>')
 		.addClass(`entry-issue panel panel-${determineLevelForIssue(issue)}`)
 		.append(
@@ -156,14 +156,14 @@ function create_issue(addr, issue, index) {
 								.addClass('backtrace')
 								.append(
 									$('<div>').addClass('backtrace-text').text('Backtrace'),
-									$.map(issue.backtrace, $.proxy(create_trace, null, addr, index, issue))
+									$.map(issue.backtrace, $.proxy(createTrace, null, addr, index, issue))
 								)
 						)
 				)
 		);
 }
 
-function create_conversion(entry, addr) {
+function createConversion(entry, addr) {
 	return $('<div>')
 		.addClass(`entry panel panel-${determineLevelForEntry(entry)}`)
 		.append(
@@ -185,14 +185,14 @@ function create_conversion(entry, addr) {
 					$('<div>')
 						.addClass('panel-body')
 						.append(
-							$.map(entry.issues, $.proxy(create_issue, null, addr)),
+							$.map(entry.issues, $.proxy(createIssue, null, addr)),
 							create_source(addr, entry.loc.source)
 						)
 				)
 		);
 }
 
-function create_raw() {
+function createRaw() {
 	return $('<div>')
 		.addClass('panel panel-default')
 		.append(
@@ -218,8 +218,18 @@ function create_raw() {
 		);
 }
 
+function setupControls() {
+	var $internals = $('.internal').add('.nodeaddress');
+
+	$internals.hide();
+
+	$('#internal-button').click(function() {
+		$internals.toggle();
+	});
+}
+
 function main() {
-	$('#main').append($.map(report.conversions, create_conversion));
+	$('#main').append($.map(report.conversions, createConversion));
 
 	// open if only 1
 	if (Object.keys(report.conversions).length == 1) {
@@ -229,9 +239,10 @@ function main() {
 	}
 
 	// add raw block
-	$('#main').append(create_raw());
+	$('#main').append(createRaw());
 
 	setProgress();
+	setupControls();
 }
 
 main();

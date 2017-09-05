@@ -11,10 +11,6 @@ h1.title {
     text-align: right;
 }
 
-#progress .progress-bar {
-    min-width: 2em;
-}
-
 .entry > .panel-heading {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     word-wrap: break-word;
@@ -51,14 +47,10 @@ h1.title {
     margin-bottom: 10px;
 }
 
-.entry .nodeaddress {
-    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
-    font-size: 12px;
-    margin-left: 15px;
-}
-
-.entry span.nodeaddress {
-    font-style: italic;
+.entry pre div.nodeaddress {
+    padding-left: 10px;
+    margin-bottom: 5px;
+    border-bottom: solid thin lightgrey;
 }
 
 .entry div.entry-issue-help:empty {
@@ -108,6 +100,14 @@ pre {
 
 .footer {
     padding: 5px 15px;
+}
+
+.footer .controls {
+    text-align: center;
+}
+
+.footer .controls a {
+    cursor: pointer;
 }
 
 .footer .about {
