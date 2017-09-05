@@ -30,6 +30,10 @@ namespace frontend {
 		runAllscaleTestOn("/inputs/allscale_di_sema_with_cleanups.cpp", true);
 	}
 
+	TEST(AllScaleDiSemaConversionTest, ApiStaticGrid) {
+		runAllscaleTestOn("/inputs/allscale_di_sema_api_static_grid.cpp", true);
+	}
+
 } // end namespace frontend
 } // end namespace compiler
 } // end namespace allscale
