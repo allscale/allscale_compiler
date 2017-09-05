@@ -5,18 +5,18 @@ using namespace allscale::api::user;
 
 int main() {
 
-	const int N = 5000000;
-	const int T = 100;
+	const int N = 500;
+	const int T = 10;
 
 	using Point = allscale::utils::Vector<int,2>;
 
 	Point size = { N, N };
 
-	std::array<std::array<int, N>, N> bufferA;
-	std::array<std::array<int, N>, N> bufferB;
+    auto bufferA = new std::array<std::array<int, N>, N>();
+    auto bufferB = new std::array<std::array<int, N>, N>();
 
-	auto* A = &bufferA;
-	auto* B = &bufferB;
+	auto* A = bufferA;
+	auto* B = bufferB;
 
 	auto ref = pfor(size, [A,B](const Point& p) {
 		(*A)[p.x][p.y] = 0;
@@ -40,6 +40,9 @@ int main() {
 			std::cout << p.x << std::endl;
 		}
 	}, one_on_one(ref));
+
+    delete bufferA;
+    delete bufferB;
 
 	return 0;
 }

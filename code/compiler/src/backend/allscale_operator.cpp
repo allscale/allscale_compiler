@@ -271,6 +271,26 @@ namespace backend {
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
 			};
 
+			table[ext.getTreetureIsDone()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_future"), {}), C_NODE_MANAGER->create("is_ready"), {});
+			};
+
+			table[ext.getTreetureIsValid()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("valid"), {});
+			};
+
 			table[ext.getTreetureWait()] = OP_CONVERTER {
 
 				// add dependency to argument type
@@ -423,6 +443,16 @@ namespace backend {
 
 				// convert to member call
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("wait"), {});
+			};
+
+			table[ext.getTaskRefValid()] = OP_CONVERTER {
+
+				// add dependency to argument type
+				auto& resTypeInfo = GET_TYPE_INFO(call->getArgument(0)->getType());
+				context.addDependency(resTypeInfo.definition);
+
+				// convert to member call
+				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("valid"), {});
 			};
 
 

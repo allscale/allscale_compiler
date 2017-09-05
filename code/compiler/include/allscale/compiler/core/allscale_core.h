@@ -3,6 +3,8 @@
 #include <map>
 #include <ostream>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include "insieme/core/ir.h"
 
 #include "allscale/compiler/reporting/reporting.h"
@@ -54,7 +56,13 @@ namespace core {
 	 */
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback = detail::ignoreProgress);
 
+	boost::property_tree::ptree toPropertyTree(const ConversionReport& report);
 
+	void toJSON(const std::string& filename, const ConversionReport& report);
+
+	void toJSON(std::ostream& out, const ConversionReport& report);
+
+	void toHTML(const std::string& filename, const ConversionReport& report);
 
 	// -- Definitions ------------------------------------------------------------------
 

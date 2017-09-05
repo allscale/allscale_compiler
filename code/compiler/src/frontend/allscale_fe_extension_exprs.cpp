@@ -53,6 +53,7 @@ namespace detail {
 		{"allscale::api::core::impl::.*::task_reference::getLeft", SimpleCallMapper("task_ref_left", true)},
 		{"allscale::api::core::impl::.*::task_reference::getRight", SimpleCallMapper("task_ref_right", true)},
 		{"allscale::api::core::impl::.*::task_reference::wait", SimpleCallMapper("task_ref_wait", true)},
+		{"allscale::api::core::impl::.*::task_reference::valid", SimpleCallMapper("task_ref_valid", true)},
 		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone},        // default ctor call - special mapping
 		{"allscale::api::core::impl::.*::task_reference::task_reference", mapCopyAndMoveConstructor},  // copy|move ctor call
 		// treeture aggregation

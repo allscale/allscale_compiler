@@ -27,16 +27,9 @@ import qualified Insieme.Utils.BoundSet as BSet
 
 -- * Issues
 
-data Severity = Warning | Error
-  deriving (Eq, Ord, Show, Generic, NFData)
-
-data Categroy = Basic
-  deriving (Eq, Ord, Show, Generic, NFData)
-
-data Issue = Issue { target   :: NodeAddress
-                   , severity :: Severity
-                   , category :: Categroy
-                   , message  :: String
+data Issue = Issue { target    :: NodeAddress
+                   , errorCode :: ErrorCode
+                   , message   :: String
                    }
   deriving (Eq, Ord, Show, Generic, NFData)
 
@@ -52,6 +45,20 @@ mkOneIssue = Issues . Set.singleton
 
 mkIssues :: [Issue] -> Issues
 mkIssues = Issues . Set.fromList
+
+-- * Error Codes
+
+data ErrorCode = Timeout
+               | CallToUnknownFunction
+               | ReadAccessToUnknownLocation
+               | WriteAccessToUnknownLocation
+               | ReadAccessToGlobal
+               | WriteAccessToGlobal
+               | ReadAccessToPotentialDataItemElementReference
+               | WriteAccessToPotentialDataItemElementReference
+               | UnobtainableDataRequirement
+               | ConvertParRegionToSharedMemoryParRuntimeCode
+  deriving (Eq, Ord, Enum, Show, Read, Generic, NFData)
 
 -- * Analysis Dispatcher
 
@@ -162,19 +169,19 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
     diag = Diagnosis unknownReferenceDiagnosis analysis ops ut
     analysis = Solver.mkAnalysisIdentifier UnknownReferenceDiagnosis "DIAG_urd"
 
-    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
+    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
 
     ops = [readHandler, writeHandler]
 
     readHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_deref"
-        val _ = handleOp "Read"
+        val _ = handleOp ReadAccessToUnknownLocation
 
     writeHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_assign"
-        val _ = handleOp "Write"
+        val _ = handleOp WriteAccessToUnknownLocation
 
     dep _ _ = Solver.toVar <$> [referenceVar]
 
@@ -185,9 +192,9 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
 
     isUnknown = BSet.isUniverse . referenceVal
 
-    handleOp access a = mkIssues $ if isUnknown a
-                                   then [Issue addr Error Basic (access ++ " access to unknown location")]
-                                   else []
+    handleOp err a = mkIssues $ if isUnknown a
+                                then [Issue addr err ""]
+                                else []
 
 
 data GlobalVariableDiagnosis = GlobalVariableDiagnosis
@@ -199,19 +206,19 @@ globalVariableDiagnosis addr = diagnosis diag addr
     diag = Diagnosis globalVariableDiagnosis analysis ops ut
     analysis = Solver.mkAnalysisIdentifier GlobalVariableDiagnosis "DIAG_global"
 
-    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
+    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
 
     ops = [readHandler, writeHandler]
 
     readHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_deref"
-        val _ = handleOp "Read"
+        val _ = handleOp ReadAccessToGlobal
 
     writeHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_assign"
-        val _ = handleOp "Write"
+        val _ = handleOp WriteAccessToGlobal
 
     dep _ _ = Solver.toVar <$> [referenceVar]
 
@@ -224,9 +231,9 @@ globalVariableDiagnosis addr = diagnosis diag addr
     globalAccess _ = False
 
     handleOp _ a | BSet.isUniverse $ referenceVal a = Solver.bot
-    handleOp access a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
-                                   then [Issue addr Error Basic (access ++ " access to global")]
-                                   else []
+    handleOp err a = mkIssues $ if any globalAccess (BSet.toList $ referenceVal a)
+                                then [Issue addr err ""]
+                                else []
 
 data UncertainAccessDiagnosis = UncertainAccessDiagnosis
   deriving (Typeable)
@@ -237,19 +244,19 @@ uncertainAccessDiagnosis addr = diagnosis diag addr
     diag = Diagnosis uncertainAccessDiagnosis analysis ops ut
     analysis = Solver.mkAnalysisIdentifier UncertainAccessDiagnosis "DIAG_uncAcc"
 
-    ut addr' = mkOneIssue $ Issue addr' Warning Basic "Call to unknown function"
+    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
 
     ops = [readHandler, writeHandler]
 
     readHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_deref"
-        val _ = handleOp "read"
+        val _ = handleOp ReadAccessToPotentialDataItemElementReference
 
     writeHandler = OperatorHandler cov dep val
       where
         cov a = isBuiltin a "ref_assign"
-        val _ = handleOp "write"
+        val _ = handleOp WriteAccessToPotentialDataItemElementReference
 
     dep _ _ = [Solver.toVar diReferenceVar, Solver.toVar referenceVar]
 
@@ -263,9 +270,9 @@ uncertainAccessDiagnosis addr = diagnosis diag addr
 
     referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 
-    handleOp _      a | referenceValIsUnknown   a = mkIssues []
-    handleOp access a | diReferenceValIsUnknown a = mkOneIssue $ Issue addr Error Basic ("Unable to determine data item element reference targeted by " ++ access ++ " operation")
-    handleOp _      _ = mkIssues []
+    handleOp _   a | referenceValIsUnknown   a = mkIssues []
+    handleOp err a | diReferenceValIsUnknown a = mkOneIssue $ Issue addr err ""
+    handleOp _   _ = mkIssues []
 
     referenceValIsUnknown   = BSet.isUniverse . referenceVal
     diReferenceValIsUnknown = BSet.isUniverse . diReferenceVal

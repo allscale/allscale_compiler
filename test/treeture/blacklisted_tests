@@ -6,8 +6,9 @@
 #                    Test cases known to be not yet supported.                     #
 ####################################################################################
 
-sync_after
-sync_after_2d
+default
+move
+void
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #

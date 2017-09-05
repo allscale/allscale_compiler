@@ -67,7 +67,7 @@ diagnostics ctx_hs addr_hs diags = do
         Nothing -> allocAnalysisResult ctx_hs  True =<< passIssues ctx_c (Diag.mkIssues [])
 
 foreign import ccall "hat_c_mk_issue"
-  mkCIssue :: CRepPtr NodeAddress -> CInt -> CInt -> CString -> IO (CRepPtr Diag.Issue)
+  mkCIssue :: CRepPtr NodeAddress -> CInt -> CString -> IO (CRepPtr Diag.Issue)
 
 foreign import ccall "hat_c_del_issue"
   delCIssue :: CRepPtr Diag.Issue -> IO ()
@@ -82,17 +82,13 @@ passIssues ctx (Diag.Issues is) = bracket
     (\is_c -> withArrayUnsignedLen is_c mkCIssues)
   where
     passIssue :: Diag.Issue -> IO (CRepPtr Diag.Issue)
-    passIssue (Diag.Issue t s c m) = bracket
+    passIssue (Diag.Issue t e m) = bracket
         (passNodeAddress ctx t)
         (delCNodeAddress)
-        (\t_c -> withCString m $ mkCIssue t_c (convertSeverity s) (convertCategory c))
+        (\t_c -> withCString m $ mkCIssue t_c (convertErrorCode e))
 
-    convertCategory :: Diag.Categroy -> CInt
-    convertCategory Diag.Basic = 0
-
-    convertSeverity :: Diag.Severity -> CInt
-    convertSeverity Diag.Warning = 0
-    convertSeverity Diag.Error = 1
+    convertErrorCode :: Diag.ErrorCode -> CInt
+    convertErrorCode = fromIntegral . fromEnum
 
 selectDiags :: DiagnosisFlags -> [Diag.DiagnosisFunction]
 selectDiags = catMaybes . map sel . zip [0..] . toListLE

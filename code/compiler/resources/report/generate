@@ -1,0 +1,23 @@
+#!/bin/bash
+
+export DIR="$(dirname "$(readlink -f "$0")")"
+
+set -e
+set -u
+
+function toBase64() {
+	base64 -w 0 < "$1"
+}
+
+sed -f - "$DIR/report.in.html" << EOF
+	s#'fonts/glyphicons-halflings-regular.eot'#data:application/vnd.ms-fontobject;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.eot")#
+	s#'fonts/glyphicons-halflings-regular.ttf'#data:application/x-font-truetype;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.ttf")#
+	s#'fonts/glyphicons-halflings-regular.woff'#data:application/x-font-woff;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.woff")#
+	s#'fonts/glyphicons-halflings-regular.woff2'#data:application/x-font-woff2;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.woff2")#
+	s#css/bootstrap.min.css#data:text/css;base64,$(toBase64 "$DIR/css/bootstrap.min.css")#
+	s#css/custom.css#data:text/css;base64,$(toBase64 "$DIR/css/custom.css")#
+	s#gfx/allscale.png#data:image/png;base64,$(toBase64 "$DIR/gfx/allscale.png")#
+	s#js/jquery.min.js#data:text/javascript;base64,$(toBase64 "js/jquery.min.js")#
+	s#js/bootstrap.min.js#data:text/javascript;base64,$(toBase64 "js/bootstrap.min.js")#
+	s#js/report.js#data:text/javascript;base64,$(toBase64 "js/report.js")#
+EOF

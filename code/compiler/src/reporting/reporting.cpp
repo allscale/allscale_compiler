@@ -1,6 +1,11 @@
 #include "allscale/compiler/reporting/reporting.h"
 
+#include <iomanip>
+
+#include <boost/property_tree/json_parser.hpp>
+
 #include "insieme/utils/name_mangling.h"
+#include "insieme/utils/string_utils.h"
 
 #include "insieme/core/annotations/naming.h"
 #include "insieme/core/annotations/source_location.h"
@@ -12,11 +17,19 @@ namespace allscale {
 namespace compiler {
 namespace reporting {
 
+	std::ostream& operator<<(std::ostream& out, ErrorCode err) {
+		auto flags = out.flags();
+		out << toString(lookupDetails(err).severity)[0]
+		    << std::setfill('0') << std::setw(3) << static_cast<int>(err);
+		out.flags(flags);
+		return out;
+	}
+
 	std::ostream& operator<<(std::ostream& out, Severity severity) {
 		switch(severity) {
 		case Severity::Warning: return out << "Warning";
 		case Severity::Error:   return out << "Error";
-		case Severity::Info:   return out << "Info";
+		case Severity::Info:    return out << "Info";
 		}
 		return out;
 	}
@@ -28,9 +41,30 @@ namespace reporting {
 		return out;
 	}
 
+	ErrorDetails lookupDetails(ErrorCode err) {
+		switch(err) {
+		case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
+		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
+		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
+		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+		default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
+		};
+	}
+
+	boost::optional<std::string> lookupHelpMessage(ErrorCode err) {
+		switch (err) {
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode: return {{"dummy help text"}};
+		default: return {};
+		}
+	}
+
 	bool Issue::operator==(const Issue& other) const {
-		return category == other.category
-			&& severity == other.severity
+		return error_code == other.error_code
 			&& target == other.target
 			&& message == other.message;
 	}
@@ -39,23 +73,20 @@ namespace reporting {
 		if (target < other.target) return true;
 		if (!(target == other.target)) return false;
 
-		if (severity < other.severity) return true;
-		if (!(severity == other.severity)) return false;
-
-		if (category < other.category) return true;
-		if (!(category == other.category)) return false;
+		if (error_code < other.error_code) return true;
+		if (!(error_code == other.error_code)) return false;
 
 		return message < other.message;
 	}
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
-		return out << toString(issue.severity) << ": "
-				   << "[" << toString(issue.category) << "] "
-				   << issue.message;
+		return out << toString(issue.error_details.severity) << ": "
+				   << "[" << toString(issue.error_details.category) << "] "
+				   << issue.getMessage();
 	}
 
 	Issue Issue::timeout(const NodeAddress& node) {
-		return Issue(node, Severity::Warning, Category::Basic, "Timeout");
+		return Issue(node, ErrorCode::Timeout);
 	}
 
 	void prettyPrintLocation(std::ostream& out, const NodeAddress& target, bool disableColorization, bool printNodeAddress) {
@@ -92,7 +123,6 @@ namespace reporting {
 		}
 	}
 
-
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization /* = false */, bool printNodeAddress /* = false */) {
 		out << issue << "\n";
 
@@ -102,6 +132,33 @@ namespace reporting {
 
 		// print target nesting information
 		prettyPrintLocation(out, issue.getTarget(),disableColorization,printNodeAddress);
+	}
+
+	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
+		boost::property_tree::ptree ret;
+		ret.put<string>("error_code", toString(issue.getErrorCode()));
+		ret.put<string>("target", toString(issue.getTarget()));
+		ret.put<string>("severity", toString(issue.getSeverity()));
+		ret.put<string>("category", toString(issue.getCategory()));
+		ret.put<string>("message", issue.getMessage());
+
+		if(auto location = annotations::getLocation(issue.getTarget())) {
+			ret.put<string>("loc_short", toString(*location));
+
+			std::stringstream ss;
+			annotations::prettyPrintLocation(ss, *location, true);
+			ret.put<string>("loc_pretty", ss.str());
+		}
+
+		return ret;
+	}
+
+	boost::property_tree::ptree toPropertyTree(const Issues & issues) {
+		boost::property_tree::ptree ret;
+		for(const auto& issue : issues) {
+			ret.push_back(make_pair("", toPropertyTree(issue)));
+		}
+		return ret;
 	}
 
 } // end namespace reporting
