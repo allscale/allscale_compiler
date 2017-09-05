@@ -27,14 +27,7 @@ namespace core {
 			auto target = p.first;
 
 			entry.push_back(make_pair("issues", toPropertyTree(p.second)));
-
-			if(auto location = insieme::core::annotations::getLocation(target)) {
-				entry.put<string>("loc_short", toString(*location));
-
-				std::stringstream ss;
-				insieme::core::annotations::prettyPrintLocation(ss, *location, true);
-				entry.put<string>("loc_pretty", ss.str());
-			}
+			entry.push_back(make_pair("loc", reporting::locationToPropertyTree(target)));
 
 			conversions.push_back(make_pair(toString(target), entry));
 		}

@@ -46,9 +46,9 @@ h1.title {
 }
 
 .entry div.entry-issue-help {
-    border-top: solid 2px lightgrey;
+    border-bottom: solid 2px lightgrey;
     padding: 5px;
-    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .entry .nodeaddress {
@@ -57,8 +57,40 @@ h1.title {
     margin-left: 15px;
 }
 
+.entry span.nodeaddress {
+    font-style: italic;
+}
+
 .entry div.entry-issue-help:empty {
     display: none;
+}
+
+.entry .backtrace {
+    padding: 5px;
+    position: relative;
+    padding-left: 20px;
+    min-height: 90px;
+    vertical-align: top;
+    background: lightgrey;
+    border-radius: 4px;
+}
+
+.entry .backtrace-text {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    position: absolute;
+    left: 20;
+    top: 60px;
+
+    transform: rotate(-90deg);
+    transform-origin: bottom left;
+    -moz-transform: rotate(-90deg);
+    -moz-transform-origin: bottom left;
+    -webkit-transform: rotate(-90deg);
+    -webkit-transform-origin: bottom left;
+}
+
+.entry .backtrace .panel-heading {
+    padding: 3px 8px;
 }
 
 img.logo {

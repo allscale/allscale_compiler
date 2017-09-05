@@ -81,8 +81,8 @@ namespace reporting {
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
 		return out << toString(issue.error_details.severity) << ": "
-				   << "[" << toString(issue.error_details.category) << "] "
-				   << issue.getMessage();
+		           << "[" << toString(issue.error_details.category) << "] "
+		           << issue.getMessage();
 	}
 
 	Issue Issue::timeout(const NodeAddress& node) {
@@ -134,6 +134,32 @@ namespace reporting {
 		prettyPrintLocation(out, issue.getTarget(),disableColorization,printNodeAddress);
 	}
 
+	boost::property_tree::ptree locationToPropertyTree(const NodeAddress& target) {
+		boost::property_tree::ptree loc;
+		loc.put<string>("address", toString(target));
+
+		if(auto binding = target.isa<LambdaBindingAddress>()) {
+			loc.put<string>("name", insieme::utils::demangle(binding->getReference()->getName()->getValue()));
+		}
+		else if(auto lambda = target.isa<LambdaExprAddress>()) {
+			loc.put<string>("name", insieme::utils::demangle(lambda->getReference()->getName()->getValue()));
+		}
+
+		if(auto location = annotations::getLocation(target)) {
+			loc.put<string>("location", toString(*location));
+
+			std::stringstream ss;
+			annotations::prettyPrintLocation(ss, *location, true);
+			loc.put<string>("source", ss.str());
+		}
+
+		if(lang::isBuiltIn(target.getAddressedNode())) {
+			loc.put<bool>("is_builtin", true);
+		}
+
+		return loc;
+	}
+
 	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
 		boost::property_tree::ptree ret;
 		ret.put<string>("error_code", toString(issue.getErrorCode()));
@@ -142,12 +168,23 @@ namespace reporting {
 		ret.put<string>("category", toString(issue.getCategory()));
 		ret.put<string>("message", issue.getMessage());
 
-		if(auto location = annotations::getLocation(issue.getTarget())) {
-			ret.put<string>("loc_short", toString(*location));
+		// loc
+		ret.push_back(make_pair("loc", locationToPropertyTree(issue.getTarget())));
 
-			std::stringstream ss;
-			annotations::prettyPrintLocation(ss, *location, true);
-			ret.put<string>("loc_pretty", ss.str());
+		// backtrace
+		{
+			boost::property_tree::ptree backtrace;
+
+			auto target = issue.getTarget();
+			auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+			while(binding) {
+				auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+				backtrace.push_back(make_pair("", locationToPropertyTree(lambdaexpr)));
+
+				binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+			}
+
+			ret.push_back(make_pair("backtrace", backtrace));
 		}
 
 		return ret;

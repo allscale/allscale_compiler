@@ -128,6 +128,8 @@ namespace reporting {
 
 	void prettyPrintLocation(std::ostream& out, const insieme::core::NodeAddress& target, bool disableColorization = false, bool printNodeAddress = false);
 
+	boost::property_tree::ptree locationToPropertyTree(const insieme::core::NodeAddress& target);
+
 	boost::property_tree::ptree toPropertyTree(const Issue& issue);
 
 	boost::property_tree::ptree toPropertyTree(const Issues& issues);
