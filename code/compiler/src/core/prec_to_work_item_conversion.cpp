@@ -1046,7 +1046,7 @@ namespace core {
 				} else {
 					// otherwise report a summary info
 					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::ErrorCode::UnobtainableDataRequirement,
+							reporting::ErrorCode::ObtainedDataRequirement,
 							format("Obtained data requirement for variant #%d: %s", counter, *requirements))
 					);
 				}

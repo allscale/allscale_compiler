@@ -51,9 +51,12 @@ namespace reporting {
 		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
 		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
 		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::UnobtainableDataRequirement:                    return {Severity::Error,   Category::Basic, "Unable to obtain data requirement"};
+		case ErrorCode::ObtainedDataRequirement:                        return {Severity::Info,    Category::Basic, "Obtained data requirement"};
 		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
-		default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
 		};
+		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
+		return {};
 	}
 
 	boost::optional<std::string> lookupHelpMessage(ErrorCode err) {

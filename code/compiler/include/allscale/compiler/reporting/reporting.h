@@ -25,6 +25,7 @@ namespace reporting {
 		ReadAccessToPotentialDataItemElementReference,
 		WriteAccessToPotentialDataItemElementReference,
 		UnobtainableDataRequirement,
+		ObtainedDataRequirement,
 		ConvertParRegionToSharedMemoryParRuntimeCode,
 	};
 

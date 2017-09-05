@@ -1,10 +1,19 @@
 body {
     overflow-y: scroll;
+    min-width: 1300px;
 }
 
 h1.title {
     text-align: center;
     margin-bottom: 15px;
+}
+
+#controls {
+    position: fixed;
+    top: 150px;
+    padding: 5px;
+    border-radius: 0 4px 4px 0;
+    border: 1px solid #ddd;
 }
 
 #progress #progress-num {
@@ -85,6 +94,10 @@ h1.title {
     padding: 3px 8px;
 }
 
+#help-modal .modal-content {
+    width: 800px;
+}
+
 img.logo {
     display: block;
     margin: 10px auto;
@@ -96,20 +109,4 @@ img.logo {
 
 pre {
     background: #f2f2f2;
-}
-
-.footer {
-    padding: 5px 15px;
-}
-
-.footer .controls {
-    text-align: center;
-}
-
-.footer .controls a {
-    cursor: pointer;
-}
-
-.footer .about {
-    text-align: right;
 }

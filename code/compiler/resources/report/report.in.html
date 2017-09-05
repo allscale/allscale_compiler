@@ -21,6 +21,11 @@
 	<link href="css/custom.css" rel="stylesheet">
 </head>
 <body>
+	<div id="controls" class="btn-group-vertical">
+		<a id="internal-button" class="btn btn-default"><i class="glyphicon glyphicon-eye-open"></i></a>
+		<a href="#help-modal" data-toggle="modal" class="btn btn-default"><i class="glyphicon glyphicon-question-sign"></i></a>
+	</div>
+
 	<div class="container">
 		<h1 class="title">Conversion Report</h1>
 
@@ -36,14 +41,55 @@
 		</div>
 
 		<div id="main"></div>
+	</div>
 
-		<div class="panel panel-default">
-			<div class="panel-body row footer">
-				<div class="col-xs-4 date">%DATETIME%</div>
-				<div class="col-xs-4 controls">
-					<a id="internal-button">Show / Hide Internals</a>
+	<div id="help-modal" class="modal fade">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 class="modal-title">About<small class="pull-right">%DATETIME%</small></h2>
 				</div>
-				<div class="col-xs-4 about"><a>About</a></div>
+				<div class="modal-body">
+
+					<table class="table table-condensed">
+						<thead>
+							<tr>
+								<th>Controls</th>
+								<th>Function</th>
+							</tr>
+						</thread>
+						<tbody>
+							<tr>
+								<td><a class="btn btn-default disabled"><i class="glyphicon glyphicon-eye-open"></i></a></td>
+								<td>show / hide internal information</td>
+							</tr>
+							<tr>
+								<td><a class="btn btn-default disabled"><i class="glyphicon glyphicon-question-sign"></i></a></td>
+								<td>shows this dialog</td>
+							</tr>
+						</tbody>
+					</table>
+
+					<hr>
+
+					<h4>AllScale Project</h4>
+					<ul>
+						<li><a href="http://www.allscale.eu/">Visit AllScale Website</a></li>
+					</ul>
+
+					<hr>
+
+					<h4>Components Used</h4>
+					<ul>
+						<li><a href="https://jquery.com/">JQuery</a></li>
+						<li><a href="https://getbootstrap.com/docs/3.3/">Bootstrap</a></li>
+						<li><a href="http://glyphicons.com/">Glyphicons</a></li>
+					</ul>
+
+				</div>
+				<div class="modal-footer">
+					<a class="btn btn-primary" data-dismiss="modal">Close</a>
+				</div>
 			</div>
 		</div>
 	</div>

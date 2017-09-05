@@ -194,7 +194,7 @@ function createConversion(entry, addr) {
 
 function createRaw() {
 	return $('<div>')
-		.addClass('panel panel-default')
+		.addClass('panel panel-default internal')
 		.append(
 			$('<div>')
 				.addClass('panel-heading')
