@@ -88,8 +88,8 @@ namespace frontend {
 						if(auto clangCast = llvm::dyn_cast<clang::CastExpr>(returnExpr)) {
 							if(clangCast->getCastKind() == clang::CK_LValueToRValue) {
 								deref = true;
-								semaCall = llvm::dyn_cast<clang::CallExpr>(clangCast->getSubExpr());
 							}
+							semaCall = llvm::dyn_cast<clang::CallExpr>(clangCast->getSubExpr());
 						}
 					}
 					if(!semaCall) return irExpr;
@@ -129,7 +129,7 @@ namespace frontend {
 							// now we build a new call to the core IR literal
 							auto returnCall = builder.callExpr(allscaleExt.getDataItemElementAccess(), semaCallArgs);
 							auto returnValue = deref ? builder.deref(returnCall) : returnCall;
-							auto returnType = returnValue->getType();
+							auto returnType = calleeType->getReturnType();
 							if(!core::analysis::isRefType(returnType)) {
 								returnType = core::transform::materialize(returnType);
 							}

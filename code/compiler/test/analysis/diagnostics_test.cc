@@ -35,7 +35,7 @@ namespace analysis {
 	class DiagnosticsInputTest : public ::testing::TestWithParam<std::string> {};
 
 	TEST_P(DiagnosticsInputTest, Test) {
-		auto input_filepath = INPUT_TESTS_DIR + GetParam();
+		auto input_filepath = fs::canonical(INPUT_TESTS_DIR + GetParam()).string();
 		auto input_diag_filepath = input_filepath + ".diag";
 		SCOPED_TRACE(input_filepath);
 
