@@ -174,6 +174,8 @@ function createIssue(addr, issue, index) {
 }
 
 function createConversion(entry, addr) {
+	var loc = entry.loc_user ? entry.loc_user : entry.loc;
+
 	return $('<div>')
 		.addClass(`entry panel panel-${determineLevelForEntry(entry)}`)
 		.append(
@@ -186,7 +188,7 @@ function createConversion(entry, addr) {
 						.attr('href', `#entry-${addr}`)
 						.attr('data-toggle', 'collapse')
 						.addClass('panel-title')
-						.text(entry.loc.location)
+						.text(loc.location)
 				),
 			$('<div>')
 				.attr('id', `entry-${addr}`)
@@ -196,7 +198,7 @@ function createConversion(entry, addr) {
 						.addClass('panel-body')
 						.append(
 							$.map(entry.issues, $.proxy(createIssue, null, addr)),
-							create_source(addr, entry.loc.source)
+							create_source(addr, loc.source)
 						)
 				)
 		);
