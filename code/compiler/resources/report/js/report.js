@@ -112,9 +112,23 @@ function createTrace(addr, issue_index, issue, trace, index) {
 		);
 }
 
+function createTags(issue) {
+	if (!issue.tags) {
+		return;
+	}
+	return $.map(issue.tags, function(tag) {
+		return $('<div>').addClass('label label-default').text(tag);
+	});
+}
+
 function createIssue(addr, issue, index) {
 	return $('<div>')
 		.addClass(`entry-issue panel panel-${determineLevelForIssue(issue)}`)
+		.addClass(
+			$.map(issue.tags, function(tag) {
+				return `tag-${tag}`;
+			}).join(' ')
+		)
 		.append(
 			$('<div>')
 				.addClass('panel-heading')
@@ -132,12 +146,8 @@ function createIssue(addr, issue, index) {
 								.html(`<strong>${issue.severity}:</strong> ${issue.message}`)
 						),
 					$('<div>')
-						.addClass('entry-issue-category')
-						.append(
-							$('<div>')
-							.addClass('label label-default')
-							.text(issue.category)
-						)
+						.addClass('entry-issue-tags')
+						.append(createTags(issue))
 				),
 			$('<div>')
 				.attr('id', `entry-${addr}-issue-${index}`)
@@ -219,13 +229,56 @@ function createRaw() {
 }
 
 function setupControls() {
-	var $internals = $('.internal').add('.nodeaddress');
+	// filter by tag
+	{
+		// collect all tags
+		var tags = new Set();
+		for (var addr in report.conversions) {
+			var conversion = report.conversions[addr];
+			for (var index = 0; index < conversion.issues.length; index++) {
+				var issue = conversion.issues[index];
+				if (issue.tags) {
+					tags = new Set([...tags, ...issue.tags]);
+				}
+			}
+		}
+		tags = Array.from(tags);
 
-	$internals.hide();
+		if (tags.length > 0) {
+			$('#filters').append(
+				$('<h4>').text('Filter Tags'),
+				$.map(tags, function(tag) {
+					return $('<div>')
+						.addClass('checkbox')
+						.append($('<label>').append(
+							$('<input>')
+								.attr('type', 'checkbox')
+								.attr('checked', true)
+								.change(function() {
+									if (this.checked) {
+										$(`.tag-${tag}`).show();
+									} else {
+										$(`.tag-${tag}`).hide();
+									}
+								}),
+							tag
+						))
+				})
+			);
+		}
 
-	$('#internal-button').click(function() {
-		$internals.toggle();
-	});
+	}
+
+	// internal
+	{
+		var $internals = $('.internal').add('.nodeaddress');
+
+		$internals.hide();
+
+		$('#internal-button').click(function() {
+			$internals.toggle();
+		});
+	}
 }
 
 function main() {

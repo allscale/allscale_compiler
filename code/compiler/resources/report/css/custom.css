@@ -1,6 +1,6 @@
 body {
     overflow-y: scroll;
-    min-width: 1300px;
+    min-width: 1500px;
 }
 
 h1.title {
@@ -10,10 +10,27 @@ h1.title {
 
 #controls {
     position: fixed;
-    top: 150px;
+    top: 50px;
     padding: 5px;
     border-radius: 0 4px 4px 0;
     border: 1px solid #ddd;
+}
+
+#filters {
+    position: fixed;
+    top: 180px;
+    padding: 5px 15px 5px 5px;
+    border-radius: 0 4px 4px 0;
+    border: 1px solid #ddd;
+}
+
+#filters:empty {
+    display: none;
+}
+
+#filters h4 {
+    padding-left: 10px;
+    text-align: center;
 }
 
 #progress #progress-num {
@@ -43,11 +60,16 @@ h1.title {
     width: 80%;
 }
 
-.entry div.entry-issue-category {
+.entry div.entry-issue-tags {
     text-align: right;
     display: inline-block;
     width: 16%;
     vertical-align: top;
+}
+
+.entry div.entry-issue-tags div.label {
+    display: inline-block;
+    margin-left: 10px;
 }
 
 .entry div.entry-issue-help {

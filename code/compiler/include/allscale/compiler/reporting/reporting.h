@@ -51,15 +51,27 @@ namespace reporting {
 
 	std::ostream& operator<<(std::ostream& out, Category category);
 
+	/**
+	 * Tags of the Diagnostics Message
+	 **/
+	enum class Tag : int {
+		Timeout,
+		Read,
+		Write,
+		Global,
+	};
 
 	/**
 	 * Details of a specific error code
 	 */
 	struct ErrorDetails {
 		Severity severity;
+		std::vector<Tag> tags;
 		Category category;
 		std::string defaultMessage;
 	};
+
+	std::ostream& operator<<(std::ostream& out, Tag tag);
 
 	ErrorDetails lookupDetails(ErrorCode err);
 
@@ -102,6 +114,10 @@ namespace reporting {
 
 		Category getCategory() const {
 			return error_details.category;
+		}
+
+		const std::vector<Tag>& getTags() const {
+			return error_details.tags;
 		}
 
 		std::string getMessage() const {

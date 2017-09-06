@@ -41,19 +41,29 @@ namespace reporting {
 		return out;
 	}
 
+	std::ostream& operator<<(std::ostream& out, Tag tag) {
+		switch(tag) {
+		case Tag::Timeout: return out << "Timeout";
+		case Tag::Read:    return out << "Read";
+		case Tag::Write:   return out << "Write";
+		case Tag::Global:  return out << "Global";
+		}
+		return out;
+	}
+
 	ErrorDetails lookupDetails(ErrorCode err) {
 		switch(err) {
-		case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
-		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
-		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
-		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
-		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
-		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
-		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
-		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
-		case ErrorCode::UnobtainableDataRequirement:                    return {Severity::Error,   Category::Basic, "Unable to obtain data requirement"};
-		case ErrorCode::ObtainedDataRequirement:                        return {Severity::Info,    Category::Basic, "Obtained data requirement"};
-		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+		case ErrorCode::Timeout:                                        return {Severity::Warning, {},                        Category::Basic, "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, {},                        Category::Basic, "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   {Tag::Read},               Category::Basic, "Read access to unknown location"};
+		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   {Tag::Write},              Category::Basic, "Write access to unknown location"};
+		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Read access to global"};
+		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Read},               Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   {Tag::Write},              Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::UnobtainableDataRequirement:                    return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirement"};
+		case ErrorCode::ObtainedDataRequirement:                        return {Severity::Info,    {},                        Category::Basic, "Obtained data requirement"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    {},                        Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
 		};
 		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
 		return {};
@@ -170,6 +180,15 @@ namespace reporting {
 		ret.put<string>("severity", toString(issue.getSeverity()));
 		ret.put<string>("category", toString(issue.getCategory()));
 		ret.put<string>("message", issue.getMessage());
+
+		// tags
+		boost::property_tree::ptree tags;
+		for(const auto& tag : issue.getTags()) {
+			tags.push_back(make_pair("", boost::property_tree::ptree(toString(tag))));
+		}
+		if(!tags.empty()) {
+			ret.push_back(make_pair("tags", tags));
+		}
 
 		// loc
 		ret.push_back(make_pair("loc", locationToPropertyTree(issue.getTarget())));
