@@ -86,9 +86,10 @@ namespace reporting {
 		ErrorDetails error_details;
 
 		boost::optional<std::string> message;
+		boost::optional<std::string> detail;
 
 		Issue(insieme::core::NodeAddress target, ErrorCode error_code, boost::optional<std::string> message)
-			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message) {
+			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message), detail(boost::none) {
 			assert_true(target);
 		}
 
@@ -125,6 +126,14 @@ namespace reporting {
 				return error_details.defaultMessage;
 			}
 			return *message;
+		}
+
+		boost::optional<std::string> getDetail() const {
+			return detail;
+		}
+
+		void setDetail(const std::string& text) {
+			detail = text;
 		}
 
 		bool operator==(const Issue&) const;

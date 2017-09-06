@@ -156,6 +156,9 @@ function createIssue(addr, issue, index) {
 					$('<div>')
 						.addClass('panel-body')
 						.append(
+							$('<pre>')
+								.addClass('entry-issue-detail')
+								.text(issue.detail ? issue.detail : ''),
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),

@@ -181,6 +181,10 @@ namespace reporting {
 		ret.put<string>("category", toString(issue.getCategory()));
 		ret.put<string>("message", issue.getMessage());
 
+		if(auto detail = issue.getDetail()) {
+			ret.put<string>("detail", *detail);
+		}
+
 		// tags
 		boost::property_tree::ptree tags;
 		for(const auto& tag : issue.getTags()) {

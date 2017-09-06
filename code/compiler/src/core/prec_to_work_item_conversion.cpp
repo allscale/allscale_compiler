@@ -1045,10 +1045,9 @@ namespace core {
 					);
 				} else {
 					// otherwise report a summary info
-					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::ErrorCode::ObtainedDataRequirement,
-							format("Obtained data requirement for variant #%d: %s", counter, *requirements))
-					);
+					auto issue = reporting::Issue(precCall, reporting::ErrorCode::ObtainedDataRequirement);
+					issue.setDetail(format("Obtained data requirement for variant #%d\n- - - - - - - - - - - - -\n%s", counter, *requirements));
+					report.addMessage(precCall, issue);
 				}
 
 				// run diagnosis

@@ -78,14 +78,14 @@ h1.title {
     margin-bottom: 10px;
 }
 
+.entry div.entry-issue-help:empty {
+    display: none;
+}
+
 .entry pre div.nodeaddress {
     padding-left: 10px;
     margin-bottom: 5px;
     border-bottom: solid thin lightgrey;
-}
-
-.entry div.entry-issue-help:empty {
-    display: none;
 }
 
 .entry .backtrace {
