@@ -78,14 +78,18 @@ h1.title {
     margin-bottom: 10px;
 }
 
-.entry div.entry-issue-help:empty {
+.entry div.entry-issue-help:empty,
+.entry pre.entry-issue-detail:empty {
     display: none;
 }
 
-.entry pre div.nodeaddress {
+.entry pre div.location {
+    color: #999;
     padding-left: 10px;
-    margin-bottom: 5px;
-    border-bottom: solid thin lightgrey;
+}
+
+.line-numbers .line-numbers-rows {
+    border-right: 1px solid lightgrey;
 }
 
 .entry .backtrace {

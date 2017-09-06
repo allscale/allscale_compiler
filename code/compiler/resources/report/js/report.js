@@ -66,14 +66,29 @@ function setProgress() {
 	bar.attr('style', `width: ${percent}%`)
 }
 
-function create_source(addr, source) {
-	return $('<pre>').append(
-		$('<div>').addClass('nodeaddress').text(`${addr}`),
-		source
+function createSource(addr, location, source, ommitLocation) {
+
+	var firstLine = parseInt(location.substr(location.indexOf('@') + 1));
+
+	var $location = $('<div>').addClass('location').append(
+		$('<div>').addClass('nodeaddress').text(addr)
 	);
+
+	if (!ommitLocation) {
+		$location.append(
+			$('<div>').addClass('filename').text(location)
+		);
+	}
+
+	return $('<pre>')
+		.attr('data-start', firstLine)
+		.append(
+			$location,
+			$('<code>').addClass('language-cpp line-numbers').append(source)
+		);
 }
 
-function createTrace(addr, issue_index, issue, trace, index) {
+function createBacktrace(addr, issue_index, issue, trace, index) {
 	var id = `entry-${addr}-issue-${issue_index}-backtrace-${index}`;
 
 	var title = trace.address;
@@ -85,7 +100,7 @@ function createTrace(addr, issue_index, issue, trace, index) {
 	var $body = $('<div>').addClass('panel-body');
 
 	if (trace.source) {
-		$body.append(create_source(addr, trace.source));
+		$body.append(createSource(addr, trace.location, trace.source, true));
 	}
 
 	if (!$body.html()) {
@@ -162,14 +177,14 @@ function createIssue(addr, issue, index) {
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),
-							create_source(addr, issue.loc.source),
+							createSource(addr, issue.loc.location, issue.loc.source),
 							$('<div>')
 								.attr('id', `entry-${addr}-issue-${index}-backtrace`)
 								.addClass('panel-group')
 								.addClass('backtrace')
 								.append(
 									$('<div>').addClass('backtrace-text').text('Backtrace'),
-									$.map(issue.backtrace, $.proxy(createTrace, null, addr, index, issue))
+									$.map(issue.backtrace, $.proxy(createBacktrace, null, addr, index, issue))
 								)
 						)
 				)
@@ -201,7 +216,7 @@ function createConversion(entry, addr) {
 						.addClass('panel-body')
 						.append(
 							$.map(entry.issues, $.proxy(createIssue, null, addr)),
-							create_source(addr, loc.source)
+							createSource(addr, loc.location, loc.source)
 						)
 				)
 		);

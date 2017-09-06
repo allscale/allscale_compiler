@@ -161,9 +161,23 @@ namespace reporting {
 		if(auto location = annotations::getLocation(target)) {
 			loc.put<string>("location", toString(*location));
 
-			std::stringstream ss;
-			annotations::prettyPrintLocation(ss, *location, true);
-			loc.put<string>("source", ss.str());
+			if(auto source_file = std::fstream(location->getFile())) {
+				std::stringstream ss;
+
+				// goto first line
+				for(unsigned i = 1; i < location->getStart().getLine(); i++) {
+					source_file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				}
+
+				// collect
+				std::string line;
+				for(unsigned i = location->getStart().getLine(); i <= location->getEnd().getLine(); i++) {
+					std::getline(source_file, line);
+					ss << line << "\n";
+				}
+
+				loc.put<string>("source", ss.str());
+			}
 		}
 
 		if(lang::isBuiltIn(target.getAddressedNode())) {
