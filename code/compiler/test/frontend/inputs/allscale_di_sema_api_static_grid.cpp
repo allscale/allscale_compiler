@@ -21,5 +21,4 @@ int main() {
 		const allscale::api::user::data::StaticGrid<double, 10> g;
 		g[0];
 	}
-
 }

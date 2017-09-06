@@ -198,6 +198,9 @@ namespace frontend {
 	AllscaleExtension::AllscaleExtension() : insieme::frontend::extensions::MappingFrontendExtension() {
 		includeDirs.push_back(getAllscaleAPICoreIncludeDir());
 		includeDirs.push_back(getAllscaleAPIUtilsIncludeDir());
+
+		// add a macro identifying the compiler to the API
+		macros.insert({"ALLSCALECC", "epsilon"});
 	}
 }
 }
