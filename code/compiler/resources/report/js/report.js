@@ -33,37 +33,31 @@ function getHelpMessage(error_code) {
 }
 
 function setProgress() {
-	var noWarnings = true;
-	var success = 0;
+	var successes = 0;
+	var warnings = 0;
+	var errors = 0;
 	var count = Object.keys(report.conversions).length;
+
 	for (var addr in report.conversions) {
 		var entry = report.conversions[addr];
 		var level = determineLevelForEntry(entry);
-		if (level != 'danger') {
-			success++;
+
+		if (level == 'danger') {
+			errors++;
+		} else if (level == 'warning') {
+			warnings++;
+		} else {
+			successes++;
 		}
-		if (level == 'warning') {
-			noWarnings = false;
-		}
 	}
 
-	$('#progress-num').text(`${success} / ${count}`);
+	console.log(successes, warnings, errors, count)
 
-	var bar = $('#progress .progress-bar');
+	$('#progress-num').text(`${successes} / ${count}`);
 
-	if (success == count && count > 0 && noWarnings) {
-		bar.addClass('progress-bar-success');
-	} else if (success == count && count > 0) {
-		bar.addClass('progress-bar-warning');
-	} else if (count > 0) {
-		bar.addClass('progress-bar-danger');
-	}
-
-	var percent = 100.0;
-	if (count > 0) {
-		percent = 100.0 * (success / count);
-	}
-	bar.attr('style', `width: ${percent}%`)
+	$('#progress .progress-bar-success').attr('style', `width: ${100 * successes / count}%`);
+	$('#progress .progress-bar-warning').attr('style', `width: ${100 * warnings  / count}%`);
+	$('#progress .progress-bar-danger').attr ('style', `width: ${100 * errors    / count}%`);
 }
 
 function createSource(addr, location, source, ommitLocation) {
