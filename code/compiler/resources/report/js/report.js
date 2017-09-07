@@ -1,5 +1,7 @@
 "use strict";
 
+const INSPYER_URL = "https://insieme.github.io/inspyer/"
+
 function determineLevelForEntry(entry) {
 	var level = 'success';
 	for (var i = 0; i < entry.issues.length; i++) {
@@ -58,6 +60,14 @@ function setProgress() {
 	$('#progress .progress-bar-danger').attr ('style', `width: ${100 * errors    / count}%`);
 }
 
+function inspyerLink(addr) {
+	return $('<a>')
+		.attr('href', `${INSPYER_URL}#node-${addr}`)
+		.attr('target', 'inspyer')
+		.addClass('inspyer-link internal')
+		.html('<i class="glyphicon glyphicon-share-alt"></i>');
+}
+
 function createSource(id, addr, location, source) {
 
 	var $src = $('<pre>');
@@ -68,13 +78,17 @@ function createSource(id, addr, location, source) {
 	if (location) {
 		$src.attr('data-start', parseInt(location.substr(location.indexOf('@') + 1)));
 		$head.append(
-			$('<div>').addClass('nodeaddress internal').text(addr),
+			$('<div>').addClass('nodeaddress internal').append(
+				inspyerLink(addr),
+				addr
+			),
 			$link.text(location)
 		);
 		$body.addClass('line-numbers');
 	} else {
 		$src.addClass('internal');
 		$head.append(
+			inspyerLink(addr),
 			$link.addClass('nodeaddress').text(addr)
 		);
 	}
@@ -91,7 +105,7 @@ function createSource(id, addr, location, source) {
 function createBacktrace(addr, issue_index, issue, trace, index) {
 	return createSource(
 		`entry-${addr}-issue-${issue_index}-backtrace-${index}`,
-		addr,
+		trace.address,
 		trace.location,
 		trace.source
 	);

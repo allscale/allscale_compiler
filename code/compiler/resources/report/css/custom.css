@@ -120,6 +120,10 @@ h1.title {
     padding: 3px 8px;
 }
 
+a.inspyer-link {
+    margin-right: 0.5em;
+}
+
 #help-modal .modal-content {
     width: 800px;
 }
