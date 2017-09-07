@@ -51,8 +51,6 @@ function setProgress() {
 		}
 	}
 
-	console.log(successes, warnings, errors, count)
-
 	$('#progress-num').text(`${successes} / ${count}`);
 
 	$('#progress .progress-bar-success').attr('style', `width: ${100 * successes / count}%`);
@@ -60,65 +58,43 @@ function setProgress() {
 	$('#progress .progress-bar-danger').attr ('style', `width: ${100 * errors    / count}%`);
 }
 
-function createSource(addr, location, source, ommitLocation) {
+function createSource(id, addr, location, source) {
 
-	var firstLine = parseInt(location.substr(location.indexOf('@') + 1));
+	var $src = $('<pre>');
+	var $head = $('<div>').addClass('location');
+	var $link = $('<a>').attr('href', `#${id}`).attr('data-toggle', 'collapse');
+	var $body = $('<code>').attr('id', id);
 
-	var $location = $('<div>').addClass('location').append(
-		$('<div>').addClass('nodeaddress').text(addr)
-	);
-
-	if (!ommitLocation) {
-		$location.append(
-			$('<div>').addClass('filename').text(location)
+	if (location) {
+		$src.attr('data-start', parseInt(location.substr(location.indexOf('@') + 1)));
+		$head.append(
+			$('<div>').addClass('nodeaddress internal').text(addr),
+			$link.text(location)
+		);
+		$body.addClass('line-numbers');
+	} else {
+		$src.addClass('internal');
+		$head.append(
+			$link.addClass('nodeaddress').text(addr)
 		);
 	}
 
-	return $('<pre>')
-		.attr('data-start', firstLine)
-		.append(
-			$location,
-			$('<code>').addClass('language-cpp line-numbers').append(source)
-		);
+	if (source) {
+		$body.addClass('language-cpp').text(source);
+	} else {
+		$body.addClass('language-txt').text('No location information');
+	}
+
+	return $src.append($head.append($link), $body);
 }
 
 function createBacktrace(addr, issue_index, issue, trace, index) {
-	var id = `entry-${addr}-issue-${issue_index}-backtrace-${index}`;
-
-	var title = trace.address;
-
-	if (trace.location) {
-		title = trace.location;
-	}
-
-	var $body = $('<div>').addClass('panel-body');
-
-	if (trace.source) {
-		$body.append(createSource(addr, trace.location, trace.source, true));
-	}
-
-	if (!$body.html()) {
-		$body.html("<i>No location information.</i>");
-	}
-
-	return $('<div>')
-		.addClass('panel panel-default')
-		.addClass(!trace.location ? 'internal' : '')
-		.append(
-			$('<div>')
-				.addClass('panel-heading')
-				.append(
-					$('<a>')
-						.attr('href', `#${id}`)
-						.attr('data-toggle', 'collapse')
-						.attr('data-parent', `#entry-${addr}-issue-${issue_index}-backtrace`)
-						.text(title)
-				),
-			$('<div>')
-				.attr('id', id)
-				.addClass('panel-collapse collapse')
-				.append($body)
-		);
+	return createSource(
+		`entry-${addr}-issue-${issue_index}-backtrace-${index}`,
+		addr,
+		trace.location,
+		trace.source
+	);
 }
 
 function createTags(issue) {
@@ -171,7 +147,7 @@ function createIssue(addr, issue, index) {
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),
-							createSource(addr, issue.loc.location, issue.loc.source),
+							createSource(`entry-${addr}-issue-${index}-source`, addr, issue.loc.location, issue.loc.source),
 							$('<div>')
 								.attr('id', `entry-${addr}-issue-${index}-backtrace`)
 								.addClass('panel-group')
@@ -210,7 +186,7 @@ function createConversion(entry, addr) {
 						.addClass('panel-body')
 						.append(
 							$.map(entry.issues, $.proxy(createIssue, null, addr)),
-							createSource(addr, loc.location, loc.source)
+							createSource(`entry-${addr}-source`, addr, loc.location, loc.source)
 						)
 				)
 		);
@@ -285,7 +261,7 @@ function setupControls() {
 
 	// internal
 	{
-		var $internals = $('.internal').add('.nodeaddress');
+		var $internals = $('.internal');
 
 		$internals.hide();
 
@@ -310,6 +286,9 @@ function main() {
 
 	setProgress();
 	setupControls();
+
+	// fix initial collapse state of prism code blocks
+	$('code[class*=language-]').addClass('collapse').attr('style', 'height: 0px');
 }
 
 main();

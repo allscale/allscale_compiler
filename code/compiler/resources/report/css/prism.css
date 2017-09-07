@@ -3,8 +3,6 @@
  * prism.js Coy theme for JavaScript, CoffeeScript, CSS and HTML
  * Based on https://github.com/tshedor/workshop-wp-theme (Example: http://workshop.kansan.com/category/sessions/basics or http://workshop.timshedor.com/category/sessions/basics);
  * @author Tim Shedor
- * modificiations:
- * - bottom shadow removed
  */
 
 code[class*="language-"],
@@ -49,16 +47,6 @@ code[class*="language"] {
 	padding: 0 1em;
 	display: block;
 	overflow: auto;
-}
-
-/* Margin bottom */
-:not(pre) > code[class*="language-"],
-pre[class*="language-"] {
-	background-color: #fdfdfd;
-	-webkit-box-sizing: border-box;
-	-moz-box-sizing: border-box;
-	box-sizing: border-box;
-	margin-bottom: 1em;
 }
 
 /* Inline code */
