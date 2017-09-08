@@ -14,6 +14,7 @@
 #include "allscale/compiler/allscale_utils.h"
 
 #include "allscale/compiler/analysis/data_requirement.h"
+#include "allscale/compiler/env_vars.h"
 
 namespace allscale {
 namespace compiler {
@@ -953,7 +954,7 @@ namespace core {
 			const bool debug = false;
 
 			// this feature may be skipped for now
-			if (std::getenv("ALLSCALE_SKIP_ANALYSIS")) {
+			if(std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
 				return precFun;
 			}
 
