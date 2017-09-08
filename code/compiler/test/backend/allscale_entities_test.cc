@@ -22,6 +22,9 @@ namespace backend {
 		auto t_bool = builder.parseType("bool");
 		auto t_cls  = builder.tupleType({ t_int });
 
+		// create a is splitable test
+		auto canSplit = builder.parseExpr("( p : cpp_ref<(int<4>),t,f> )->bool { return p.0 > 0; }").as<LambdaExprPtr>();
+
 
 		// create a work item variants
 
@@ -47,7 +50,7 @@ namespace backend {
 
 		// create a work item description
 		WorkItemDescription desc(
-				"test", versionA, versionB
+				"test", canSplit, versionA, versionB
 		);
 
 		EXPECT_EQ(t_cls, desc.getClosureType());
@@ -63,6 +66,9 @@ namespace backend {
 		auto t_bool = builder.parseType("bool");
 		auto t_cls  = builder.tupleType({ t_int });
 
+		// create a is splitable test
+		auto canSplit = builder.parseExpr("( p : cpp_ref<(int<4>),t,f> )->bool { return p.0 > 0; }").as<LambdaExprPtr>();
+
 		// create a work item variant
 		WorkItemVariant variant (
 				builder.parseExpr(
@@ -72,7 +78,7 @@ namespace backend {
 
 		// create a work item description
 		WorkItemDescription desc(
-				"test", variant, variant
+				"test", canSplit, variant, variant
 		);
 
 		// convert work item description into IR

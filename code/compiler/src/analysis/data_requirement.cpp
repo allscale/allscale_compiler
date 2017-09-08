@@ -4,6 +4,7 @@
 #include "insieme/analysis/cba/common/set.h"
 
 #include "insieme/core/ir_builder.h"
+#include "insieme/core/printer/pretty_printer.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
 
@@ -31,6 +32,20 @@ namespace analysis {
 		return out << "??";
 	}
 
+	IRDump dumpPrettyLocalContext(const insieme::core::NodePtr& node, std::ostream& out) {
+		using namespace insieme::core::printer;
+
+		return IRDump([node](std::ostream& out) -> std::ostream& {
+			PrettyPrinter print(node);
+			print.setOption(PrettyPrinter::PRINT_DEREFS);
+			print.setOption(PrettyPrinter::USE_VARIABLE_NAME_ANNOTATIONS);
+			print.setOption(PrettyPrinter::CALL_ARG_LINE_BREAKS);
+			print.setOption(PrettyPrinter::READABLE_NAMES);
+			print.setOption(PrettyPrinter::JUST_LOCAL_CONTEXT);
+			return out << print << std::endl;
+		}, out);
+	}
+
 	// - DataPoint -
 
 	bool DataPoint::operator==(const DataPoint& other) const {
@@ -44,7 +59,7 @@ namespace analysis {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const DataPoint& point) {
-		return out << dumpOneLine(point.expr);
+		return out << dumpOneLine(point.expr, out);
 	}
 
 
@@ -177,16 +192,48 @@ namespace analysis {
 		return res;
 	}
 
+	boost::property_tree::ptree DataRequirement::toPropertyTree() const {
+		boost::property_tree::ptree t;
+		t.put("type", "data_requirement");
+		t.put("mode", toString(mode));
+
+		{
+			std::stringstream ss;
+			ss << dumpPrettyLocalContext(dataItem, ss);
+			t.put("item", ss.str());
+		}
+
+		t.put("range", toString(range));
+
+		return t;
+	}
+
+	boost::property_tree::ptree DataRequirements::toPropertyTree() const {
+		boost::property_tree::ptree t;
+		t.put("type", "data_requirements");
+
+		t.put("unknown", isUnknown());
+		if(isUnknown()) {
+			return t;
+		}
+
+		boost::property_tree::ptree reqs;
+		for(const auto& req : requirements) {
+			reqs.push_back(make_pair("", req.toPropertyTree()));
+		}
+		t.push_back(make_pair("reqs", reqs));
+
+		return t;
+	}
 
 	std::ostream& operator<<(std::ostream& out, const DataRequirement& req) {
-		return out << "Requirement { " << dumpOneLine(req.dataItem) << "[" << req.range << "] " << req.mode << " }";
+		return out << "Requirement { " << dumpOneLine(req.dataItem, out) << "[" << req.range << "] " << req.mode << " }";
 	}
 
 	std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs) {
 		if (reqs.isUnknown()) return out << "unknown";
 		return out << reqs.requirements;
 	}
-
 
 	// -- Data Requirement Analysis --
 

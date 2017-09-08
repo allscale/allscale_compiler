@@ -90,6 +90,7 @@ namespace backend {
 		core::ProgramPtr replaceMain(const core::ProgramPtr& prog, const be::Converter& converter) {
 			core::NodeManager& mgr = prog.getNodeManager();
 			core::IRBuilder builder(mgr);
+			auto& basic = mgr.getLangBasic();
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 
 			// check that what has been build is properly composed
@@ -133,9 +134,12 @@ namespace backend {
 				<< dumpPretty(main) << "\n"
 				<< insieme::core::printer::dumpErrors(core::checks::check(main));
 
+			// create a no-split test
+			auto no_split = builder.lambdaExpr(basic.getBool(),{ param }, builder.returnStmt(basic.getFalse()));
+
 			// convert this main into a work item
 			WorkItemVariant impl(main);
-			WorkItemDescription desc("main", impl);
+			WorkItemDescription desc("main", no_split, impl);
 
 
 			// create a new main entry point
