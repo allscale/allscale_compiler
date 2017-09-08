@@ -1,7 +1,8 @@
 #pragma once
 
-#include <set>
+#include <memory>
 #include <ostream>
+#include <set>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -77,6 +78,31 @@ namespace reporting {
 
 	boost::optional<std::string> lookupHelpMessage(ErrorCode err);
 
+	class IssueDetails {
+	  public:
+		virtual boost::property_tree::ptree toPropertyTree() const = 0;
+	};
+
+	class IssueDetailsMessage: public IssueDetails {
+	  private:
+
+		std::string message;
+
+	  public:
+
+		IssueDetailsMessage(const std::string& message) : message(message) {}
+
+		virtual ~IssueDetailsMessage() = default;
+
+		virtual boost::property_tree::ptree toPropertyTree() const override {
+			boost::property_tree::ptree t;
+			t.put<string>("type", "message");
+			t.put<string>("message", message);
+			return t;
+		}
+
+	};
+
 	class Issue {
 
 	  private:
@@ -86,10 +112,10 @@ namespace reporting {
 		ErrorDetails error_details;
 
 		boost::optional<std::string> message;
-		boost::optional<std::string> detail;
+		std::shared_ptr<IssueDetails> detail;
 
 		Issue(insieme::core::NodeAddress target, ErrorCode error_code, boost::optional<std::string> message)
-			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message), detail(boost::none) {
+			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message), detail() {
 			assert_true(target);
 		}
 
@@ -128,12 +154,12 @@ namespace reporting {
 			return *message;
 		}
 
-		boost::optional<std::string> getDetail() const {
+		std::shared_ptr<IssueDetails> getDetail() const {
 			return detail;
 		}
 
-		void setDetail(const std::string& text) {
-			detail = text;
+		void setDetail(std::shared_ptr<IssueDetails> detail) {
+			this->detail = detail;
 		}
 
 		bool operator==(const Issue&) const;

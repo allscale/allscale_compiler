@@ -3,12 +3,15 @@
 #include <ostream>
 
 #include <boost/optional.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include "insieme/core/ir.h"
 #include "insieme/analysis/cba/common/set.h"
 #include "insieme/analysis/cba/haskell/context.h"
 
 #include "insieme/utils/comparable.h"
+
+#include "allscale/compiler/reporting/reporting.h"
 
 namespace allscale {
 namespace compiler {
@@ -159,7 +162,7 @@ namespace analysis {
 	 * A data requirement, referencing a data item, a (sub-)range of
 	 * the data item and the mode of access.
 	 */
-	class DataRequirement {
+	class DataRequirement : public reporting::IssueDetails {
 
 		// the expression addressing the data item reference
 		insieme::core::ExpressionPtr dataItem;
@@ -176,6 +179,8 @@ namespace analysis {
 			: dataItem(dataItem), range(range), mode(mode) {
 			assert_true(dataItem) << "Data item reference must not be null!";
 		}
+
+		virtual ~DataRequirement() = default;
 
 		const insieme::core::ExpressionPtr& getDataItem() const {
 			return dataItem;
@@ -216,6 +221,8 @@ namespace analysis {
 			return range < other.range;
 		}
 
+		virtual boost::property_tree::ptree toPropertyTree() const override;
+
 		friend std::ostream& operator<<(std::ostream& out, const DataRequirement& req);
 
 	};
@@ -225,7 +232,7 @@ namespace analysis {
 	 * The result of a data requirement analysis, summarizing the data accessed
 	 * by a given code fragment.
 	 */
-	class DataRequirements {
+	class DataRequirements : public reporting::IssueDetails {
 
 	public:
 
@@ -242,6 +249,8 @@ namespace analysis {
 
 		DataRequirements(const set_type& requirements)
 			: requirements(requirements) {}
+
+		virtual ~DataRequirements() = default;
 
 		bool isUnknown() const {
 			return requirements.isUniversal();
@@ -262,6 +271,8 @@ namespace analysis {
 		auto end() const {
 			return requirements.end();
 		}
+
+		virtual boost::property_tree::ptree toPropertyTree() const override;
 
 		friend std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs);
 

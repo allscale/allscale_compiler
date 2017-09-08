@@ -195,8 +195,8 @@ namespace reporting {
 		ret.put<string>("category", toString(issue.getCategory()));
 		ret.put<string>("message", issue.getMessage());
 
-		if(auto detail = issue.getDetail()) {
-			ret.put<string>("detail", *detail);
+		if(const auto& details = issue.getDetail()) {
+			ret.push_back(make_pair("details", details->toPropertyTree()));
 		}
 
 		// tags

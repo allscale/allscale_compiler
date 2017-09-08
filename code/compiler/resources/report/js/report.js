@@ -70,7 +70,7 @@ function inspyerLink(addr) {
 
 function createSource(id, addr, location, source) {
 
-	var $src = $('<pre>');
+	var $src = $('<pre>').addClass('prism-collapse');
 	var $head = $('<div>').addClass('location');
 	var $link = $('<a>').attr('href', `#${id}`).attr('data-toggle', 'collapse');
 	var $body = $('<code>').attr('id', id);
@@ -120,6 +120,46 @@ function createTags(issue) {
 	});
 }
 
+function createIssueDetails(addr, issue) {
+	var $details = $('<div>').addClass('entry-issue-details');
+
+	if (!issue.details) {
+		return $details;
+	}
+
+	if (issue.details.type == 'message') {
+		$details.append($('<pre>').text(issue.details.message));
+	} else if (issue.details.type == 'data_requirements') {
+		if (issue.details.unknown != 'false') {
+			$details.text('Unknown Data Requirements');
+		} else {
+
+			$details.append(
+				$.map(issue.details.reqs, function(req, index) {
+					var id = `entry-${addr}-issue-req-${index}`;
+
+					return $('<div>')
+						.addClass('panel panel-default')
+						.append(
+							$('<div>').addClass('panel-heading').append(
+								$('<a>').attr('href', `#${id}`).attr('data-toggle', 'collapse').text(`Data Requirement (${req.mode})`)
+							),
+							$('<div>').attr('id', id).addClass('panel-body collapse').append(
+								$('<pre>').append($('<code>').addClass('language-cpp line-numbers').text(req.item)),
+								$('<pre>').append($('<code>').addClass('language-cpp line-numbers').text(req.range))
+							)
+						)
+				})
+			)
+		}
+
+	} else {
+		console.warn(`Unsupported details type: ${issue.details.type}`);
+	}
+
+	return $details;
+}
+
 function createIssue(addr, issue, index) {
 	return $('<div>')
 		.addClass(`entry-issue panel panel-${determineLevelForIssue(issue)}`)
@@ -155,9 +195,7 @@ function createIssue(addr, issue, index) {
 					$('<div>')
 						.addClass('panel-body')
 						.append(
-							$('<pre>')
-								.addClass('entry-issue-detail')
-								.text(issue.detail ? issue.detail : ''),
+							createIssueDetails(addr, issue),
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),
@@ -302,7 +340,7 @@ function main() {
 	setupControls();
 
 	// fix initial collapse state of prism code blocks
-	$('code[class*=language-]').addClass('collapse').attr('style', 'height: 0px');
+	$('pre.prism-collapse code').addClass('collapse').attr('style', 'height: 0px');
 }
 
 main();
