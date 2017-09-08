@@ -134,6 +134,11 @@ namespace backend {
 		std::string name;
 
 		/**
+		 * A function testing for the base case of a recursive operation.
+		 */
+		insieme::core::LambdaExprPtr baseCaseTest;
+
+		/**
 		 * A list of implementation variants.
 		 */
 		std::vector<WorkItemVariant> variants;
@@ -142,10 +147,12 @@ namespace backend {
 
 		WorkItemDescription(
 				const std::string& name,
+				const insieme::core::LambdaExprPtr& baseCaseTest,
 				const WorkItemVariant& process,
 				const WorkItemVariant& split,
 				const std::vector<WorkItemVariant>& variants = std::vector<WorkItemVariant>()
-			) : name(name), variants({process,split}) {
+			) : name(name), baseCaseTest(baseCaseTest), variants({process,split}) {
+			assert_true(baseCaseTest);
 			assert_eq(process.getResultType(),split.getResultType());
 			assert_eq(process.getClosureType(),split.getClosureType());
 
@@ -157,8 +164,10 @@ namespace backend {
 
 		WorkItemDescription(
 				const std::string& name,
+				const insieme::core::LambdaExprPtr& baseCaseTest,
 				const std::vector<WorkItemVariant>& variants
-			) : name(name), variants(variants) {
+			) : name(name), baseCaseTest(baseCaseTest), variants(variants) {
+			assert_true(baseCaseTest);
 			assert_le(2,variants.size());
 			for(const auto& cur : variants) {
 				assert_eq(getResultType(), cur.getResultType());
@@ -166,8 +175,11 @@ namespace backend {
 			}
 		}
 
-		WorkItemDescription(const std::string& name, const WorkItemVariant& implementation)
-			: WorkItemDescription(name, implementation, implementation) {}
+		WorkItemDescription(
+				const std::string& name,
+				const insieme::core::LambdaExprPtr& baseCaseTest,
+				const WorkItemVariant& implementation)
+			: WorkItemDescription(name, baseCaseTest, implementation, implementation) {}
 
 		const std::string& getName() const {
 			return name;

@@ -632,6 +632,18 @@ namespace core {
 			return res;
 		}
 
+		LambdaExprPtr getCanSplitFunction(const lang::PrecFunction& function) {
+			auto baseCaseTest = function.getBaseCaseTest();
+			auto& mgr = baseCaseTest.getNodeManager();
+			auto& basic = mgr.getLangBasic();
+			core::IRBuilder builder(mgr);
+
+			// get closure parameter
+			auto p = builder.variable(function.getParameterType());
+
+			// build lambda
+			return builder.lambdaExpr(basic.getBool(), { p }, builder.returnStmt(builder.negateExpr(builder.callExpr(baseCaseTest, p))));
+		}
 
 		WorkItemVariant getProcessVariant(const lang::PrecFunction& function) {
 
@@ -783,17 +795,20 @@ namespace core {
 			}
 
 
-			// -- Step 5: Create process and split versions --
+			// -- Step 5: Create can_split test, process and split versions --
 
 			// get a name for the work item
 			std::string name = format("allscale_wi_%d",index);
 
+			auto can_split = getCanSplitFunction(function);
 			auto process = getProcessVariant(function);
 			auto split = getSplitVariant(name,function);
 
 
 			// print debug information
 			if (debug) {
+				std::cout << "-------------------------------------------------------------------\n";
+				std::cout << " - can_split test -\n" << dumpReadable(can_split) << "\n";
 				std::cout << "-------------------------------------------------------------------\n";
 				std::cout << " - process variant -\n" << dumpReadable(process.getImplementation()) << "\n";
 				std::cout << "-------------------------------------------------------------------\n";
@@ -804,7 +819,7 @@ namespace core {
 			// -- Step 6: work item spawn function --
 
 			// wrap it up in a work item
-			WorkItemDescription desc(name,process,split);
+			WorkItemDescription desc(name,can_split,process,split);
 
 			// create a function wrapping the spawn call (need for bind)
 			core::VariableList params;
@@ -953,7 +968,7 @@ namespace core {
 			const bool debug = false;
 
 			// this feature may be skipped for now
-			if (std::getenv("ALLSCALE_SKIP_ANALYSIS")) {
+			if (true || std::getenv("ALLSCALE_SKIP_ANALYSIS")) {
 				return precFun;
 			}
 
