@@ -11,8 +11,8 @@ using namespace allscale::api::core;
 	decl IMP__operator_call_:const __any_string__cutoff::(int<4>) -> bool;
 	decl IMP__operator_call_:const __any_string__base::(int<4>) -> int<4>;
 	decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
-	decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
-	decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
+	decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
+	decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
 	def struct __any_string__cutoff {
 		const function IMP__operator_call_ = (v35 : ref<int<4>,f,f,plain>) -> bool {
 			return *v35<2;

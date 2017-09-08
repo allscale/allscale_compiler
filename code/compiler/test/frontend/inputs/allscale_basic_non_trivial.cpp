@@ -11,8 +11,8 @@ using namespace allscale::api::core;
 	decl IMP__operator_call_:const __any_string__cutoff::(ref<int<4>,t,f,cpp_ref>) -> bool;
 	decl IMP__operator_call_:const __any_string__base::(ref<int<4>,t,f,cpp_ref>) -> int<4>;
 	decl IMP__operator_call_:const __any_string__step::(ref<int<4>,t,f,cpp_ref>, (recfun<ref<int<4>,t,f,cpp_ref>,int<4>>)) -> treeture<int<4>,f>;
-	decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen_:const __any_string__cutoff::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> bool,t,f>;
-	decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen_:const __any_string__base::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> int<4>,t,f>;
+	decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> bool,t,f>;
+	decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(ref<int<4>,t,f,cpp_ref>) -> int<4>,t,f>;
 	def struct __any_string__cutoff {
 		const function IMP__operator_call_ = (v35 : ref<int<4>,t,f,cpp_ref>) -> bool {
 			return *v35<2;
@@ -114,8 +114,8 @@ int main() {
 		decl __any_string__S::i : int<4>;
 		decl ctor:__any_string__S::(int<4>);
 		decl dtor:~__any_string__S::();
-		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_S_rparen_:const __any_string__cutoff::() -> ptr<(__any_string__S) -> bool,t,f>;
-		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_S_rparen_:const __any_string__base::() -> ptr<(__any_string__S) -> int<4>,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_struct_space_S_rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(__any_string__S) -> bool,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_struct_space_S_rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(__any_string__S) -> int<4>,t,f>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v699 : ref<__any_string__S,f,f,plain>) -> bool {
 				return *v699.i<2;
@@ -201,8 +201,8 @@ int main() {
 		decl __any_string__S::i : int<4>;
 		decl ctor:__any_string__S::(int<4>);
 		decl dtor:~__any_string__S::();
-		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_const_space_S_space__ampersand__rparen_:const __any_string__cutoff::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> bool,t,f>;
-		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_S_space__ampersand__rparen_:const __any_string__base::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> int<4>,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_const_space_struct_space_S_space__ampersand__rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> bool,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_const_space_struct_space_S_space__ampersand__rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(ref<__any_string__S,t,f,cpp_ref>) -> int<4>,t,f>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v699 : ref<__any_string__S,t,f,cpp_ref>) -> bool {
 				return *v699.i<2;
