@@ -15,9 +15,12 @@ sed -f - "$DIR/report.in.html" << EOF
 	s#'fonts/glyphicons-halflings-regular.woff'#data:application/x-font-woff;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.woff")#
 	s#'fonts/glyphicons-halflings-regular.woff2'#data:application/x-font-woff2;base64,$(toBase64 "$DIR/fonts/glyphicons-halflings-regular.woff2")#
 	s#css/bootstrap.min.css#data:text/css;base64,$(toBase64 "$DIR/css/bootstrap.min.css")#
+	s#css/prism.css#data:text/css;base64,$(toBase64 "$DIR/css/prism.css")#
 	s#css/custom.css#data:text/css;base64,$(toBase64 "$DIR/css/custom.css")#
+	s#gfx/allscale.ico#data:image/x-icon;base64,$(toBase64 "$DIR/gfx/allscale.ico")#
 	s#gfx/allscale.png#data:image/png;base64,$(toBase64 "$DIR/gfx/allscale.png")#
 	s#js/jquery.min.js#data:text/javascript;base64,$(toBase64 "js/jquery.min.js")#
 	s#js/bootstrap.min.js#data:text/javascript;base64,$(toBase64 "js/bootstrap.min.js")#
+	s#js/prism.min.js#data:text/javascript;base64,$(toBase64 "js/prism.min.js")#
 	s#js/report.js#data:text/javascript;base64,$(toBase64 "js/report.js")#
 EOF

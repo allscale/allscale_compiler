@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="shortcut icon" href="gfx/allscale.ico" type="image/x-icon">
 	<title>Conversion Report</title>
 
 	<!-- Glyphicons Halflings -->
@@ -18,9 +19,17 @@
 	</style>
 
 	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/prism.css" rel="stylesheet">
 	<link href="css/custom.css" rel="stylesheet">
 </head>
 <body>
+	<div id="controls" class="btn-group-vertical">
+		<a id="internal-button" class="btn btn-default"><i class="glyphicon glyphicon-eye-open"></i></a>
+		<a href="#help-modal" data-toggle="modal" class="btn btn-default"><i class="glyphicon glyphicon-question-sign"></i></a>
+	</div>
+
+	<div id="filters"></div>
+
 	<div class="container">
 		<h1 class="title">Conversion Report</h1>
 
@@ -30,17 +39,68 @@
 			</div>
 			<div class="col-xs-8">
 				<div class="progress">
-					<div class="progress-bar"></div>
+					<div class="progress-bar progress-bar-success"></div>
+					<div class="progress-bar progress-bar-warning"></div>
+					<div class="progress-bar progress-bar-danger"></div>
 				</div>
 			</div>
 		</div>
 
 		<div id="main"></div>
+	</div>
 
-		<div class="panel panel-default">
-			<div class="panel-body row footer">
-				<div class="col-xs-6 date">%DATETIME%</div>
-				<div class="col-xs-6 about"><a>About</a></div>
+	<div id="help-modal" class="modal fade">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 class="modal-title">About<small class="pull-right">%DATETIME%</small></h2>
+				</div>
+				<div class="modal-body">
+
+					<table class="table table-condensed">
+						<thead>
+							<tr>
+								<th style="text-align: center">Controls</th>
+								<th>Function</th>
+							</tr>
+						</thread>
+						<tbody>
+							<tr>
+								<td style="text-align: center"><a class="btn btn-default disabled"><i class="glyphicon glyphicon-eye-open"></i></a></td>
+								<td style="vertical-align: middle">show / hide internal information</td>
+							</tr>
+							<tr>
+								<td style="text-align: center"><a class="btn btn-default disabled"><i class="glyphicon glyphicon-question-sign"></i></a></td>
+								<td style="vertical-align: middle">shows this dialog</td>
+							</tr>
+							<tr>
+								<td style="text-align: center"><a class="disabled"><i class="glyphicon glyphicon-share-alt"></i></a></td>
+								<td style="vertical-align: middle">open INSPYER and go to node (requries initial loading of a JSON dump) (only visible when showing internals)</td>
+							</tr>
+						</tbody>
+					</table>
+
+					<hr>
+
+					<h4>AllScale Project</h4>
+					<ul>
+						<li><a href="http://www.allscale.eu/">Visit AllScale Website</a></li>
+					</ul>
+
+					<hr>
+
+					<h4>Components Used</h4>
+					<ul>
+						<li><a href="https://jquery.com/">JQuery</a></li>
+						<li><a href="https://getbootstrap.com/docs/3.3/">Bootstrap</a></li>
+						<li><a href="http://glyphicons.com/">Glyphicons</a></li>
+						<li><a href="http://prismjs.com/">Prism</a></li>
+					</ul>
+
+				</div>
+				<div class="modal-footer">
+					<a class="btn btn-primary" data-dismiss="modal">Close</a>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -51,6 +111,7 @@
 
 	<script src="js/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
+	<script src="js/prism.min.js"></script>
 	<script src="js/report.js"></script>
 </body>
 </html>

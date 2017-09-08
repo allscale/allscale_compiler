@@ -1060,10 +1060,10 @@ namespace core {
 					);
 				} else {
 					// otherwise report a summary info
-					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::ErrorCode::UnobtainableDataRequirement,
-							format("Obtained data requirement for variant #%d: %s", counter, *requirements))
-					);
+					auto issue = reporting::Issue(precCall, reporting::ErrorCode::ObtainedDataRequirement);
+					auto issueDetail = std::make_shared<analysis::DataRequirements>(*requirements);
+					issue.setDetail(issueDetail);
+					report.addMessage(precCall, issue);
 				}
 
 				// run diagnosis
