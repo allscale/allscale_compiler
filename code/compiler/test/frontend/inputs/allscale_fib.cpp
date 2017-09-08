@@ -15,8 +15,8 @@ int main() {
 		decl IMP__operator_call_:const __any_string__cutoff::(int<4>) -> bool;
 		decl IMP__operator_call_:const __any_string__base::(int<4>) -> int<4>;
 		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
-		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
-		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v35 : ref<int<4>,f,f,plain>) -> bool {
 				return *v35<2;
@@ -87,8 +87,8 @@ int main() {
 		decl IMP__operator_call_:const __any_string__step::(int<4>, (recfun<int<4>,int<4>>)) -> treeture<int<4>,f>;
 		decl IMP__operator_call_:const __any_string__add_lambda_operator::(ref<int<4>,t,f,cpp_ref>, ref<int<4>,t,f,cpp_ref>) -> int<4>;
 		decl __any_string__user_add : (ref<treeture<int<4>,f>,f,f,cpp_rref>, ref<treeture<int<4>,f>,f,f,cpp_rref>) -> treeture<int<4>,f>;
-		decl IMP__conversion_operator_bool_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
-		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_rparen_:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_bool:const __any_string__cutoff::() -> ptr<(int<4>) -> bool,t,f>;
+		decl IMP__conversion_operator_auto_space__lparen__star__rparen__lparen_int_rparen__space__minus__gt__space_int:const __any_string__base::() -> ptr<(int<4>) -> int<4>,t,f>;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_const_space_int_space__ampersand__comma__space_const_space_int_space__ampersand__rparen_:const __any_string__add_lambda_operator::() -> ptr<(ref<int<4>,t,f,cpp_ref>, ref<int<4>,t,f,cpp_ref>) -> int<4>,t,f>;
 		def struct __any_string__cutoff {
 			const function IMP__operator_call_ = (v1 : ref<int<4>,f,f,plain>) -> bool {
