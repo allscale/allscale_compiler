@@ -1,5 +1,6 @@
 body {
     overflow-y: scroll;
+    min-width: 1500px;
 }
 
 h1.title {
@@ -7,12 +8,33 @@ h1.title {
     margin-bottom: 15px;
 }
 
-#progress #progress-num {
-    text-align: right;
+#controls {
+    position: fixed;
+    top: 50px;
+    padding: 5px;
+    border-radius: 0 4px 4px 0;
+    border: 1px solid #ddd;
 }
 
-#progress .progress-bar {
-    min-width: 2em;
+#filters {
+    position: fixed;
+    top: 180px;
+    padding: 5px 15px 5px 5px;
+    border-radius: 0 4px 4px 0;
+    border: 1px solid #ddd;
+}
+
+#filters:empty {
+    display: none;
+}
+
+#filters h4 {
+    padding-left: 10px;
+    text-align: center;
+}
+
+#progress #progress-num {
+    text-align: right;
 }
 
 .entry > .panel-heading {
@@ -38,21 +60,72 @@ h1.title {
     width: 80%;
 }
 
-.entry div.entry-issue-category {
+.entry div.entry-issue-tags {
     text-align: right;
     display: inline-block;
     width: 16%;
     vertical-align: top;
 }
 
-.entry div.entry-issue-help {
-    border-top: solid 2px lightgrey;
-    padding: 5px;
-    margin-top: 10px;
+.entry div.entry-issue-tags div.label {
+    display: inline-block;
+    margin-left: 10px;
 }
 
-.entry div.entry-issue-help:empty {
+.entry div.entry-issue-help {
+    border-bottom: solid 2px lightgrey;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+
+.entry div.entry-issue-help:empty,
+.entry pre.entry-issue-detail:empty {
     display: none;
+}
+
+.entry pre div.location {
+    color: #999;
+    padding-left: 10px;
+}
+
+.line-numbers .line-numbers-rows {
+    border-right: 1px solid lightgrey;
+}
+
+.entry .backtrace {
+    padding: 5px;
+    position: relative;
+    padding-left: 20px;
+    min-height: 90px;
+    vertical-align: top;
+    background: lightgrey;
+    border-radius: 4px;
+}
+
+.entry .backtrace-text {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    position: absolute;
+    left: 20;
+    top: 60px;
+
+    transform: rotate(-90deg);
+    transform-origin: bottom left;
+    -moz-transform: rotate(-90deg);
+    -moz-transform-origin: bottom left;
+    -webkit-transform: rotate(-90deg);
+    -webkit-transform-origin: bottom left;
+}
+
+.entry .backtrace .panel-heading {
+    padding: 3px 8px;
+}
+
+a.inspyer-link {
+    margin-right: 0.5em;
+}
+
+#help-modal .modal-content {
+    width: 800px;
 }
 
 img.logo {
@@ -66,12 +139,4 @@ img.logo {
 
 pre {
     background: #f2f2f2;
-}
-
-.footer {
-    padding: 5px 15px;
-}
-
-.footer .about {
-    text-align: right;
 }

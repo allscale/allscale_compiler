@@ -41,19 +41,32 @@ namespace reporting {
 		return out;
 	}
 
+	std::ostream& operator<<(std::ostream& out, Tag tag) {
+		switch(tag) {
+		case Tag::Timeout: return out << "Timeout";
+		case Tag::Read:    return out << "Read";
+		case Tag::Write:   return out << "Write";
+		case Tag::Global:  return out << "Global";
+		}
+		return out;
+	}
+
 	ErrorDetails lookupDetails(ErrorCode err) {
 		switch(err) {
-		case ErrorCode::Timeout:                                        return {Severity::Warning, Category::Basic, "Timeout"};
-		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, Category::Basic, "Call to unknown function"};
-		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   Category::Basic, "Read access to unknown location"};
-		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   Category::Basic, "Write access to unknown location"};
-		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   Category::Basic, "Read access to global"};
-		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   Category::Basic, "Write access to global"};
-		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by read operation"};
-		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   Category::Basic, "Unable to determine data item element reference targeted by write operation"};
-		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
-		default:                                                        return {Severity::Error,   Category::Basic, "Unknown error code"};
+		case ErrorCode::Timeout:                                        return {Severity::Warning, {},                        Category::Basic, "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, {},                        Category::Basic, "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   {Tag::Read},               Category::Basic, "Read access to unknown location"};
+		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   {Tag::Write},              Category::Basic, "Write access to unknown location"};
+		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Read access to global"};
+		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Read},               Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   {Tag::Write},              Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::UnobtainableDataRequirement:                    return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirement"};
+		case ErrorCode::ObtainedDataRequirement:                        return {Severity::Info,    {},                        Category::Basic, "Obtained data requirement"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    {},                        Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
 		};
+		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
+		return {};
 	}
 
 	boost::optional<std::string> lookupHelpMessage(ErrorCode err) {
@@ -81,8 +94,8 @@ namespace reporting {
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
 		return out << toString(issue.error_details.severity) << ": "
-				   << "[" << toString(issue.error_details.category) << "] "
-				   << issue.getMessage();
+		           << "[" << toString(issue.error_details.category) << "] "
+		           << issue.getMessage();
 	}
 
 	Issue Issue::timeout(const NodeAddress& node) {
@@ -134,6 +147,46 @@ namespace reporting {
 		prettyPrintLocation(out, issue.getTarget(),disableColorization,printNodeAddress);
 	}
 
+	boost::property_tree::ptree locationToPropertyTree(const NodeAddress& target) {
+		boost::property_tree::ptree loc;
+		loc.put<string>("address", toString(target));
+
+		if(auto binding = target.isa<LambdaBindingAddress>()) {
+			loc.put<string>("name", insieme::utils::demangle(binding->getReference()->getName()->getValue()));
+		}
+		else if(auto lambda = target.isa<LambdaExprAddress>()) {
+			loc.put<string>("name", insieme::utils::demangle(lambda->getReference()->getName()->getValue()));
+		}
+
+		if(auto location = annotations::getLocation(target)) {
+			loc.put<string>("location", toString(*location));
+
+			if(auto source_file = std::fstream(location->getFile())) {
+				std::stringstream ss;
+
+				// goto first line
+				for(unsigned i = 1; i < location->getStart().getLine(); i++) {
+					source_file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				}
+
+				// collect
+				std::string line;
+				for(unsigned i = location->getStart().getLine(); i <= location->getEnd().getLine(); i++) {
+					std::getline(source_file, line);
+					ss << line << "\n";
+				}
+
+				loc.put<string>("source", ss.str());
+			}
+		}
+
+		if(lang::isBuiltIn(target.getAddressedNode())) {
+			loc.put<bool>("is_builtin", true);
+		}
+
+		return loc;
+	}
+
 	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
 		boost::property_tree::ptree ret;
 		ret.put<string>("error_code", toString(issue.getErrorCode()));
@@ -142,12 +195,36 @@ namespace reporting {
 		ret.put<string>("category", toString(issue.getCategory()));
 		ret.put<string>("message", issue.getMessage());
 
-		if(auto location = annotations::getLocation(issue.getTarget())) {
-			ret.put<string>("loc_short", toString(*location));
+		if(const auto& details = issue.getDetail()) {
+			ret.push_back(make_pair("details", details->toPropertyTree()));
+		}
 
-			std::stringstream ss;
-			annotations::prettyPrintLocation(ss, *location, true);
-			ret.put<string>("loc_pretty", ss.str());
+		// tags
+		boost::property_tree::ptree tags;
+		for(const auto& tag : issue.getTags()) {
+			tags.push_back(make_pair("", boost::property_tree::ptree(toString(tag))));
+		}
+		if(!tags.empty()) {
+			ret.push_back(make_pair("tags", tags));
+		}
+
+		// loc
+		ret.push_back(make_pair("loc", locationToPropertyTree(issue.getTarget())));
+
+		// backtrace
+		{
+			boost::property_tree::ptree backtrace;
+
+			auto target = issue.getTarget();
+			auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+			while(binding) {
+				auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+				backtrace.push_back(make_pair("", locationToPropertyTree(lambdaexpr)));
+
+				binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+			}
+
+			ret.push_back(make_pair("backtrace", backtrace));
 		}
 
 		return ret;

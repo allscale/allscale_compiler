@@ -1,7 +1,8 @@
 #pragma once
 
-#include <set>
+#include <memory>
 #include <ostream>
+#include <set>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -25,6 +26,7 @@ namespace reporting {
 		ReadAccessToPotentialDataItemElementReference,
 		WriteAccessToPotentialDataItemElementReference,
 		UnobtainableDataRequirement,
+		ObtainedDataRequirement,
 		ConvertParRegionToSharedMemoryParRuntimeCode,
 	};
 
@@ -50,19 +52,56 @@ namespace reporting {
 
 	std::ostream& operator<<(std::ostream& out, Category category);
 
+	/**
+	 * Tags of the Diagnostics Message
+	 **/
+	enum class Tag : int {
+		Timeout,
+		Read,
+		Write,
+		Global,
+	};
 
 	/**
 	 * Details of a specific error code
 	 */
 	struct ErrorDetails {
 		Severity severity;
+		std::vector<Tag> tags;
 		Category category;
 		std::string defaultMessage;
 	};
 
+	std::ostream& operator<<(std::ostream& out, Tag tag);
+
 	ErrorDetails lookupDetails(ErrorCode err);
 
 	boost::optional<std::string> lookupHelpMessage(ErrorCode err);
+
+	class IssueDetails {
+	  public:
+		virtual boost::property_tree::ptree toPropertyTree() const = 0;
+	};
+
+	class IssueDetailsMessage: public IssueDetails {
+	  private:
+
+		std::string message;
+
+	  public:
+
+		IssueDetailsMessage(const std::string& message) : message(message) {}
+
+		virtual ~IssueDetailsMessage() = default;
+
+		virtual boost::property_tree::ptree toPropertyTree() const override {
+			boost::property_tree::ptree t;
+			t.put<string>("type", "message");
+			t.put<string>("message", message);
+			return t;
+		}
+
+	};
 
 	class Issue {
 
@@ -73,9 +112,10 @@ namespace reporting {
 		ErrorDetails error_details;
 
 		boost::optional<std::string> message;
+		std::shared_ptr<IssueDetails> detail;
 
 		Issue(insieme::core::NodeAddress target, ErrorCode error_code, boost::optional<std::string> message)
-			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message) {
+			: target(target), error_code(error_code), error_details(lookupDetails(error_code)), message(message), detail() {
 			assert_true(target);
 		}
 
@@ -103,11 +143,23 @@ namespace reporting {
 			return error_details.category;
 		}
 
+		const std::vector<Tag>& getTags() const {
+			return error_details.tags;
+		}
+
 		std::string getMessage() const {
 			if(!message) {
 				return error_details.defaultMessage;
 			}
 			return *message;
+		}
+
+		std::shared_ptr<IssueDetails> getDetail() const {
+			return detail;
+		}
+
+		void setDetail(std::shared_ptr<IssueDetails> detail) {
+			this->detail = detail;
 		}
 
 		bool operator==(const Issue&) const;
@@ -127,6 +179,8 @@ namespace reporting {
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
 	void prettyPrintLocation(std::ostream& out, const insieme::core::NodeAddress& target, bool disableColorization = false, bool printNodeAddress = false);
+
+	boost::property_tree::ptree locationToPropertyTree(const insieme::core::NodeAddress& target);
 
 	boost::property_tree::ptree toPropertyTree(const Issue& issue);
 

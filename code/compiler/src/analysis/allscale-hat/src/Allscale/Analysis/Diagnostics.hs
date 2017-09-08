@@ -57,6 +57,7 @@ data ErrorCode = Timeout
                | ReadAccessToPotentialDataItemElementReference
                | WriteAccessToPotentialDataItemElementReference
                | UnobtainableDataRequirement
+               | ObtainedDataRequirement
                | ConvertParRegionToSharedMemoryParRuntimeCode
   deriving (Eq, Ord, Enum, Show, Read, Generic, NFData)
 

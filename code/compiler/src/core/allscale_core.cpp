@@ -20,21 +20,37 @@ namespace compiler {
 namespace core {
 
 	boost::property_tree::ptree toPropertyTree(const ConversionReport& report) {
+
 		// conversions + issues
 		boost::property_tree::ptree conversions;
 		for(const auto& p : report.issues) {
 			boost::property_tree::ptree entry;
+
+			// original target
 			auto target = p.first;
+			entry.push_back(make_pair("loc", reporting::locationToPropertyTree(target)));
+
+			// locating user code
+			{
+				using namespace insieme::core;
+
+				auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+				while(binding) {
+					auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+
+					if(auto location = annotations::getLocation(lambdaexpr)) {
+						if(!containsSubString(location->getFile(), "include/allscale/api")) {
+							// found user code
+							entry.push_back(make_pair("loc_user", reporting::locationToPropertyTree(lambdaexpr)));
+							break;
+						}
+					}
+
+					binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+				}
+			}
 
 			entry.push_back(make_pair("issues", toPropertyTree(p.second)));
-
-			if(auto location = insieme::core::annotations::getLocation(target)) {
-				entry.put<string>("loc_short", toString(*location));
-
-				std::stringstream ss;
-				insieme::core::annotations::prettyPrintLocation(ss, *location, true);
-				entry.put<string>("loc_pretty", ss.str());
-			}
 
 			conversions.push_back(make_pair(toString(target), entry));
 		}
