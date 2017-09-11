@@ -2,6 +2,10 @@
 # It is needed for the integration test driver to recognize this folder as the parent for multiple other tests.
 
 
+# Disabled for now
+scalar_read_only
+scalar_read_write
+
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
 # All test names preceded with a '+' will not be executed by default but only when #
