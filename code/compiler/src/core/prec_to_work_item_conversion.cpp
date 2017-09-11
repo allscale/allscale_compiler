@@ -589,7 +589,6 @@ namespace core {
 		core::LambdaExprPtr getParallelImplementation(const string& wi_name, const lang::PrecFunction& function) {
 			auto& mgr = function.getBaseCaseTest()->getNodeManager();
 			core::IRBuilder builder(mgr);
-			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 			auto& ext2 = mgr.getLangExtension<backend::AllScaleBackendModule>();
 
 			// -- build up the sequential implementation of this function --
