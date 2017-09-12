@@ -1060,7 +1060,10 @@ namespace core {
 					);
 				} else {
 					// otherwise report a summary info
-					auto issue = reporting::Issue(precCall, reporting::ErrorCode::ObtainedDataRequirement);
+					auto issue = reporting::Issue(precCall,
+							reporting::ErrorCode::ObtainedDataRequirement,
+							format("Obtained data requirement for code variant #%d.", counter)
+					);
 					auto issueDetail = std::make_shared<analysis::DataRequirements>(*requirements);
 					issue.setDetail(issueDetail);
 					report.addMessage(precCall, issue);

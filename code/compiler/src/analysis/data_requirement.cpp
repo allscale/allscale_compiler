@@ -203,7 +203,11 @@ namespace analysis {
 			t.put("item", ss.str());
 		}
 
-		t.put("range", toString(range));
+		{
+			std::stringstream ss;
+			ss << dumpPrettyLocalContext(range.toIR(dataItem.getNodeManager()), ss);
+			t.put("range", ss.str());
+		}
 
 		return t;
 	}
