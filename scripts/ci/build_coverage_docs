@@ -17,7 +17,3 @@ cmake "$WORKSPACE/code" \
 	-DBUILD_COVERAGE=ON
 
 make -j "$NPROC"
-
-compiler/allscale_integration_tests --preprocess
-
-insieme/driver/integration_tests --preprocess "$WORKSPACE/test/allscale"

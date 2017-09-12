@@ -14,8 +14,5 @@ cmake "$WORKSPACE/code" \
 	-DCMAKE_CXX_FLAGS="-Werror" \
 	-DHPX_WITH_NETWORKING=OFF
 
-make -j "$NPROC"
-
-compiler/allscale_integration_tests --preprocess
-
-insieme/driver/integration_tests --preprocess "$WORKSPACE/test/allscale"
+# Allow passing specific make targets to be compiled as well as everything
+make -j "$NPROC" "$@"

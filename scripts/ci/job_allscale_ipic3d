@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -ex
+
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source defaults.sh
+
+nice -n "$NICE_LEVEL" ./configure
+nice -n "$NICE_LEVEL" ./checkout_submodules
+nice -n "$NICE_LEVEL" ./clean_cmake
+nice -n "$NICE_LEVEL" ./clean_analysis
+nice -n "$NICE_LEVEL" ./build compiler_allscalecc
+
+# Compile and run IPIC3D pilot
+
+export IPIC3D_REPO=$WORKSPACE/allscale_ipic3d
+export OUT_FN=$WORKSPACE/out.put
+
+# compile
+
+nice -n "$NICE_LEVEL" $BUILD_DIR/compiler/allscalecc -I$IPIC3D_REPO/code/app/include -std=c++14 -ftemplate-depth-900 -O0 -g3 -ggdb -o $WORKSPACE/ipic3d.out $IPIC3D_REPO/code/app/src/ipic3d.cxx
+
+# run
+
+nice -n "$NICE_LEVEL"  $WORKSPACE/ipic3d.out $IPIC3D_REPO/inputs/tiny.inp -Ihpx.stacks.use_guard_pages=0 --hpx:threads 4 >  $OUT_FN
+
+# check output
+
+grep -q "Simulation finished successfully!" $OUT_FN
