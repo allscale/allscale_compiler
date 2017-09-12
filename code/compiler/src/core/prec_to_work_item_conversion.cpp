@@ -968,7 +968,7 @@ namespace core {
 			const bool debug = false;
 
 			// this feature may be skipped for now
-			if(true || std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
+			if(std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
 				return precFun;
 			}
 
