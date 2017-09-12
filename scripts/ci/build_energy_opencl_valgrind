@@ -27,10 +27,6 @@ cmake "$WORKSPACE/code" \
 
 make -j "$NPROC"
 
-compiler/allscale_integration_tests --preprocess
-
-insieme/driver/integration_tests --preprocess "$WORKSPACE/test/allscale"
-
 # Setup restrictions and permissions for CI server.
 if $RUNNING_ON_CI_SERVER; then
 	# Set permissions for RAPL tests.

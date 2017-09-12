@@ -11,5 +11,6 @@ nice -n "$NICE_LEVEL" ./checkout_submodules
 nice -n "$NICE_LEVEL" ./clean_cmake
 nice -n "$NICE_LEVEL" ./clean_analysis
 nice -n "$NICE_LEVEL" ./build_energy_opencl_valgrind
+nice -n "$NICE_LEVEL" ./run_integration_tests_preprocessing
 nice -n "$NICE_LEVEL" ./run_unit_tests
 nice -n "$NICE_LEVEL" ./run_integration_tests
