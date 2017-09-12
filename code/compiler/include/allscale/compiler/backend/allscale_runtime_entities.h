@@ -136,7 +136,7 @@ namespace backend {
 		/**
 		 * A function testing for the base case of a recursive operation.
 		 */
-		insieme::core::LambdaExprPtr baseCaseTest;
+		insieme::core::LambdaExprPtr splitableTest;
 
 		/**
 		 * A list of implementation variants.
@@ -147,12 +147,12 @@ namespace backend {
 
 		WorkItemDescription(
 				const std::string& name,
-				const insieme::core::LambdaExprPtr& baseCaseTest,
+				const insieme::core::LambdaExprPtr& splitableTest,
 				const WorkItemVariant& process,
 				const WorkItemVariant& split,
 				const std::vector<WorkItemVariant>& variants = std::vector<WorkItemVariant>()
-			) : name(name), baseCaseTest(baseCaseTest), variants({process,split}) {
-			assert_true(baseCaseTest);
+			) : name(name), splitableTest(splitableTest), variants({process,split}) {
+			assert_true(splitableTest);
 			assert_eq(process.getResultType(),split.getResultType());
 			assert_eq(process.getClosureType(),split.getClosureType());
 
@@ -164,10 +164,10 @@ namespace backend {
 
 		WorkItemDescription(
 				const std::string& name,
-				const insieme::core::LambdaExprPtr& baseCaseTest,
+				const insieme::core::LambdaExprPtr& splitableTest,
 				const std::vector<WorkItemVariant>& variants
-			) : name(name), baseCaseTest(baseCaseTest), variants(variants) {
-			assert_true(baseCaseTest);
+			) : name(name), splitableTest(splitableTest), variants(variants) {
+			assert_true(splitableTest);
 			assert_le(2,variants.size());
 			for(const auto& cur : variants) {
 				assert_eq(getResultType(), cur.getResultType());
@@ -177,9 +177,9 @@ namespace backend {
 
 		WorkItemDescription(
 				const std::string& name,
-				const insieme::core::LambdaExprPtr& baseCaseTest,
+				const insieme::core::LambdaExprPtr& splitableTest,
 				const WorkItemVariant& implementation)
-			: WorkItemDescription(name, baseCaseTest, implementation, implementation) {}
+			: WorkItemDescription(name, splitableTest, implementation, implementation) {}
 
 		const std::string& getName() const {
 			return name;
@@ -191,6 +191,10 @@ namespace backend {
 
 		insieme::core::TupleTypePtr getClosureType() const {
 			return getProcessVariant().getClosureType();
+		}
+
+		insieme::core::LambdaExprPtr getSplitableTest() const {
+			return splitableTest;
 		}
 
 		const WorkItemVariant& getProcessVariant() const {

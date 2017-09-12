@@ -589,7 +589,6 @@ namespace core {
 		core::LambdaExprPtr getParallelImplementation(const string& wi_name, const lang::PrecFunction& function) {
 			auto& mgr = function.getBaseCaseTest()->getNodeManager();
 			core::IRBuilder builder(mgr);
-			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 			auto& ext2 = mgr.getLangExtension<backend::AllScaleBackendModule>();
 
 			// -- build up the sequential implementation of this function --
@@ -613,14 +612,8 @@ namespace core {
 
 			// create the body of the lambda
 			auto body = builder.compoundStmt(
-				builder.ifStmt(
-					// check the base case test
-					builder.callExpr(function.getBaseCaseTest(), in),
-					// if in the base case => run base case
-					builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(function.getBaseCases()[0],in))),
-					// else run step case
-					builder.returnStmt(builder.callExpr(stepFun,in))
-				)
+				// run step case
+				builder.returnStmt(builder.callExpr(stepFun,in))
 			);
 
 			// build the resulting lambda
@@ -643,7 +636,13 @@ namespace core {
 			auto p = builder.variable(function.getParameterType());
 
 			// build lambda
-			return builder.lambdaExpr(basic.getBool(), { p }, builder.returnStmt(builder.negateExpr(builder.callExpr(baseCaseTest, p))));
+			return builder.lambdaExpr(basic.getBool(), { p },
+					builder.returnStmt(
+							builder.negateExpr(
+									builder.callExpr(baseCaseTest, p)
+							)
+					)
+			);
 		}
 
 		WorkItemVariant getProcessVariant(const lang::PrecFunction& function) {

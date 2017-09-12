@@ -101,6 +101,9 @@ namespace backend {
 
 				// 6) add variants to the description info
 				addWorkItemVariants(descInfo, variants);
+
+				// 7) add can split operation to description
+				addWorkItemDescriptionParameter(descInfo, createCanSplitImplementation(context,desc.getSplitableTest(),name));
 			}
 
 			std::string getName(const WorkItemDescription& desc) {
@@ -148,6 +151,83 @@ namespace backend {
 
 			}
 
+			void addStaticMemberFunction(backend::ConversionContext& context, TypeInfo& info, const core::LambdaExprPtr& fun, const std::string& name) {
+
+				// get the C-Node Manager
+				auto& mgr = getCNodeManager();
+
+				// resolve the implementation function
+				auto& funInfo = context.getConverter().getFunctionManager().getInfo(context, fun);
+
+				// build wrapper function
+				auto wrapper = mgr->create<backend::c_ast::Function>();
+				wrapper->returnType = funInfo.function->returnType;
+				wrapper->name = mgr->create(name);
+				wrapper->parameter = funInfo.function->parameter;
+				wrapper->body = backend::c_ast::ret(backend::c_ast::call(
+						funInfo.function->name,
+						wrapper->parameter[0]
+				));
+
+				// get the c_ast struct
+				auto strct = info.type.as<backend::c_ast::StructTypePtr>();
+
+				// wrap up wrapper as a static member function
+				const auto& structName = strct->name;
+				auto memberFun = mgr->create<backend::c_ast::MemberFunction>(structName, wrapper);
+				memberFun->isStatic = true;
+
+				// create code fragment for definition of member function
+				auto wrapperFragment = fragmentManager->create<backend::c_ast::CCodeFragment>(
+						getCNodeManager(),
+						memberFun
+				);
+				wrapperFragment->addDependency(funInfo.prototype);
+
+				// add wrapper to resulting struct
+				strct->members.push_back(mgr->create<backend::c_ast::MemberFunctionPrototype>(memberFun));
+
+				// connect execution member to struct definition
+				info.definition->addDependency(funInfo.prototype);
+				info.definition->addRequirement(wrapperFragment);
+
+			};
+
+
+
+			TypeInfo createCanSplitImplementation(backend::ConversionContext& context, const core::LambdaExprPtr& test, const std::string& name) {
+
+				// get the C-Node Manager
+				auto& mgr = getCNodeManager();
+
+				// get the struct name
+				auto structName = mgr->create<backend::c_ast::Identifier>(format("%s_can_split",name));
+
+				// build the struct
+				auto strct = mgr->create<backend::c_ast::StructType>(structName);
+
+				// get the struct declaration and definition
+				auto strctDec = mgr->create<backend::c_ast::TypeDeclaration>(strct);
+				auto strctDef = mgr->create<backend::c_ast::TypeDefinition>(strct);
+
+				// create the code fragment containing the declarations and definitions
+				auto dec = fragmentManager->create<backend::c_ast::CCodeFragment>(getCNodeManager(), strctDec);
+				auto def = fragmentManager->create<backend::c_ast::CCodeFragment>(getCNodeManager(), strctDef);
+
+				// connect the declaration and definition
+				dec->addRequirement(def);
+				def->addDependency(dec);
+
+				// build resulting type info
+				TypeInfo res { strct, dec, def };
+
+				// add execute function
+				addStaticMemberFunction(context, res, test,"call");
+
+				// return result
+				return res;
+			}
+
 
 			TypeInfo createVariantImplementation(backend::ConversionContext& context, const WorkItemVariant& variant, const std::string& name, int i) {
 
@@ -182,53 +262,20 @@ namespace backend {
 						opaque("static constexpr bool valid = true;")
 				);
 
-				// a utility for creating static wrapper functions
-				auto addStaticMemberFunction = [&](const core::LambdaExprPtr& fun, const std::string& name) {
-
-					// resolve the implementation function
-					auto& funInfo = context.getConverter().getFunctionManager().getInfo(context, fun);
-
-					// build wrapper function
-					auto wrapper = mgr->create<backend::c_ast::Function>();
-					wrapper->returnType = funInfo.function->returnType;
-					wrapper->name = mgr->create(name);
-					wrapper->parameter = funInfo.function->parameter;
-					wrapper->body = backend::c_ast::ret(backend::c_ast::call(
-							funInfo.function->name,
-							wrapper->parameter[0]
-					));
-
-					// wrap up wrapper as a static member function
-					auto memberFun = mgr->create<backend::c_ast::MemberFunction>(structName, wrapper);
-					memberFun->isStatic = true;
-
-					// create code fragment for definition of member function
-					auto wrapperFragment = fragmentManager->create<backend::c_ast::CCodeFragment>(
-							getCNodeManager(),
-							memberFun
-					);
-					wrapperFragment->addDependency(funInfo.prototype);
-
-					// add wrapper to resulting struct
-					strct->members.push_back(mgr->create<backend::c_ast::MemberFunctionPrototype>(memberFun));
-
-					// connect execution member to struct definition
-					def->addDependency(funInfo.prototype);
-					def->addRequirement(wrapperFragment);
-
-				};
+				// build the resulting type info
+				TypeInfo res{ strct, dec, def };
 
 				// add execute function
-				addStaticMemberFunction(variant.getImplementation(),"execute");
+				addStaticMemberFunction(context, res, variant.getImplementation(),"execute");
 
 				// add data requirement function
 				const auto& dataRequirements = variant.getDataRequirements();
 				if (dataRequirements.valid()) {
-					addStaticMemberFunction(dataRequirements.getImplementation(),"get_requirements");
+					addStaticMemberFunction(context, res, dataRequirements.getImplementation(),"get_requirements");
 				}
 
 				// return result
-				return TypeInfo{ strct, dec, def };
+				return res;
 			}
 
 			WorkItemDescInfo createWorkItemDescription(backend::ConversionContext& context, const WorkItemDescription& desc, const std::string& name, const TypeInfo& nameFactory) {
@@ -278,14 +325,19 @@ namespace backend {
 
 				// add work item variants as parameters to the definition
 				for(const auto& cur : variants) {
-					info.defining_type->parameters.push_back(cur.type);
+					addWorkItemDescriptionParameter(info, cur);
 				}
 
-				// add dependencies to parameter types
-				for(const auto& cur : variants) {
-					info.definition->addDependency(cur.declaration);
-					info.definition->addRequirement(cur.definition);
-				}
+			}
+
+			void addWorkItemDescriptionParameter(const WorkItemDescInfo& info, const TypeInfo& paramTypeInfo) {
+
+				// add parameter to work item description type
+				info.defining_type->parameters.push_back(paramTypeInfo.type);
+
+				// add dependencies to parameter type
+				info.definition->addDependency(paramTypeInfo.declaration);
+				info.definition->addRequirement(paramTypeInfo.definition);
 
 			}
 

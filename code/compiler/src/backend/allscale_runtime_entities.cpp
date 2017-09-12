@@ -123,14 +123,14 @@ namespace backend {
 
 
 	bool WorkItemDescription::operator==(const WorkItemDescription& other) const {
-		return name == other.name && *baseCaseTest == *other.baseCaseTest && variants == other.variants;
+		return name == other.name && *splitableTest == *other.splitableTest && variants == other.variants;
 	}
 
 	bool WorkItemDescription::operator<(const WorkItemDescription& other) const {
 
 		// compare one field after the other
 		if (name != other.name) return name < other.name;
-		if (*baseCaseTest != *other.baseCaseTest) return *baseCaseTest < *other.baseCaseTest;
+		if (*splitableTest != *other.splitableTest) return *splitableTest < *other.splitableTest;
 		return lexicographical_compare(variants, other.variants);
 	}
 
@@ -158,7 +158,7 @@ namespace backend {
 
 		// encode the information stored within this description into a tuple
 		auto info = ie::toIR(mgr, work_item_description_tuple{
-			name, baseCaseTest, variants
+			name, splitableTest, variants
 		});
 
 		// wrap this information into a work item description operator
