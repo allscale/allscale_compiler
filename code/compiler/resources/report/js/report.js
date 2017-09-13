@@ -132,6 +132,8 @@ function createIssueDetails(addr, issue) {
 	} else if (issue.details.type == 'data_requirements') {
 		if (issue.details.unknown != 'false') {
 			$details.text('Unknown Data Requirements');
+		} else if (!issue.details.reqs) {
+			$details.text('No Data Requirements discovered.');
 		} else {
 
 			$details.append(
