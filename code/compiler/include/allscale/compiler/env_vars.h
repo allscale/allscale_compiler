@@ -7,3 +7,6 @@
 
 // skip data requirement analysis
 #define ALLSCALE_SKIP_ANALYSIS "ALLSCALE_SKIP_ANALYSIS"
+
+// enable debugging of allscale data requirement analysis
+#define ALLSCALE_DEBUG_ANALYSIS "ALLSCALE_DEBUG_ANALYSIS"

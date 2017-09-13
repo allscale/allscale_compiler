@@ -964,8 +964,8 @@ namespace core {
 		}
 
 
-		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall) {
-			const bool debug = false;
+		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
+			const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
 
 			// this feature may be skipped for now
 			if(std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
@@ -996,23 +996,9 @@ namespace core {
 				counter++;
 				auto target = variant.getImplementation()->getBody();
 
-				if (debug) std::cout << "Analyzing variant implementation\n" << dumpReadable(target) << "\n";
-
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
 				auto requirements = analysis::getDataRequirements(context,target);
-
-				if (debug) {
-					std::cout << "Obtained dependencies: ";
-					if(requirements) {
-						std::cout << *requirements << "\n";
-					} else {
-						std::cout << "-timeout-\n";
-					}
-					context.dumpStatistics();
-					core::dump::json::dumpIR("code.json",target);
-					context.dumpSolution();
-				}
 
 				// integrate data requirement into variant
 				if (requirements && !requirements->isUniverse()) {
@@ -1072,6 +1058,18 @@ namespace core {
 				// run diagnosis
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
 				report.addMessages(precCall, issues);
+
+				// print some debug information
+				if (debug) {
+					// dump analysis statistics
+					context.dumpStatistics();
+
+					// dump prec operator code in json format
+					if (counter == 1) core::dump::json::dumpIR(format("analysis_p%d_code.json",precIndex),target);
+
+					// dump analysis solution as json meta file
+					context.dumpSolution(format("analysis_p%d_solution_v%d", precIndex, counter));
+				}
 
 			}
 
@@ -1187,7 +1185,7 @@ namespace core {
 			);
 
 			// add data requirement dependencies
-			res = integrateDataRequirements(res,report,firstAddress);
+			res = integrateDataRequirements(res,report,firstAddress,index);
 
 			// done
 			return res;
