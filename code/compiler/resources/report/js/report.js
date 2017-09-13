@@ -349,8 +349,11 @@ function main() {
 	setProgress();
 	setupControls();
 
+	// initialize Prism.js
+	Prism.highlightAll();
+
 	// fix initial collapse state of prism code blocks
 	$('pre.prism-collapse code').addClass('collapse').attr('style', 'height: 0px');
 }
 
-main();
+$(document).ready(main);
