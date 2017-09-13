@@ -24,7 +24,8 @@
 </head>
 <body>
 	<div id="controls" class="btn-group-vertical">
-		<a id="internal-button" class="btn btn-default"><i class="glyphicon glyphicon-eye-open"></i></a>
+		<a id="internal-button" class="btn btn-default" data-toggle="tooltip" data-placement="right" title="Developer Mode"><i class="glyphicon glyphicon-eye-open"></i></a>
+		<a id="export-button" class="btn btn-default internal"><i class="glyphicon glyphicon-export"></i></a>
 		<a href="#help-modal" data-toggle="modal" class="btn btn-default"><i class="glyphicon glyphicon-question-sign"></i></a>
 	</div>
 
@@ -67,7 +68,11 @@
 						<tbody>
 							<tr>
 								<td style="text-align: center"><a class="btn btn-default disabled"><i class="glyphicon glyphicon-eye-open"></i></a></td>
-								<td style="vertical-align: middle">show / hide internal information</td>
+								<td style="vertical-align: middle">show / hide developer controls / information</td>
+							</tr>
+							<tr>
+								<td style="text-align: center"><a class="btn btn-default disabled"><i class="glyphicon glyphicon-export"></i></a></td>
+								<td style="vertical-align: middle">export JSON data (developer mode)</td>
 							</tr>
 							<tr>
 								<td style="text-align: center"><a class="btn btn-default disabled"><i class="glyphicon glyphicon-question-sign"></i></a></td>
@@ -75,7 +80,7 @@
 							</tr>
 							<tr>
 								<td style="text-align: center"><a class="disabled"><i class="glyphicon glyphicon-share-alt"></i></a></td>
-								<td style="vertical-align: middle">open INSPYER and go to node (requries initial loading of a JSON dump) (only visible when showing internals)</td>
+								<td style="vertical-align: middle">open INSPYER and go to node (requries initial loading of a JSON dump) (developer mode)</td>
 							</tr>
 						</tbody>
 					</table>
@@ -111,7 +116,7 @@
 
 	<script src="js/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
-	<script src="js/prism.min.js"></script>
+	<script src="js/prism.min.js" data-manual></script>
 	<script src="js/report.js"></script>
 </body>
 </html>

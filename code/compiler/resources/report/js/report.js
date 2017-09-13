@@ -65,6 +65,7 @@ function inspyerLink(addr) {
 		.attr('href', `${INSPYER_URL}#node-${addr}`)
 		.attr('target', 'inspyer')
 		.addClass('inspyer-link internal')
+		.tooltip({'placement': 'left', 'title': 'Open in INSPYER'})
 		.html('<i class="glyphicon glyphicon-share-alt"></i>');
 }
 
@@ -132,6 +133,8 @@ function createIssueDetails(addr, issue) {
 	} else if (issue.details.type == 'data_requirements') {
 		if (issue.details.unknown != 'false') {
 			$details.text('Unknown Data Requirements');
+		} else if (!issue.details.reqs) {
+			$details.text('No Data Requirements discovered.');
 		} else {
 
 			$details.append(
@@ -199,7 +202,7 @@ function createIssue(addr, issue, index) {
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),
-							createSource(`entry-${addr}-issue-${index}-source`, addr, issue.loc.location, issue.loc.source),
+							createSource(`entry-${addr}-issue-${index}-source`, issue.loc.address, issue.loc.location, issue.loc.source),
 							$('<div>')
 								.attr('id', `entry-${addr}-issue-${index}-backtrace`)
 								.addClass('panel-group')
@@ -311,6 +314,14 @@ function setupControls() {
 
 	}
 
+	// export
+	{
+		var data = JSON.stringify(report, null, 2);
+		$('a#export-button')
+			.attr('download', 'report.json')
+			.attr('href', `data:text/json;charset=utf-8,${escape(data)}`);
+	}
+
 	// internal
 	{
 		var $internals = $('.internal');
@@ -321,6 +332,9 @@ function setupControls() {
 			$internals.toggle();
 		});
 	}
+
+	// tooltips
+	$('#controls [data-toggle="tooltip"]').tooltip();
 }
 
 function main() {
@@ -339,8 +353,11 @@ function main() {
 	setProgress();
 	setupControls();
 
+	// initialize Prism.js
+	Prism.highlightAll();
+
 	// fix initial collapse state of prism code blocks
 	$('pre.prism-collapse code').addClass('collapse').attr('style', 'height: 0px');
 }
 
-main();
+$(document).ready(main);
