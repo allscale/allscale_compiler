@@ -9,6 +9,7 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "insieme/core/annotations/source_location.h"
+#include "insieme/core/checks/full_check.h"
 
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/core/cpp_lambda_to_ir_conversion.h"
@@ -151,6 +152,9 @@ namespace core {
 
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback) {
 
+		// make sure the input is correct
+		assert_correct_ir(code);
+
 		// Step 1: convert C++ lambdas to IR
 		callback(ProgressUpdate("Pre-processing C++ lambdas ..."));
 		auto res = convertCppLambdaToIR(code);
@@ -171,6 +175,9 @@ namespace core {
 
 		// Step 6: add default constructors to all closure types
 		// TODO: move this step from the backend to the core
+
+		// make sure the result is correct
+		assert_correct_ir(res);
 
 		return { precConversionResult.report, res };
 	}

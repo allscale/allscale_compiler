@@ -261,37 +261,58 @@ namespace core {
 
 		// -- Extraction of captured values ----------------------------------------------------------------------------
 
-		struct CapturedValue {
+		struct ClosureField {
 
 			core::TagTypeReferencePtr lambdaTypeName;
 
 			core::FieldPtr field;
 
+			friend std::ostream& operator<<(std::ostream& out, const ClosureField& value) {
+				return out << *value.lambdaTypeName << "::" << *value.field->getName() << " : " << *value.field->getType();
+			}
+		};
+
+		struct CapturedValue {
+
+			ClosureField field;
+
 			core::ExpressionPtr value;
 
 			friend std::ostream& operator<<(std::ostream& out, const CapturedValue& value) {
-				return out << *value.lambdaTypeName << "::" << *value.field->getName() << " : " << *value.field->getType() << " = " << *value.value;
+				return out << value.field << " = " << *value.value;
 			}
 		};
 
 		class CapturedValueIndex {
 
-			std::vector<CapturedValue> values;
+			// we index captured value by the init expression to avoid
+			// capturing the same value more than once
+			std::map<core::ExpressionPtr, std::vector<ClosureField>> values;
 
 		public:
 
 			void append(const CapturedValue& value) {
-				values.push_back(value);
+				values[value.value].push_back(value.field);
+				// make sure all captured field with the same init value have the same type
+				assert_true(all(values[value.value], [&](const auto& cur){
+					return *values[value.value].front().field->getType() == *cur.field->getType();
+				}));
 			}
 
 			std::size_t getIndex(const core::TagTypeReferencePtr& lambda, const core::ExpressionPtr& fieldIdentifier) const {
 				assert_true(fieldIdentifier.isa<core::LiteralPtr>());
 
 				auto name = fieldIdentifier.as<core::LiteralPtr>()->getValue();
-				for(std::size_t i = 0; i<values.size(); ++i) {
-					// check current entry
-					if (values[i].lambdaTypeName == lambda && values[i].field->getName() == name) return i;
+
+				std::size_t i = 0;
+				for(const auto& cur : values) {
+					for(const auto& field : cur.second) {
+						// check current entry
+						if (field.lambdaTypeName == lambda && field.field->getName() == name) return i;
+					}
+					i++;
 				}
+
 				assert_fail() << "Unable to obtain field " << *lambda << "::" << *fieldIdentifier << " from list of captured values: " << *this;
 				return -1;
 			}
@@ -304,8 +325,16 @@ namespace core {
 				return values.size();
 			}
 
-			const CapturedValue& operator[](std::size_t index) const {
-				return values[index];
+			CapturedValue operator[](std::size_t index) const {
+				auto it = values.begin();
+				for(std::size_t i=0; i<index; i++) {
+					assert_true(it != values.end());
+					++it;
+				}
+				return CapturedValue {
+					it->second.front(),
+					it->first
+				};
 			}
 
 			auto begin() const {
@@ -463,7 +492,7 @@ namespace core {
 							core::ExpressionPtr forward = builder.refComponent(param,i+1);
 
 							// if the captured values is a reference value
-							if (core::lang::isReference(index[i].field->getType())) {
+							if (core::lang::isReference(index[i].field.field->getType())) {
 								// we need to de-ref the captured value
 								forward = builder.deref(forward);
 							}
@@ -745,7 +774,7 @@ namespace core {
 
 			// add captured values
 			for(const auto& cur : capturedValues) {
-				auto type = cur.field->getType();
+				auto type = cur.second.front().field->getType();
 
 				// capture C++ references as plain references, thus as pointer
 				if (core::lang::isReference(type)) {
@@ -874,10 +903,10 @@ namespace core {
 
 			// collect the values to be captured for the closure
 			core::ExpressionList closureValues;
-			for(const CapturedValue& cur : capturedValues) {
-				auto capture = cur.value;
-				if (core::lang::isCppReference(cur.field->getType())) {
-					capture = core::lang::buildRefKindCast(cur.value,core::lang::ReferenceType::Kind::Plain);
+			for(const auto& cur : capturedValues) {
+				auto capture = cur.first;
+				if (core::lang::isCppReference(cur.second.front().field->getType())) {
+					capture = core::lang::buildRefKindCast(cur.first,core::lang::ReferenceType::Kind::Plain);
 				}
 				closureValues.push_back(capture);
 			}
