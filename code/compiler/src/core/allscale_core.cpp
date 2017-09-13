@@ -12,6 +12,7 @@
 
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/core/cpp_lambda_to_ir_conversion.h"
+#include "allscale/compiler/core/global_constant_propagation.h"
 #include "allscale/compiler/core/data_item_conversion.h"
 #include "allscale/compiler/core/prec_to_work_item_conversion.h"
 
@@ -154,17 +155,21 @@ namespace core {
 		callback(ProgressUpdate("Pre-processing C++ lambdas ..."));
 		auto res = convertCppLambdaToIR(code);
 
-		// Step 2: introduce data item references
+		// Step 2: performing global constant propagation
+		callback(ProgressUpdate("Propagating global constants ..."));
+		res = propagateGlobalConstants(res);
+
+		// Step 3: introduce data item references
 		res = convertDataItemReferences(res, callback);
 
-		// Step 3: convert prec calls
+		// Step 4: convert prec calls
 		auto precConversionResult = convertPrecToWorkItem(res, callback);
 		res = precConversionResult.result;
 
-		// Step 4: convert the entry point into a work item
+		// Step 5: convert the entry point into a work item
 		// TODO: move this step from the backend to the core
 
-		// Step 5: add default constructors to all closure types
+		// Step 6: add default constructors to all closure types
 		// TODO: move this step from the backend to the core
 
 		return { precConversionResult.report, res };
