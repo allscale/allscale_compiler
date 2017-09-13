@@ -65,6 +65,7 @@ function inspyerLink(addr) {
 		.attr('href', `${INSPYER_URL}#node-${addr}`)
 		.attr('target', 'inspyer')
 		.addClass('inspyer-link internal')
+		.tooltip({'placement': 'left', 'title': 'Open in INSPYER'})
 		.html('<i class="glyphicon glyphicon-share-alt"></i>');
 }
 
@@ -331,6 +332,9 @@ function setupControls() {
 			$internals.toggle();
 		});
 	}
+
+	// tooltips
+	$('#controls [data-toggle="tooltip"]').tooltip();
 }
 
 function main() {
