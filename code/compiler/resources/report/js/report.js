@@ -313,6 +313,14 @@ function setupControls() {
 
 	}
 
+	// export
+	{
+		var data = JSON.stringify(report, null, 2);
+		$('a#export-button')
+			.attr('download', 'report.json')
+			.attr('href', `data:text/json;charset=utf-8,${escape(data)}`);
+	}
+
 	// internal
 	{
 		var $internals = $('.internal');
