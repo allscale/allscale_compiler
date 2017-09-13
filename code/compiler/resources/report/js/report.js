@@ -199,7 +199,7 @@ function createIssue(addr, issue, index) {
 							$('<div>')
 								.addClass('entry-issue-help')
 								.text(getHelpMessage(issue.error_code)),
-							createSource(`entry-${addr}-issue-${index}-source`, addr, issue.loc.location, issue.loc.source),
+							createSource(`entry-${addr}-issue-${index}-source`, issue.loc.address, issue.loc.location, issue.loc.source),
 							$('<div>')
 								.attr('id', `entry-${addr}-issue-${index}-backtrace`)
 								.addClass('panel-group')
