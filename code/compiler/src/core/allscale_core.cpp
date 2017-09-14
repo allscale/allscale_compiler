@@ -12,6 +12,7 @@
 #include "insieme/core/checks/full_check.h"
 
 #include "allscale/compiler/config.h"
+#include "allscale/compiler/env_vars.h"
 #include "allscale/compiler/core/cpp_lambda_to_ir_conversion.h"
 #include "allscale/compiler/core/global_constant_propagation.h"
 #include "allscale/compiler/core/data_item_conversion.h"
@@ -180,8 +181,10 @@ namespace core {
 		auto res = convertCppLambdaToIR(code);
 
 		// Step 2: performing global constant propagation
-		callback(ProgressUpdate("Propagating global constants ..."));
-		res = propagateGlobalConstants(res);
+		if(!std::getenv(ALLSCALE_SKIP_GLOBAL_CONSTANT_PROPAGATION)) {
+			callback(ProgressUpdate("Propagating global constants ..."));
+			res = propagateGlobalConstants(res);
+		}
 
 		// Step 3: introduce data item references
 		res = convertDataItemReferences(res, callback);
