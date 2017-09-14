@@ -881,7 +881,7 @@ namespace core {
 				params,
 				builder.compoundStmt(
 					builder.returnStmt(
-						builder.callExpr(ext.getSpawnWorkItem(), spawnArgs)
+						builder.callExpr(ext.getSpawnFirstWorkItem(), spawnArgs)
 					)
 				)
 			);

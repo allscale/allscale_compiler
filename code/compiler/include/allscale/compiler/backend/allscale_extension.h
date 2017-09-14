@@ -41,7 +41,8 @@ namespace backend {
 		// --- a primitive to start a work item ---
 
 		// the operator for spawning a work item
-		LANG_EXT_LITERAL(SpawnWorkItem, "art_spawn", "(dependencies,art_wi_desc<('Args...),'Res>,'InitArgs...)->treeture<'Res,f>");
+		LANG_EXT_LITERAL(SpawnWorkItem,      "art_spawn",       "(dependencies,art_wi_desc<('Args...),'Res>,'InitArgs...)->treeture<'Res,f>");
+		LANG_EXT_LITERAL(SpawnFirstWorkItem, "art_spawn_first", "(dependencies,art_wi_desc<('Args...),'Res>,'InitArgs...)->treeture<'Res,f>");
 
 		// the operator for wrapping the execution of the main function
 		LANG_EXT_LITERAL(ProcessMain, "art_main", "(art_wi_desc<('Args...),'Res>,'Args...)->'Res");

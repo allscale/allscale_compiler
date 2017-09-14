@@ -52,7 +52,9 @@ namespace backend {
 			};
 
 
-			table[ext.getSpawnWorkItem()] = OP_CONVERTER {
+			auto spawnHandler = OP_CONVERTER {
+
+				bool isSpawnFirst = LANG_EXT(AllScaleBackendModule).isCallOfSpawnFirstWorkItem(call);
 
 				// add dependencies
 				ADD_HEADER("allscale/runtime.hpp");
@@ -73,7 +75,7 @@ namespace backend {
 				auto workItemDescType = info.description_type;
 
 				// create the target
-				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::spawn_with_dependencies");
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>(isSpawnFirst ? "allscale::spawn_first_with_dependencies" : "allscale::spawn_with_dependencies");
 				trg = c_ast::instantiate(trg,workItemDescType);
 
 				// create the arguments
@@ -88,6 +90,9 @@ namespace backend {
 				// create the call
 				return c_ast::call(trg,args);
 			};
+
+			table[ext.getSpawnWorkItem()] = spawnHandler;
+			table[ext.getSpawnFirstWorkItem()] = spawnHandler;
 
 			table[ext.getPrecFunCreate()] = OP_CONVERTER {
 
