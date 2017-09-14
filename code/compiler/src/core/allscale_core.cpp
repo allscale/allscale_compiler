@@ -52,7 +52,16 @@ namespace core {
 				}
 			}
 
-			entry.push_back(make_pair("issues", toPropertyTree(p.second)));
+			entry.push_back(make_pair("issues", toPropertyTree(p.second.first)));
+
+			boost::property_tree::ptree variant_issues;
+			{
+				int variant_counter = 0;
+				for(const auto& pp : p.second.second) {
+					variant_issues.push_back(make_pair(toString(++variant_counter), toPropertyTree(pp.second)));
+				}
+			}
+			entry.push_back(make_pair("variant_issues", variant_issues));
 
 			conversions.push_back(make_pair(toString(target), entry));
 		}
@@ -62,8 +71,13 @@ namespace core {
 		{
 			std::set<reporting::ErrorCode> errors;
 			for(const auto& p : report.issues) {
-				for (const auto& issue : p.second) {
+				for (const auto& issue : p.second.first) {
 					errors.insert(issue.getErrorCode());
+				}
+				for(const auto& pp : p.second.second) {
+					for(const auto& issue : pp.second) {
+						errors.insert(issue.getErrorCode());
+					}
 				}
 			}
 
@@ -126,27 +140,33 @@ namespace core {
 
 		out << " ---------------------------------------------\n";
 
-		// print issues, one after another
-		int counter = 0;
-		for(const auto& cur : report.issues) {
-			const auto& precCall = cur.first;
-			const auto& issues = cur.second;
+		int region_counter = 0;
+		for(const auto& p : report.issues) {
+			const auto& issues = p.second.first;
+			const auto& variants = p.second.second;
 
-			// if there are no issues to report => skip this one
-			if (issues.empty()) continue;
+			out << "Processed parallel region #" << (++region_counter) << ":\n";
 
-			out << "Processed parallel region #" << (++counter) << ":\n";
-			reporting::prettyPrintLocation(out,precCall);
-			std::cout << "  Messages:\n";
-			for(const auto& cur : issues) {
-				out << "\t" << cur << "\n";
+			// output issues not associated with a specific variant
+			for(const auto& issue : issues) {
+				out << "\t" << issue << "\n";
 			}
-			out << "\n";
+
+			// output issues associated with a specific variant
+			int variant_counter = 0;
+			for(const auto& pp : variants) {
+				const auto& issues = pp.second;
+
+				out << "\tVariant #" << (++variant_counter) << "\n";
+				for(const auto& issue : issues) {
+					out << "\t\t" << issue << "\n";
+				}
+			}
+
 		}
 
 		out << " ---------------------------------------------\n";
 
-		// done
 		return out;
 	}
 

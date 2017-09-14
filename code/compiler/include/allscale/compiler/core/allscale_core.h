@@ -66,24 +66,36 @@ namespace core {
 
 	// -- Definitions ------------------------------------------------------------------
 
-
 	struct ConversionReport {
 
 		using PrecCall = insieme::core::CallExprAddress;
 
+		using VariantId = int;
+
+		using VariantIssues = std::map<VariantId, reporting::Issues>;
+
 		// the collected issues, indexed by the prec operator location
-		std::map<PrecCall,reporting::Issues> issues;
+		std::map<PrecCall, std::pair<reporting::Issues, VariantIssues>> issues;
 
 		void addMessage(const PrecCall& prec, const reporting::Issue& issue) {
-			issues[prec].insert(issue);
+			issues[prec].first.insert(issue);
+		}
+
+		void addMessage(const PrecCall& prec, const VariantId& variant, const reporting::Issue& issue) {
+			issues[prec].second[variant].insert(issue);
 		}
 
 		void addMessages(const PrecCall& prec, const reporting::Issues& is) {
-			issues[prec].insert(is.begin(), is.end());
+			issues[prec].first.insert(is.begin(), is.end());
 		}
 
-		friend std::ostream& operator<<(std::ostream& out, const ConversionReport& report);
+		void addMessages(const PrecCall& prec, const VariantId& variant, const reporting::Issues& is) {
+			issues[prec].second[variant].insert(is.begin(), is.end());
+		}
+
 	};
+
+	std::ostream& operator<<(std::ostream& out, const ConversionReport& report);
 
 	struct ConversionResult {
 

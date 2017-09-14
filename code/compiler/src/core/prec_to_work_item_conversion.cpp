@@ -1065,28 +1065,22 @@ namespace core {
 
 				// add summary to report
 				if (!requirements) {
-					// a time-out occured
-					report.addMessage(precCall, reporting::Issue::timeout(precCall));
+					// a time-out occurred
+					report.addMessage(precCall, counter, reporting::Issue::timeout(precCall));
 				} else if (requirements->isUniverse()) {
 					// if dependencies could not be narrowed down => report a warning
-					report.addMessage(precCall, reporting::Issue(precCall,
-							reporting::ErrorCode::UnobtainableDataRequirement,
-							format("Unable to obtain data requirement for code variant #%d.", counter))
-					);
+					report.addMessage(precCall, counter, reporting::Issue(precCall, reporting::ErrorCode::UnobtainableDataRequirement));
 				} else {
 					// otherwise report a summary info
-					auto issue = reporting::Issue(precCall,
-							reporting::ErrorCode::ObtainedDataRequirement,
-							format("Obtained data requirement for code variant #%d.", counter)
-					);
+					auto issue = reporting::Issue(precCall, reporting::ErrorCode::ObtainedDataRequirement);
 					auto issueDetail = std::make_shared<analysis::DataRequirements>(*requirements);
 					issue.setDetail(issueDetail);
-					report.addMessage(precCall, issue);
+					report.addMessage(precCall, counter, issue);
 				}
 
 				// run diagnosis
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
-				report.addMessages(precCall, issues);
+				report.addMessages(precCall, counter, issues);
 
 				// print some debug information
 				if (debug) {

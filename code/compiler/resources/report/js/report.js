@@ -2,17 +2,37 @@
 
 const INSPYER_URL = "https://insieme.github.io/inspyer/"
 
+
+
 function determineLevelForEntry(entry) {
-	var level = 'success';
-	for (var i = 0; i < entry.issues.length; i++) {
-		var issue = entry.issues[i];
-		if (issue.severity == 'Warning') {
+	var level = determineLevelFromIssues(entry.issues);
+
+	for (var key in entry.variant_issues) {
+		var level_ = determineLevelFromIssues(entry.variant_issues[key]);
+		if (level_ == 'warning') {
 			level = 'warning';
-		} else if (issue.severity == 'Error') {
+		} else if (level_ == 'danger') {
 			level = 'danger';
 			break;
 		}
 	}
+
+	return level;
+}
+
+function determineLevelFromIssues(issues) {
+	var level = 'success';
+
+	for (var i = 0; i < issues.length; i++) {
+		var issue = issues[i];
+		if (determineLevelForIssue(issue) == 'warning') {
+			level = 'warning';
+		} else if (determineLevelForIssue(issue) == 'danger') {
+			level = 'danger';
+			break;
+		}
+	}
+
 	return level;
 }
 
@@ -216,6 +236,33 @@ function createIssue(addr, issue, index) {
 		);
 }
 
+function createVariantIssues(addr, issues, variant) {
+	var addr = `${addr}-variant-${variant}`;
+	return $('<div>')
+		.addClass(`entry-variant panel panel-${determineLevelFromIssues(issues)}`)
+		.append(
+			$('<div>')
+				.addClass('panel-heading')
+				.append(
+					$('<a>')
+						.attr('href', `#entry-${addr}`)
+						.attr('data-toggle', 'collapse')
+						.addClass('panel-title')
+						.text(`Variant #${variant}`)
+				),
+			$('<div>')
+				.attr('id', `entry-${addr}`)
+				.addClass('collapse')
+				.append(
+					$('<div>')
+						.addClass('panel-body')
+						.append(
+							$.map(issues, $.proxy(createIssue, null, addr))
+						)
+				)
+		);
+}
+
 function createConversion(entry, addr) {
 	var loc = entry.loc_user ? entry.loc_user : entry.loc;
 
@@ -241,6 +288,7 @@ function createConversion(entry, addr) {
 						.addClass('panel-body')
 						.append(
 							$.map(entry.issues, $.proxy(createIssue, null, addr)),
+							$.map(entry.variant_issues, $.proxy(createVariantIssues, null, addr)),
 							createSource(`entry-${addr}-source`, addr, loc.location, loc.source)
 						)
 				)
