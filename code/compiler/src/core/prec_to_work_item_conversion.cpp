@@ -385,7 +385,7 @@ namespace core {
 				for(std::size_t i = 0; i<fields.size(); i++) {
 					auto field = fields[i];
 					auto init = initValues[i];
-					res.append(CapturedValue{lambdaClass->getTag(),field,init});
+					res.append(CapturedValue{{lambdaClass->getTag(), field}, init});
 				}
 
 				// done -- do not descent further
