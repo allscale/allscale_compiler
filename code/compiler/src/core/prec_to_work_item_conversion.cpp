@@ -993,7 +993,7 @@ namespace core {
 		}
 
 
-		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
+		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
 			const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
 
 			// this feature may be skipped for now
@@ -1097,7 +1097,7 @@ namespace core {
 			}
 
 			// create HTML report
-			toHTML("report.html", report);
+			report.toHTML("report.html");
 
 			// update work item description
 			auto newWorkItemDesc = desc.toIR(mgr);
@@ -1140,7 +1140,7 @@ namespace core {
 		},false,true);
 
 		// check whether there is something to do
-		ConversionReport report;
+		reporting::ConversionReport report;
 		if (precCalls.empty()) return ConversionResult { report, code };
 
 

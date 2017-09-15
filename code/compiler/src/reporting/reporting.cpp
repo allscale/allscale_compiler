@@ -2,6 +2,7 @@
 
 #include <iomanip>
 
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
 #include "insieme/utils/name_mangling.h"
@@ -11,11 +12,257 @@
 #include "insieme/core/annotations/source_location.h"
 #include "insieme/core/lang/lang.h"
 
+#include "allscale/compiler/config.h"
+
 using namespace insieme::core;
 
 namespace allscale {
 namespace compiler {
 namespace reporting {
+
+	namespace {
+
+		boost::property_tree::ptree locationToPropertyTree(const NodeAddress& target) {
+			boost::property_tree::ptree loc;
+			loc.put<string>("address", toString(target));
+
+			if(auto binding = target.isa<LambdaBindingAddress>()) {
+				loc.put<string>("name", insieme::utils::demangle(binding->getReference()->getName()->getValue()));
+			}
+			else if(auto lambda = target.isa<LambdaExprAddress>()) {
+				loc.put<string>("name", insieme::utils::demangle(lambda->getReference()->getName()->getValue()));
+			}
+
+			if(auto location = annotations::getLocation(target)) {
+				loc.put<string>("location", toString(*location));
+
+				if(auto source_file = std::fstream(location->getFile())) {
+					std::stringstream ss;
+
+					// goto first line
+					for(unsigned i = 1; i < location->getStart().getLine(); i++) {
+						source_file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+					}
+
+					// collect
+					std::string line;
+					for(unsigned i = location->getStart().getLine(); i <= location->getEnd().getLine(); i++) {
+						std::getline(source_file, line);
+						ss << line << "\n";
+					}
+
+					loc.put<string>("source", ss.str());
+				}
+			}
+
+			if(lang::isBuiltIn(target.getAddressedNode())) {
+				loc.put<bool>("is_builtin", true);
+			}
+
+			return loc;
+		}
+
+		boost::property_tree::ptree toPropertyTree(const Issue & issue) {
+			boost::property_tree::ptree ret;
+			ret.put<string>("error_code", toString(issue.getErrorCode()));
+			ret.put<string>("target", toString(issue.getTarget()));
+			ret.put<string>("severity", toString(issue.getSeverity()));
+			ret.put<string>("category", toString(issue.getCategory()));
+			ret.put<string>("message", issue.getMessage());
+
+			if(const auto& details = issue.getDetail()) {
+				ret.push_back(make_pair("details", details->toPropertyTree()));
+			}
+
+			// tags
+			boost::property_tree::ptree tags;
+			for(const auto& tag : issue.getTags()) {
+				tags.push_back(make_pair("", boost::property_tree::ptree(toString(tag))));
+			}
+			if(!tags.empty()) {
+				ret.push_back(make_pair("tags", tags));
+			}
+
+			// loc
+			ret.push_back(make_pair("loc", locationToPropertyTree(issue.getTarget())));
+
+			// backtrace
+			{
+				boost::property_tree::ptree backtrace;
+
+				auto target = issue.getTarget();
+				auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+				while(binding) {
+					auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+					backtrace.push_back(make_pair("", locationToPropertyTree(lambdaexpr)));
+
+					binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+				}
+
+				ret.push_back(make_pair("backtrace", backtrace));
+			}
+
+			return ret;
+		}
+
+		boost::property_tree::ptree toPropertyTree(const Issues & issues) {
+			boost::property_tree::ptree ret;
+			for(const auto& issue : issues) {
+				ret.push_back(make_pair("", toPropertyTree(issue)));
+			}
+			return ret;
+		}
+
+		boost::property_tree::ptree toPropertyTree(const ConversionReport& report) {
+
+			// conversions + issues
+			boost::property_tree::ptree conversions;
+			for(const auto& p : report.issues) {
+				boost::property_tree::ptree entry;
+
+				// original target
+				auto target = p.first;
+				entry.push_back(make_pair("loc", locationToPropertyTree(target)));
+
+				// locating user code
+				{
+					using namespace insieme::core;
+
+					auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+					while(binding) {
+						auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
+
+						if(auto location = annotations::getLocation(lambdaexpr)) {
+							if(!containsSubString(location->getFile(), "include/allscale/api")) {
+								// found user code
+								entry.push_back(make_pair("loc_user", locationToPropertyTree(lambdaexpr)));
+								break;
+							}
+						}
+
+						binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
+					}
+				}
+
+				entry.push_back(make_pair("issues", toPropertyTree(p.second.first)));
+
+				boost::property_tree::ptree variant_issues;
+				{
+					int variant_counter = 0;
+					for(const auto& pp : p.second.second) {
+						variant_issues.push_back(make_pair(toString(++variant_counter), toPropertyTree(pp.second)));
+					}
+				}
+				entry.push_back(make_pair("variant_issues", variant_issues));
+
+				conversions.push_back(make_pair(toString(target), entry));
+			}
+
+			// collect help messages
+			boost::property_tree::ptree help_messages;
+			{
+				std::set<ErrorCode> errors;
+				for(const auto& p : report.issues) {
+					for (const auto& issue : p.second.first) {
+						errors.insert(issue.getErrorCode());
+					}
+					for(const auto& pp : p.second.second) {
+						for(const auto& issue : pp.second) {
+							errors.insert(issue.getErrorCode());
+						}
+					}
+				}
+
+				for (const auto& err : errors) {
+					if (auto msg = lookupHelpMessage(err)) {
+						help_messages.put<string>(toString(err), *msg);
+					}
+				}
+			}
+
+			boost::property_tree::ptree ret;
+			ret.push_back(make_pair("conversions", conversions));
+			ret.push_back(make_pair("help_messages", help_messages));
+			return ret;
+		}
+
+	}
+
+	std::ostream& operator<<(std::ostream& out, const ConversionReport& report) {
+
+		out << "\n";
+		out << " ------ AllScale Code Generation Report ------\n";
+
+		out << "  Number of processed parallel regions: " << report.issues.size() << "\n";
+
+		out << " ---------------------------------------------\n";
+
+		int region_counter = 0;
+		for(const auto& p : report.issues) {
+			const auto& issues = p.second.first;
+			const auto& variants = p.second.second;
+
+			out << "Processed parallel region #" << (++region_counter) << ":\n";
+
+			// output issues not associated with a specific variant
+			for(const auto& issue : issues) {
+				out << "\t" << issue << "\n";
+			}
+
+			// output issues associated with a specific variant
+			int variant_counter = 0;
+			for(const auto& pp : variants) {
+				const auto& issues = pp.second;
+
+				out << "\tVariant #" << (++variant_counter) << "\n";
+				for(const auto& issue : issues) {
+					out << "\t\t" << issue << "\n";
+				}
+			}
+
+		}
+
+		out << " ---------------------------------------------\n";
+
+		return out;
+	}
+
+	void ConversionReport::toJSON(const std::string& filename) const {
+		write_json(filename, toPropertyTree(*this));
+	}
+
+	void ConversionReport::toJSON(std::ostream& out) const {
+		write_json(out, toPropertyTree(*this));
+	}
+
+	void ConversionReport::toHTML(const std::string& filename) const {
+		auto report_template = getAllscaleBuildRootDir() + "/report.out.html"; // generated by CMake
+		std::ifstream in(report_template);
+		assert_true(in)  << "could not open template for conversion report";
+		in >> std::noskipws;
+
+		std::ofstream out(filename);
+		assert_true(out) << "could not open output file for conversion report";
+
+		std::stringstream report_buffer;
+		write_json(report_buffer, toPropertyTree(*this));
+
+		std::stringstream timestamp;
+		{
+			std::time_t t = std::time(nullptr);
+			timestamp << std::asctime(std::localtime(&t));
+		}
+
+		while(in) {
+			std::string line;
+			std::getline(in, line);
+
+			boost::replace_all(line, "%REPORT%",   report_buffer.str());
+			boost::replace_all(line, "%DATETIME%", timestamp.str());
+
+			out << line << "\n";
+		}
+	}
 
 	std::ostream& operator<<(std::ostream& out, ErrorCode err) {
 		auto flags = out.flags();
@@ -145,97 +392,6 @@ namespace reporting {
 
 		// print target nesting information
 		prettyPrintLocation(out, issue.getTarget(),disableColorization,printNodeAddress);
-	}
-
-	boost::property_tree::ptree locationToPropertyTree(const NodeAddress& target) {
-		boost::property_tree::ptree loc;
-		loc.put<string>("address", toString(target));
-
-		if(auto binding = target.isa<LambdaBindingAddress>()) {
-			loc.put<string>("name", insieme::utils::demangle(binding->getReference()->getName()->getValue()));
-		}
-		else if(auto lambda = target.isa<LambdaExprAddress>()) {
-			loc.put<string>("name", insieme::utils::demangle(lambda->getReference()->getName()->getValue()));
-		}
-
-		if(auto location = annotations::getLocation(target)) {
-			loc.put<string>("location", toString(*location));
-
-			if(auto source_file = std::fstream(location->getFile())) {
-				std::stringstream ss;
-
-				// goto first line
-				for(unsigned i = 1; i < location->getStart().getLine(); i++) {
-					source_file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				}
-
-				// collect
-				std::string line;
-				for(unsigned i = location->getStart().getLine(); i <= location->getEnd().getLine(); i++) {
-					std::getline(source_file, line);
-					ss << line << "\n";
-				}
-
-				loc.put<string>("source", ss.str());
-			}
-		}
-
-		if(lang::isBuiltIn(target.getAddressedNode())) {
-			loc.put<bool>("is_builtin", true);
-		}
-
-		return loc;
-	}
-
-	boost::property_tree::ptree toPropertyTree(const Issue & issue) {
-		boost::property_tree::ptree ret;
-		ret.put<string>("error_code", toString(issue.getErrorCode()));
-		ret.put<string>("target", toString(issue.getTarget()));
-		ret.put<string>("severity", toString(issue.getSeverity()));
-		ret.put<string>("category", toString(issue.getCategory()));
-		ret.put<string>("message", issue.getMessage());
-
-		if(const auto& details = issue.getDetail()) {
-			ret.push_back(make_pair("details", details->toPropertyTree()));
-		}
-
-		// tags
-		boost::property_tree::ptree tags;
-		for(const auto& tag : issue.getTags()) {
-			tags.push_back(make_pair("", boost::property_tree::ptree(toString(tag))));
-		}
-		if(!tags.empty()) {
-			ret.push_back(make_pair("tags", tags));
-		}
-
-		// loc
-		ret.push_back(make_pair("loc", locationToPropertyTree(issue.getTarget())));
-
-		// backtrace
-		{
-			boost::property_tree::ptree backtrace;
-
-			auto target = issue.getTarget();
-			auto binding = target.getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
-			while(binding) {
-				auto lambdaexpr = binding.getFirstParentOfType(NodeType::NT_LambdaExpr);
-				backtrace.push_back(make_pair("", locationToPropertyTree(lambdaexpr)));
-
-				binding = binding.getParentAddress().getFirstParentOfType(NodeType::NT_LambdaBinding).as<LambdaBindingAddress>();
-			}
-
-			ret.push_back(make_pair("backtrace", backtrace));
-		}
-
-		return ret;
-	}
-
-	boost::property_tree::ptree toPropertyTree(const Issues & issues) {
-		boost::property_tree::ptree ret;
-		for(const auto& issue : issues) {
-			ret.push_back(make_pair("", toPropertyTree(issue)));
-		}
-		return ret;
 	}
 
 } // end namespace reporting

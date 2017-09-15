@@ -16,13 +16,6 @@ namespace core {
 	// -- Declarations -----------------------------------------------------------------
 
 	/**
-	 * A conversion report is produced by the core conversion process along with
-	 * the conversion result. The report contains information regarding the conversion
-	 * process to be forwarded to the user.
-	 */
-	struct ConversionReport;
-
-	/**
 	 * A conversion result is merely the combination of a conversion report and the
 	 * converted code structure.
 	 */
@@ -56,51 +49,12 @@ namespace core {
 	 */
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback = detail::ignoreProgress);
 
-	boost::property_tree::ptree toPropertyTree(const ConversionReport& report);
-
-	void toJSON(const std::string& filename, const ConversionReport& report);
-
-	void toJSON(std::ostream& out, const ConversionReport& report);
-
-	void toHTML(const std::string& filename, const ConversionReport& report);
-
 	// -- Definitions ------------------------------------------------------------------
-
-	struct ConversionReport {
-
-		using PrecCall = insieme::core::CallExprAddress;
-
-		using VariantId = int;
-
-		using VariantIssues = std::map<VariantId, reporting::Issues>;
-
-		// the collected issues, indexed by the prec operator location
-		std::map<PrecCall, std::pair<reporting::Issues, VariantIssues>> issues;
-
-		void addMessage(const PrecCall& prec, const reporting::Issue& issue) {
-			issues[prec].first.insert(issue);
-		}
-
-		void addMessage(const PrecCall& prec, const VariantId& variant, const reporting::Issue& issue) {
-			issues[prec].second[variant].insert(issue);
-		}
-
-		void addMessages(const PrecCall& prec, const reporting::Issues& is) {
-			issues[prec].first.insert(is.begin(), is.end());
-		}
-
-		void addMessages(const PrecCall& prec, const VariantId& variant, const reporting::Issues& is) {
-			issues[prec].second[variant].insert(is.begin(), is.end());
-		}
-
-	};
-
-	std::ostream& operator<<(std::ostream& out, const ConversionReport& report);
 
 	struct ConversionResult {
 
 		// the report generated during the generation
-		ConversionReport report;
+		reporting::ConversionReport report;
 
 		// the converted code fragment
 		insieme::core::NodePtr result;

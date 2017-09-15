@@ -13,6 +13,52 @@ namespace allscale {
 namespace compiler {
 namespace reporting {
 
+	class Issue;
+
+	using Issues = std::set<Issue>;
+
+	/**
+	 * A conversion report is produced by the core conversion process along with
+	 * the conversion result. The report contains information regarding the conversion
+	 * process to be forwarded to the user.
+	 */
+	struct ConversionReport {
+
+		using PrecCall = insieme::core::CallExprAddress;
+
+		using VariantId = int;
+
+		using VariantIssues = std::map<VariantId, Issues>;
+
+		// the collected issues, indexed by the prec operator location
+		std::map<PrecCall, std::pair<Issues, VariantIssues>> issues;
+
+		void addMessage(const PrecCall& prec, const Issue& issue) {
+			issues[prec].first.insert(issue);
+		}
+
+		void addMessage(const PrecCall& prec, const VariantId& variant, const Issue& issue) {
+			issues[prec].second[variant].insert(issue);
+		}
+
+		void addMessages(const PrecCall& prec, const Issues& is) {
+			issues[prec].first.insert(is.begin(), is.end());
+		}
+
+		void addMessages(const PrecCall& prec, const VariantId& variant, const Issues& is) {
+			issues[prec].second[variant].insert(is.begin(), is.end());
+		}
+
+		void toJSON(const std::string& filename) const;
+
+		void toJSON(std::ostream& out) const;
+
+		void toHTML(const std::string& filename) const;
+
+	};
+
+	std::ostream& operator<<(std::ostream& out, const ConversionReport& report);
+
 	/**
 	 * Error Code to easily identify a given Issue.
 	 */
@@ -174,17 +220,9 @@ namespace reporting {
 
 	};
 
-	using Issues = std::set<Issue>;
-
 	void prettyPrintIssue(std::ostream& out, const Issue& issue, bool disableColorization = false, bool printNodeAddresse = false);
 
 	void prettyPrintLocation(std::ostream& out, const insieme::core::NodeAddress& target, bool disableColorization = false, bool printNodeAddress = false);
-
-	boost::property_tree::ptree locationToPropertyTree(const insieme::core::NodeAddress& target);
-
-	boost::property_tree::ptree toPropertyTree(const Issue& issue);
-
-	boost::property_tree::ptree toPropertyTree(const Issues& issues);
 
 } // end namespace reporting
 } // end namespace compiler
