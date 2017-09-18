@@ -334,6 +334,15 @@ function setupControls() {
 					tags = new Set([...tags, ...issue.tags]);
 				}
 			}
+			for (var key in conversion.variant_issues) {
+				var issues = conversion.variant_issues[key];
+				for (var index = 0; index < issues.length; index++) {
+					var issue = issues[index];
+					if (issue.tags) {
+						tags = new Set([...tags, ...issue.tags]);
+					}
+				}
+			}
 		}
 		tags = Array.from(tags);
 
