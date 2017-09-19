@@ -4,27 +4,17 @@ The AllScale compiler is a source-to-source compiler for C++ applications that u
 
 ## Quickstart Guide
 
-This quickstart guide requires GCC 5 (or 6), m4, CMake, bison, flex, pkg-config and Ruby in addition to a standard Linux setup.
-Install them via your distribution's package manager.
-For example, on Ubuntu 16.04 LTS:
-
-    $ sudo apt update
-    $ sudo apt install git build-essential m4 cmake bison flex pkg-config ruby
-
-Then run the following commands:
+To build the AllScale compiler, clone this repository and take a peek at `QUICKSTART`.
+You can directly execute it, given you are running a recent Ubuntu / Debian.
 
     $ git clone --recursive https://github.com/allscale/allscale_compiler
-    $ cd allscale_compiler
-    $ scripts/dependencies/installer
-    $ mkdir build
-    $ cd build
-    $ ../scripts/dependencies/third_party_linker
-    $ cmake ../code
-    $ make -j8
-    $ ctest -j8
+    $ cd insieme
+    $ ./QUICKSTART    # prompts for sudo
 
-This will retrieve, optionally patch and compile all required dependencies (including llvm and HPX) as well as the project itself, and then run the unit tests for the AllScale compiler and the AllScale API.
-On a high-end desktop system, this full process takes about an hour.
+If you are using a different distribution use your package manager to install all dependencies available.
+A list of dependencies can be viewed in the [Dependencies](#dependencies) section of this README.
+
+For software not available in your package manager (or the ones that require a specific patch) use the provided dependency installer inside `/insieme/scripts/dependencies`.
 
 ## Full Build Instructions
 
@@ -39,7 +29,7 @@ Change to a working directory on your system and clone the repository *recursive
 
 ### Structure
 
-The AllScale compiler depends on three external projects, all of which are included as *Git submodules*:
+The AllScale compiler depends on three related projects, all of which are included as *Git submodules*:
 
  - **API**: The AllScale API project
  - **Runtime**: The AllScale runtime project, which in turn depends on HPX.
@@ -49,18 +39,16 @@ The AllScale compiler depends on three external projects, all of which are inclu
 
 AllScale is a project which depends heavily on modern C++ features, and thus requires a compiler implementing C++14.
 
-The dependencies for Insieme and installation instructions for them are detailed [in the README.md file for Insieme](https://github.com/insieme/insieme#dependencies).
-This repository comes with a dependency installer (like Insieme) which takes care of installing the required dependencies.
-See its [README](scripts/dependencies/README.md) for additional information.
+All dependencies of the Insieme compiler are required as this project builds on top of it.
+The list of Insieme's dependencies and instructions on how to use its dependency installer can be found in `/insieme/scripts/dependencies/README.md`.
 
-The prerequisites for the HPX runtime system are listed [here](https://github.com/STEllAR-GROUP/hpx#build-instructions).
-The AllScale API submodule and the Allscale compiler itself do not require additional dependencies beyond those necessitated by Insieme and the HPX Runtime system.
+The prerequisites for the HPX runtime system are listed in `/runtime/hpx/README.rst` under *build-instructions*.
 
-To setup the dependencies run the following command.
+Assuming you are running a recent Ubunut / Debian you can use the provided environment setup script to install these dependencies.
 
-    $ scripts/dependencies/installer
+    $ scripts/environment/setup
 
-This line will install the dependencies into `$HOME/third_party_libs`.
+Otherwise consult the dependency installer's README (`/insieme/scripts/dependencies/README.md`).
 
 ### Building the Project
 
@@ -68,7 +56,7 @@ Once the prerequisites are fulfilled, you can build the entire project by callin
 
     $ mkdir build
     $ cd build
-    $ ../scripts/dependencies/third_party_linker
+    $ ../insieme/scripts/dependencies/third_party_linker
     $ cmake ../code
     $ make -j8
 
