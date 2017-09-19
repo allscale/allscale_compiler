@@ -140,3 +140,9 @@ img.logo {
 pre {
     background: #f2f2f2;
 }
+
+/* fix tooltip in button-group */
+.btn-group-vertical > div.tooltip + .btn,
+.btn-group-vertical > div.tooltip + .btn-group {
+    margin-top: -1px;
+}
