@@ -12,6 +12,7 @@ library
                         -O2 -optc-O3
     hs-source-dirs:     src
     exposed-modules:    Allscale.Analysis.Entities.DataRange,
+                        Allscale.Analysis.DataItemAccesses,
                         Allscale.Analysis.DataItemElementReference,
                         Allscale.Analysis.DataRequirements,
                         Allscale.Analysis.Diagnostics,
