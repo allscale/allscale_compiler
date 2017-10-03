@@ -13,6 +13,7 @@ import Foreign.C.Types
 import Insieme.Inspire.NodeAddress
 import System.Timeout (timeout)
 
+import qualified Allscale.Analysis.DataItemAccesses as DIaccess
 import qualified Allscale.Analysis.DataRequirements as Dreq
 import qualified Allscale.Analysis.Diagnostics as Diag
 import qualified Allscale.Analysis.Entities.DataRange as DR
@@ -32,6 +33,9 @@ foreign export ccall "hat_hs_diagnostics"
 
 foreign export ccall "hat_hs_data_requirements"
   dataRequirements :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CRepPtr Dreq.DataRequirements))
+
+foreign export ccall "hat_hs_data_item_accesses"
+  dataItemAccesses :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CSetPtr NodeAddress))
 
 -- * Out Of Bounds
 
@@ -183,3 +187,27 @@ passDataRequirements ctx (Dreq.DataRequirements s) = bracket
     convertAccessMode :: Dreq.AccessMode -> CInt
     convertAccessMode Dreq.ReadOnly = 0
     convertAccessMode Dreq.ReadWrite = 1
+
+
+-- * Data Item Accesses
+
+dataItemAccesses :: StablePtr Ctx.Context -> StablePtr NodeAddress -> IO (AnalysisResultPtr (CSetPtr NodeAddress))
+dataItemAccesses ctx_hs stmt_hs = do
+    ctx  <- deRefStablePtr ctx_hs
+    stmt <- deRefStablePtr stmt_hs
+    timelimit <- fromIntegral <$> getTimelimit (Ctx.getCContext ctx)
+    let ctx_c = Ctx.getCContext ctx
+
+    let (res,ns) = Solver.resolve (Ctx.getSolverState ctx) (DIaccess.dataItemAccesses stmt)
+    ctx_new_hs <- newStablePtr $ ctx { Ctx.getSolverState = ns }
+
+    --let results = Ref.unRS $ ComposedValue.toValue res :: BSet.UnboundSet (Ref.Reference FieldIndex.SimpleFieldIndex)
+    result <- timeout timelimit $ serialize ctx_c res
+    case result of
+        Just r  -> allocAnalysisResult ctx_new_hs False r
+        Nothing -> allocAnalysisResult ctx_hs True =<< serialize ctx_c Solver.top
+  where
+    serialize ctx_c results = passBoundSet (passNodeAddress ctx_c) mkCNodeAddressSet
+                            $ case results of
+                                DIaccess.DataItemAccesses s -> s
+

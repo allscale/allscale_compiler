@@ -1,0 +1,2 @@
+compFlags[insiemecc_seq_cpp_convert]="--check-data-item-accesses"
+compFlags[insiemecc_seq_cpp_compile]="-DALLSCALE_RUNTIME_WITH_DATA_REQUIREMENT_CHECKS=On"

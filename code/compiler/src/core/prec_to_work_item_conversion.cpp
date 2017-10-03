@@ -13,6 +13,7 @@
 #include "allscale/compiler/backend/allscale_runtime_entities.h"
 #include "allscale/compiler/allscale_utils.h"
 
+#include "allscale/compiler/analysis/data_item_access.h"
 #include "allscale/compiler/analysis/data_requirement.h"
 #include "allscale/compiler/env_vars.h"
 
@@ -990,10 +991,80 @@ namespace core {
 				return res;
 			}
 
+			/**
+			 * Instruments all work item accesses.
+			 */
+			void instrumentDataItemAccesses(reporting::ConversionReport& report, analysis::AnalysisContext& context, const CallExprAddress& precCall, backend::WorkItemVariant& variant, int variantId) {
+
+				auto& mgr = precCall->getNodeManager();
+				IRBuilder builder(mgr);
+
+				const auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
+				const auto& beExt = mgr.getLangExtension<backend::AllScaleBackendModule>();
+
+				auto impl = variant.getImplementation();
+				auto body = impl->getBody();
+
+				// step 1: get all data item accesses
+				auto optional_accesses = analysis::getDataItemAccesses(context,body);
+
+				// check the result
+				if (!optional_accesses || optional_accesses->isUniversal()) {
+					// unable to obtain (accurate) list of accesses, skipping instrumentation
+					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::UnableToInstrumentVariantForDataItemAccessCheck));
+					return;
+				}
+
+				// extract real accesses
+				auto accesses = std::move(*optional_accesses);
+
+				// step 2: replace accesses by checked accesses
+				for(const auto& cur : accesses) {
+
+					// update the target
+					auto trg = cur.switchRoot(body).as<ExpressionAddress>();
+
+					// add instrumentation
+					core::CallExprPtr call = trg.getAddressedNode().as<CallExprPtr>();
+
+					// redirect the target to the addressed memory location
+					trg = trg.as<CallExprAddress>()->getArgument(0);
+					NodePtr newTrg;
+					if (refExt.isCallOfRefDeref(call)) {
+						newTrg = builder.callExpr(beExt.getDataItemCheckReadAccess(),trg.getAddressedNode());
+					} else if (refExt.isCallOfRefAssign(call)) {
+						newTrg = builder.callExpr(beExt.getDataItemCheckWriteAccess(),trg.getAddressedNode());
+					} else {
+						assert_fail() << "Unsupported case: neighter read nor write?";
+					}
+
+					// apply replacement
+					body = core::transform::replaceNode(mgr,trg,newTrg).as<CompoundStmtPtr>();
+				}
+
+				// update implementation
+				variant.setImplementation(core::transform::replaceNode(
+						mgr, LambdaExprAddress(impl)->getBody(),body
+					).as<LambdaExprPtr>());
+
+				// check correctness
+				assert_correct_ir(variant.getImplementation());
+
+				// report successful instrumentation
+				report.addMessage(precCall, variantId,
+						reporting::Issue(
+							precCall,
+							reporting::ErrorCode::InstrumentedVariantForDataItemAccessCheck,
+							format("Total number of accesses: %d", accesses.size())
+						)
+				);
+
+			}
+
 		}
 
 
-		ExpressionPtr integrateDataRequirements(const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
+		ExpressionPtr integrateDataRequirements(const ConversionConfig& config, const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
 			const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
 
 			// this feature may be skipped for now
@@ -1082,6 +1153,11 @@ namespace core {
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
 				report.addMessages(precCall, counter, issues);
 
+				// integrate data item access instrumentation
+				if (config.checkDataItemAccesses) {
+					instrumentDataItemAccesses(report, context, precCall, variant, counter);
+				}
+
 				// print some debug information
 				if (debug) {
 					// dump analysis statistics
@@ -1115,7 +1191,7 @@ namespace core {
 	/**
 	 * Converts prec calls in the given input program to work item constructs.
 	 */
-	ConversionResult convertPrecToWorkItem(const NodePtr& code, const ProgressCallback& callback) {
+	ConversionResult convertPrecToWorkItem(const ConversionConfig& config, const NodePtr& code, const ProgressCallback& callback) {
 
 		// replace all prec calls with prec_operations and strip prec operator unwrapper
 		auto& mgr = code->getNodeManager();
@@ -1208,7 +1284,7 @@ namespace core {
 			);
 
 			// add data requirement dependencies
-			res = integrateDataRequirements(res,report,firstAddress,index);
+			res = integrateDataRequirements(config,res,report,firstAddress,index);
 
 			// done
 			return res;

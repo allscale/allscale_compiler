@@ -300,17 +300,19 @@ namespace reporting {
 
 	ErrorDetails lookupDetails(ErrorCode err) {
 		switch(err) {
-		case ErrorCode::Timeout:                                        return {Severity::Warning, {},                        Category::Basic, "Timeout"};
-		case ErrorCode::CallToUnknownFunction:                          return {Severity::Warning, {},                        Category::Basic, "Call to unknown function"};
-		case ErrorCode::ReadAccessToUnknownLocation:                    return {Severity::Error,   {Tag::Read},               Category::Basic, "Read access to unknown location"};
-		case ErrorCode::WriteAccessToUnknownLocation:                   return {Severity::Error,   {Tag::Write},              Category::Basic, "Write access to unknown location"};
-		case ErrorCode::ReadAccessToGlobal:                             return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Read access to global"};
-		case ErrorCode::WriteAccessToGlobal:                            return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Write access to global"};
-		case ErrorCode::ReadAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Read},               Category::Basic, "Unable to determine data item element reference targeted by read operation"};
-		case ErrorCode::WriteAccessToPotentialDataItemElementReference: return {Severity::Error,   {Tag::Write},              Category::Basic, "Unable to determine data item element reference targeted by write operation"};
-		case ErrorCode::UnobtainableDataRequirement:                    return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirement"};
-		case ErrorCode::ObtainedDataRequirement:                        return {Severity::Info,    {},                        Category::Basic, "Obtained data requirement"};
-		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:   return {Severity::Info,    {},                        Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+		case ErrorCode::Timeout:                                         return {Severity::Warning, {},                        Category::Basic, "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                           return {Severity::Warning, {},                        Category::Basic, "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                     return {Severity::Error,   {Tag::Read},               Category::Basic, "Read access to unknown location"};
+		case ErrorCode::WriteAccessToUnknownLocation:                    return {Severity::Error,   {Tag::Write},              Category::Basic, "Write access to unknown location"};
+		case ErrorCode::ReadAccessToGlobal:                              return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Read access to global"};
+		case ErrorCode::WriteAccessToGlobal:                             return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:   return {Severity::Error,   {Tag::Read},               Category::Basic, "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Write},              Category::Basic, "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::UnobtainableDataRequirement:                     return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirement"};
+		case ErrorCode::ObtainedDataRequirement:                         return {Severity::Info,    {},                        Category::Basic, "Obtained data requirement"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:    return {Severity::Info,    {},                        Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
+		case ErrorCode::UnableToInstrumentVariantForDataItemAccessCheck: return {Severity::Error,   {},                        Category::Basic, "Unable to instrument data item accesses as requested due to unknown targets of read/write operations."};
+		case ErrorCode::InstrumentedVariantForDataItemAccessCheck:       return {Severity::Info,    {},                        Category::Basic, "Successfully instrumented data item accesses."};
 		};
 		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
 		return {};

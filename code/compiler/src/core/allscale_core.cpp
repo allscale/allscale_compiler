@@ -19,6 +19,10 @@ namespace compiler {
 namespace core {
 
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback) {
+		return convert(ConversionConfig(),code,callback);
+	}
+
+	ConversionResult convert(const ConversionConfig& config, const insieme::core::NodePtr& code, const ProgressCallback& callback) {
 
 		// make sure the input is correct
 		assert_correct_ir(code);
@@ -37,7 +41,7 @@ namespace core {
 		res = convertDataItemReferences(res, callback);
 
 		// Step 4: convert prec calls
-		auto precConversionResult = convertPrecToWorkItem(res, callback);
+		auto precConversionResult = convertPrecToWorkItem(config, res, callback);
 		res = precConversionResult.result;
 
 		// Step 5: convert the entry point into a work item

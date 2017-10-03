@@ -92,6 +92,10 @@ namespace backend {
 			return implementation;
 		}
 
+		insieme::core::LambdaExprPtr setImplementation(const insieme::core::LambdaExprPtr& impl) {
+			return implementation = impl;
+		}
+
 		insieme::core::TypePtr getResultType() const;
 
 		insieme::core::TupleTypePtr getClosureType() const;

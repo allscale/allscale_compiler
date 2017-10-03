@@ -16,6 +16,16 @@ namespace core {
 	// -- Declarations -----------------------------------------------------------------
 
 	/**
+	 * A configuration type for the conversion process.
+	 */
+	struct ConversionConfig {
+
+		// will enable / disable runtime based data item access checks
+		bool checkDataItemAccesses = false;
+
+	};
+
+	/**
 	 * A conversion result is merely the combination of a conversion report and the
 	 * converted code structure.
 	 */
@@ -44,10 +54,23 @@ namespace core {
 	 * the prec operator of the AllScale API into a program utilizing the primitives
 	 * supported by the AllScale runtime system.
 	 *
+	 * @param config a configuration for the conversion operation
+	 * @param code the code fragment to be converted
+	 * @param callback an optional parameter for monitoring the conversion process
+	 */
+	ConversionResult convert(const ConversionConfig& config, const insieme::core::NodePtr& code, const ProgressCallback& callback = detail::ignoreProgress);
+
+	/**
+	 * The actual core AllScale conversion function, converting a program utilizing
+	 * the prec operator of the AllScale API into a program utilizing the primitives
+	 * supported by the AllScale runtime system. Default configuration options are
+	 * utilized
+	 *
 	 * @param code the code fragment to be converted
 	 * @param callback an optional parameter for monitoring the conversion process
 	 */
 	ConversionResult convert(const insieme::core::NodePtr& code, const ProgressCallback& callback = detail::ignoreProgress);
+
 
 	// -- Definitions ------------------------------------------------------------------
 

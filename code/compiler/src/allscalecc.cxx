@@ -45,6 +45,9 @@ int main(int argc, char** argv) {
 	// Allows the AllScale driver to dump an input code as JSON.
 	insieme::frontend::path dumpJSON;
 
+	// Allows to enable the instrumentation of data item accesses (for access validation and statistics)
+	bool checkDataItemAccesses;
+
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
@@ -53,9 +56,10 @@ int main(int argc, char** argv) {
 	commonOptions.addFlagsAndParameters(parser);
 
 	// register allscalecc specific flags and parameters
-	parser.addParameter(",O",        opt_level,     0u,                        "optimization level");
-	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(), "dump intermediate representation (JSON)");
-	parser.addParameter("backend",   backendString, std::string(""),           "backend selection (for compatibility reasons - ignored)");
+	parser.addParameter(",O",        opt_level,     0u,                         "optimization level");
+	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),  "dump intermediate representation (JSON)");
+	parser.addParameter("backend",   backendString, std::string(""),            "backend selection (for compatibility reasons - ignored)");
+	parser.addFlag("check-data-item-accesses",      checkDataItemAccesses,      "enables data item access instrumentation (debugging)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -147,7 +151,9 @@ int main(int argc, char** argv) {
 
 	// Step 4: apply source-to-source conversions
 	std::cout << "Converting to AllScale Runtime code ... \n" << std::flush;
-	auto summary = allscale::compiler::core::convert(program,[&](const allscale::compiler::core::ProgressUpdate& update){
+	allscale::compiler::core::ConversionConfig conversionConfig;
+	conversionConfig.checkDataItemAccesses = checkDataItemAccesses;
+	auto summary = allscale::compiler::core::convert(conversionConfig,program,[&](const allscale::compiler::core::ProgressUpdate& update){
 		std::cout << "\t" << update.msg;
 		if (update.totalSteps > 0) {
 			std::cout << " ("<< update.completedSteps << "/" << update.totalSteps << ")";
@@ -189,7 +195,10 @@ int main(int argc, char** argv) {
 
 	// Step 6: built the resulting binary
 	std::cout << "Compiling target code (-O" << opt_level << ") ... " << std::flush;
-	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), opt_level);
+	allscale::compiler::backend::CompilerConfig compilerConfig;
+	compilerConfig.optimization_level = opt_level;
+	compilerConfig.checkDataItemAccesses = checkDataItemAccesses;
+	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), compilerConfig);
 	std::cout << timer.step() << "s\n";
 
 	// return result

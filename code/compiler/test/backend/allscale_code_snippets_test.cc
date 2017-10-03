@@ -40,8 +40,7 @@ namespace backend {
 		// get a temporary file path
 		auto tmp = fs::unique_path(fs::temp_directory_path() / "allscale-trg-%%%%%%%%");
 
-//		bool res = compileTo(code, tmp, 0, true);
-		bool res = compileTo(code, tmp, 0);
+		bool res = compileTo(code, tmp);
 
 		// delete the temporary
 		if (res) fs::remove(tmp);

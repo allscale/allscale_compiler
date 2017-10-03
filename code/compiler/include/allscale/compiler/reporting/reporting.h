@@ -74,6 +74,8 @@ namespace reporting {
 		UnobtainableDataRequirement,
 		ObtainedDataRequirement,
 		ConvertParRegionToSharedMemoryParRuntimeCode,
+		UnableToInstrumentVariantForDataItemAccessCheck,
+		InstrumentedVariantForDataItemAccessCheck,
 	};
 
 	std::ostream& operator<<(std::ostream& out, ErrorCode err);

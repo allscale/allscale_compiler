@@ -67,7 +67,7 @@ namespace backend {
 		return AllScaleBackend().convert(code);
 	}
 
-	bool compileTo(const be::TargetCodePtr& code, const boost::filesystem::path& targetBinary, unsigned optimization_level, bool syntax_only) {
+	bool compileTo(const be::TargetCodePtr& code, const boost::filesystem::path& targetBinary, const CompilerConfig& config) {
 		namespace ic = insieme::utils::compiler;
 
 		// check the input code
@@ -79,10 +79,12 @@ namespace backend {
 		// - customize compiler -
 
 		// optimization level
-		compiler.addFlag(format("-O%d", optimization_level));
+		compiler.addFlag(format("-O%d", config.optimization_level));
 
-		// add syntax only flag
-		if (syntax_only) compiler.addFlag("-fsyntax-only");
+		// add code instrumentation definition
+		if (config.checkDataItemAccesses) {
+			compiler.addFlag("-DALLSCALE_RUNTIME_WITH_DATA_REQUIREMENT_CHECKS=On");
+		}
 
 		// include directories
 		compiler.addIncludeDir(getAllscaleAPICoreIncludeDir());

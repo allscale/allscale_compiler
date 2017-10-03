@@ -83,10 +83,17 @@ namespace backend {
 		LANG_EXT_LITERAL(DataItemRangeSpan,  "art_data_item_range_span",  "('a,'a) -> 'a");
 
 
+		// --- data item access checks ---
+
+		LANG_EXT_LITERAL(DataItemCheckReadAccess,  "art_data_item_check_read",  "(ref<'a,'c,'v,'k>) -> ref<'a,'c,'v,'k>");
+		LANG_EXT_LITERAL(DataItemCheckWriteAccess, "art_data_item_check_write", "(ref<'a, f,'v,'k>) -> ref<'a, f,'v,'k>");
+
 		// --- misc ---
 
 		// a primitive for converting captured references from the pointer within the closure struct to a reference
 		LANG_EXT_LITERAL(RefRefPlainToRefRefCpp,  "art_ref_ref_plain_to_ref_ref_cpp",  "(ref<ref<'a,'c1,'v1,plain>,'c2,'v2,'k>)->ref<ref<'a,'c1,'v1,cpp_ref>,'c2,'v2,'k>");
+
+
 
 	};
 

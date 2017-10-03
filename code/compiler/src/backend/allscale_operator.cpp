@@ -224,6 +224,46 @@ namespace backend {
 				// done
 				return res;
 			};
+
+			table[ext.getDataItemCheckReadAccess()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::check_read");
+
+				// create call
+				auto res = c_ast::call(trg);
+
+				// add parameters
+				for(const auto& cur : call->getArgumentList()) {
+					res->arguments.push_back(c_ast::deref(CONVERT_EXPR(cur)));
+				}
+
+				// done
+				return c_ast::ref(res);
+			};
+
+			table[ext.getDataItemCheckWriteAccess()] = OP_CONVERTER {
+
+				// add dependencies
+				ADD_HEADER("allscale/runtime.hpp");
+
+				// get a literal of the targeted function
+				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::runtime::check_write");
+
+				// create call
+				auto res = c_ast::call(trg);
+
+				// add parameters
+				for(const auto& cur : call->getArgumentList()) {
+					res->arguments.push_back(c_ast::deref(CONVERT_EXPR(cur)));
+				}
+
+				// done
+				return c_ast::ref(res);
+			};
 		}
 
 
