@@ -6,13 +6,12 @@ module Allscale.Analysis.Diagnostics where
 --import Debug.Trace
 
 import Control.DeepSeq (NFData)
-import Data.Maybe
 import Data.Set (Set)
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import Allscale.Analysis.DataItemElementReference
-import Insieme.Analysis.Callable
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
+import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.Reference
@@ -39,6 +38,10 @@ newtype Issues = Issues (Set Issue)
 instance Solver.Lattice Issues where
     bot = Issues Set.empty
     Issues x `merge` Issues y = Issues $ Set.union x y
+
+instance Solver.ExtLattice Issues where
+    top = undefined
+
 
 mkOneIssue :: Issue -> Issues
 mkOneIssue = Issues . Set.singleton
@@ -72,91 +75,30 @@ runDiagnostics s addr diags = (Solver.join issues, ns)
 
 type DiagnosisFunction = NodeAddress -> Solver.TypedVar Issues
 
-data Diagnosis = Diagnosis { varGen        :: NodeAddress -> Solver.TypedVar Issues
-                           , analysis      :: Solver.AnalysisIdentifier
-                           , opHandler     :: [OperatorHandler Issues]
-                           , unknownTarget :: NodeAddress -> Issues
-                           }
+-- a configuration struct for the generic diagnosis interface
+data Diagnosis a = Diagnosis { analysisToken        :: a
+                             , analysisName         :: String
+                             , varGen               :: NodeAddress -> Solver.TypedVar Issues
+                             , operatorHandler      :: [OperatorHandler Issues]
+                             }
 
-diagnosis :: Diagnosis -> NodeAddress -> Solver.TypedVar Issues
-diagnosis diag addr = case getNode addr of
-
-    -- types have no issues
-    n | isType n -> noIssues
-
-    -- also literals have no issues
-    IR.Node IR.Literal _ -> noIssues
-
-    -- also variables have no issues
-    IR.Node IR.Variable _ -> noIssues
-
-    -- also lambda expressions have no issues
-    IR.Node IR.LambdaExpr _ | not (isEntryPoint addr) -> noIssues
-
-    -- for call expressions, we have to apply special rules
-    IR.Node IR.CallExpr _ -> var
-      where
-        var = Solver.mkVariable varId cons Solver.bot
-        cons = callTargetConstraint : childConstraints var
-
-        callTargetConstraint = Solver.createConstraint dep val var
-          where
-            dep a = Solver.toVar callableVar : (localIssueVars a) ++ (Solver.toVar <$> callableBodyVars a)
-
-            val a = Solver.join (callTargetIssues a : unknownTargetIssues a : localIssues a)
-
-            -- get access to functions targeted by this call
-            callableVar = callableValue $ goDown 1 addr
-            callableVal a = toValue $ Solver.get a callableVar
-
-            callableBodyVars a = case () of
-                _ | BSet.isUniverse callTargets -> []
-                _                               -> foldr go [] $ BSet.toList callTargets
-                  where
-                    go (Lambda addr) bs = (varGen diag $ goDown 2 addr) : bs
-                    go _ bs = bs
-              where
-                callTargets = callableVal a
-
-            -- aggregate data requirements of call targets
-            callTargetIssues a = Solver.join $ Solver.get a <$> callableBodyVars a
-
-            -- add data requirements in case of unknown call targets
-            unknownTargetIssues a = case () of
-                _ | BSet.isUniverse $ callableVal a -> unknownTarget diag $ goDown 1 addr
-                _                                   -> Solver.bot
-
-            getActiveOperators a = if BSet.isUniverse targets then [] else concatMap f (opHandler diag)
-                where
-                    targets = callableVal a
-                    f o = mapMaybe go $ BSet.toList targets
-                        where
-                            go l = if covers o trg then Just (o,trg) else Nothing
-                                where
-                                    trg = toAddress l
-
-            localIssueVars a = concat $ map go $ getActiveOperators a
-                where
-                    go (o,t) = dependsOn o t a
-
-            localIssues a = map go $ getActiveOperators a
-                where
-                    go (o,t) = getValue o t a
-
-    -- for everything else we aggregate the requirements of the child nodes
-    _ -> var
-      where
-        var = Solver.mkVariable varId (childConstraints var) Solver.bot
-
+-- a generic diagnosis implementation
+diagnosis :: (Typeable a) => Diagnosis a -> NodeAddress -> Solver.TypedVar Issues
+diagnosis diag addr = executionTreeValue analysis addr
   where
-    -- the standard-child-aggregation constraints
-    childConstraints var = map go $ getChildren addr
-      where
-        go addr = Solver.forward (varGen diag addr) var
 
-    noIssues = Solver.mkVariable varId [] Solver.bot
-    idGen = Solver.mkIdentifierFromExpression $ analysis diag
-    varId = idGen addr
+    -- configure the underlying execution tree analysis
+    analysis = (mkExecutionTreeAnalysis (analysisToken diag) ("DIAG_" ++ analysisName diag) (varGen diag)) {
+
+        -- register analysis specific operator handler
+        opHandler = operatorHandler diag,
+
+        -- all unhandled operators have no issues
+        unhandledOperatorHandler = \_ -> Solver.bot,
+
+        -- all diagnoses have problems with unknown targets
+        unknownTargetHandler = \addr -> mkOneIssue $ Issue addr CallToUnknownFunction ""
+    }
 
 
 -- * Diagnoses
@@ -167,10 +109,7 @@ data UnknownReferenceDiagnosis = UnknownReferenceDiagnosis
 unknownReferenceDiagnosis :: NodeAddress -> Solver.TypedVar Issues
 unknownReferenceDiagnosis addr = diagnosis diag addr
   where
-    diag = Diagnosis unknownReferenceDiagnosis analysis ops ut
-    analysis = Solver.mkAnalysisIdentifier UnknownReferenceDiagnosis "DIAG_urd"
-
-    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
+    diag = Diagnosis UnknownReferenceDiagnosis "urd" unknownReferenceDiagnosis ops
 
     ops = [readHandler, writeHandler]
 
@@ -197,17 +136,13 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
                                 then [Issue addr err ""]
                                 else []
 
-
 data GlobalVariableDiagnosis = GlobalVariableDiagnosis
   deriving (Typeable)
 
 globalVariableDiagnosis :: NodeAddress -> Solver.TypedVar Issues
 globalVariableDiagnosis addr = diagnosis diag addr
   where
-    diag = Diagnosis globalVariableDiagnosis analysis ops ut
-    analysis = Solver.mkAnalysisIdentifier GlobalVariableDiagnosis "DIAG_global"
-
-    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
+    diag = Diagnosis UnknownReferenceDiagnosis "global" globalVariableDiagnosis ops
 
     ops = [readHandler, writeHandler]
 
@@ -242,10 +177,7 @@ data UncertainAccessDiagnosis = UncertainAccessDiagnosis
 uncertainAccessDiagnosis :: NodeAddress -> Solver.TypedVar Issues
 uncertainAccessDiagnosis addr = diagnosis diag addr
   where
-    diag = Diagnosis uncertainAccessDiagnosis analysis ops ut
-    analysis = Solver.mkAnalysisIdentifier UncertainAccessDiagnosis "DIAG_uncAcc"
-
-    ut addr' = mkOneIssue $ Issue addr' CallToUnknownFunction ""
+    diag = Diagnosis UnknownReferenceDiagnosis "uncAcc" uncertainAccessDiagnosis ops
 
     ops = [readHandler, writeHandler]
 
