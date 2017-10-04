@@ -78,10 +78,6 @@ namespace frontend {
 		runAllscaleTestOn("/inputs/allscale_types.cpp");
 	}
 
-	TEST(AllScaleConversionTest, UtilsVector) {
-		runAllscaleTestOn("/inputs/allscale_utils_vector.cpp");
-	}
-
 } // end namespace frontend
 } // end namespace compiler
 } // end namespace allscale

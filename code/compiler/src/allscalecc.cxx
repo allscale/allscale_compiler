@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 	// configure for AllScale
 	allscale::compiler::frontend::configureConversionJob(options.job);
 
-	// add appropriate macros depending on optimization level 
+	// add appropriate macros depending on optimization level
 	// TODO: invoke backend compiler and retrieve macro definitions?
 	if(opt_level != 0) {
 		options.job.setDefinition("__OPTIMIZE__", "1");
@@ -161,9 +161,11 @@ int main(int argc, char** argv) {
 		std::cout << std::endl;
 	});
 
-	// print the reporting
-	// TODO: move this to a file
+	// print brief reporting
 	std::cout << summary.report << std::endl;
+
+	// create HTML report
+	summary.report.toHTML("report.html");
 
 	// abort if not successful so far
 	if (!summary.successful()) {
