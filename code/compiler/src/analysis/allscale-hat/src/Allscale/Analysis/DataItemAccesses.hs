@@ -60,25 +60,25 @@ data DataItemAccessesAnalysis = DataItemAccessesAnalysis
 dataItemAccesses :: NodeAddress -> Solver.TypedVar DataItemAccesses
 dataItemAccesses addr = executionTreeValue analysis addr
   where
-  
+
     -- configure the underlying execution tree analysis
     analysis = (mkExecutionTreeAnalysis DataItemAccessesAnalysis "DI_Access" dataItemAccesses) {
-    
+
         -- register analysis specific operator handler
         opHandler = [accessHandler],
-        
+
         -- all unhandled operators have no effect
         unhandledOperatorHandler = \_ -> Solver.bot
-        
+
     }
-    
+
     -- an operator handler handling read/write accesses
     accessHandler = OperatorHandler cov dep val
       where
         cov a = any (isBuiltin a) ["ref_deref","ref_assign"]
         dep _ _ = [Solver.toVar referenceVar]
         val _ a = accessVal a
-        
+
         referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
         referenceVal a = toSet $ toValue $ Solver.get a referenceVar
           where

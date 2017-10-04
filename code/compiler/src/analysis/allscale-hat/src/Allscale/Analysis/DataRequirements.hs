@@ -16,8 +16,9 @@ import Data.List
 import Data.Typeable
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
-import Insieme.Analysis.Callable
+import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
+import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
@@ -83,181 +84,93 @@ data DataRequirementAnalysis = DataRequirementAnalysis
 dataRequirements :: NodeAddress -> Solver.TypedVar DataRequirements
 dataRequirements addr = case getNode addr of
 
-    -- types have no data requirements
-    n | isType n -> noRequirements
-    
-    -- also literals have no requirements
-    IR.Node IR.Literal _ -> noRequirements 
-    
-    -- also variables have no requirements
-    IR.Node IR.Variable _ -> noRequirements 
-    
-    -- also lambda expressions have no data requirements
-    IR.Node IR.LambdaExpr _ -> noRequirements
-    
-    -- for call expressions, we have to apply special rules
-    IR.Node IR.CallExpr _ -> var
-      where
-        var = Solver.mkVariable varId cons Solver.bot
-        
-        cons = callTargetConstraint : childConstraints
-        
-        -- the standard-child-aggregation constraints 
-        
-        childConstraints = map go $ getChildren addr
-          where
-            go addr = Solver.forward (dataRequirements addr) var
-        
-        
-        -- constraints considering the call targets
-        
-        callTargetConstraint = Solver.createConstraint dep val var
-          where
-            dep a = (Solver.toVar callableVar) : (Solver.toVar <$> referenceVars a) ++ (Solver.toVar <$> callableBodyVars a)
-            val a = Solver.join [(callTargetRequirements a),(localAccess a),(unknownTargetRequirements a)]
-            
-            
-            -- get access to functions targeted by this call
-            
-            callableVar = callableValue $ goDown 1 addr  
-            callableVal a = toValue $ Solver.get a callableVar  
-            
-            callableBodyVars a = case () of 
-            
-                _ | BSet.isUniverse callTargets -> [] 
-                _                               -> foldr go [] $ BSet.toList callTargets
-                    where
-                                
-                        go (Lambda addr) bs = (dataRequirements $ goDown 2 addr) : bs
-                        
-                        go _ bs = bs
-                        
-                
-              where
-                
-                callTargets = callableVal a
-                
-                
-            -- aggregate data requirements of call targets 
-            
-            callTargetRequirements a = Solver.join $ Solver.get a <$> callableBodyVars a
-            
-            
-            -- add data requirements in case of unknown call targets
-            
-            unknownTargetRequirements a = case () of 
-                _ | BSet.isUniverse $ callableVal a -> Solver.top
-                _                                   -> Solver.bot
-            
-            
-            -- also add data requirements if this call is targeting a ref_deref or ref_assign
-            
-            referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
-            referenceVal a = toSet $ toValue $ Solver.get a referenceVar
-              where
-                toSet (ElementReferenceSet s) = s
-            
-            referenceVars a = case () of
-                _ | isRead a || isWrite a -> [referenceVar]
-                _                         -> []
-            
-            
-            localAccess a = Solver.join [readAccess,writeAccess]
-              where
-                
-                readAccess = case () of
-                    _ | isRead a -> requirements ReadOnly
-                    _                        -> Solver.bot
-
-                writeAccess = case () of
-                    _ | isWrite a -> requirements ReadWrite
-                    _                         -> Solver.bot
-            
-                requirements mode = DataRequirements $ BSet.map go $ referenceVal a
-                  where
-                    go (ElementReference ref range) = DataRequirement {
-                                dataItemRef = ref,
-                                range       = range,
-                                accessMode  = mode
-                        } 
-            
-            
-            -- utilities
-            
-            mayCall a lit = case () of 
-                _ | BSet.isUniverse targets -> False
-                _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
-              where
-                targets = callableVal a
-                
-            isRead a = mayCall a "ref_deref"
-            
-            isWrite a = mayCall a "ref_assign"
-            
-            
-    -- for for-loops, iterator bounds need to be included  
+    -- special case: for for-loops, iterator bounds need to be included
     IR.Node IR.ForStmt _ -> var
       where
         var = Solver.mkVariable varId [con] Solver.bot
         con = Solver.createConstraint dep val var
-        
+
         dep _ = ( Solver.toVar <$> [beginDepVar,endDepVar,stepDepVar,bodyDepVar] )
              ++ ( Solver.toVar <$> [beginValVar,endValVar] )
-        
+
         val a = Solver.join [beginDepVal a,endDepVal a,stepDepVal a,bodyDepVal a]
-        
+
         -- get the addresses of sub-elements
         iter  = getNode $ goDown 1 $ goDown 0 addr
         begin = goDown 1 $ goDown 0 $ goDown 0 addr
         end   = goDown 1 addr
         step  = goDown 2 addr
         body  = goDown 3 addr
-        
+
         -- get data requirement variables
         beginDepVar = dataRequirements begin
         endDepVar   = dataRequirements end
         stepDepVar  = dataRequirements step
         bodyDepVar  = dataRequirements body
-        
+
         -- get the symbolic value variables for the iterators
         beginValVar = symbolicValue begin
         endValVar   = symbolicValue end
-        
+
         -- get the data requirement values
         beginDepVal a = Solver.get a beginDepVar
         endDepVal   a = Solver.get a endDepVar
         stepDepVal  a = Solver.get a stepDepVar
-        
+
         bodyDepVal  a = DataRequirements val
           where
-          
+
             DataRequirements bodyRequirements  = (Solver.get a bodyDepVar)
-            
+
             val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)  
                   then bodyRequirements 
                   else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )  
-            
+
             fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- BSet.toList toVals ]
-          
+
             fromVals = unSVS $ toValue $ Solver.get a beginValVar
             toVals   = unSVS $ toValue $ Solver.get a endValVar
-    
-    
-    -- for everything else we aggregate the requirements of the child nodes
-    _ -> var
-      where
-        var = Solver.mkVariable varId cons Solver.bot
-        
-        cons = map go $ getChildren addr
-          where
-            go addr = Solver.forward (dataRequirements addr) var  
-        
+
+
+    -- default handling through execution tree value analysis 
+    _ -> executionTreeValue analysis addr
+
   where
 
-    noRequirements = Solver.mkVariable varId [] Solver.bot
+    -- configure the underlying execution tree analysis
+    analysis = (mkExecutionTreeAnalysis DataRequirementAnalysis "DR" dataRequirements) {
 
-    analysis = Solver.mkAnalysisIdentifier DataRequirementAnalysis "DR"
+        -- register analysis specific operator handler
+        opHandler = [accessHandler],
 
-    idGen = Solver.mkIdentifierFromExpression analysis
-    
+        -- all unhandled operators cause no data requirements
+        unhandledOperatorHandler = \_ -> Solver.bot
+
+    }
+
+    -- an operator handler handling read/write accesses
+    accessHandler = OperatorHandler cov dep val
+      where
+        cov a = any (isBuiltin a) ["ref_deref","ref_assign"]
+        dep _ _ = [Solver.toVar referenceVar]
+        val = dataRequirements
+
+        referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+        referenceVal a = toSet $ toValue $ Solver.get a referenceVar
+          where
+            toSet (ElementReferenceSet s) = s
+
+        dataRequirements o a = DataRequirements $ BSet.map go $ referenceVal a
+          where
+            go (ElementReference ref range) = DataRequirement {
+                dataItemRef = ref,
+                range       = range,
+                accessMode  = mode
+            }
+
+            mode = if isBuiltin o "ref_deref" then ReadOnly else ReadWrite
+
+    -- utilities --
+    idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis
     varId = idGen addr
+
