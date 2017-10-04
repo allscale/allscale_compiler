@@ -42,8 +42,13 @@ namespace backend {
 			// set up name manager
 			converter.setNameManager(std::make_shared<be::SimpleNameManager>("allscale_"));
 
+			// set up the backend interception
+			auto backendInterceptionPreprocessor = be::makePreProcessor<be::BackendInterceptor>();
+			backendInterceptionPreprocessor->addBackendInterception("IMP_allscale_colon__colon_utils_colon__colon_Vector", "allscale/utils/vector.h");
+
 			// set up pre-processing
 			converter.setPreProcessor(be::makePreProcessorSequence(
+				backendInterceptionPreprocessor,
 				be::getBasicPreProcessorSequence(),
 				be::makePreProcessor<EntryPointWrapper>(),
 				be::makePreProcessor<ClosureDefaultConstructorEnforcer>()

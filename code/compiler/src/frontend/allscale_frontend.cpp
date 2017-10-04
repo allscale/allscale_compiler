@@ -15,6 +15,7 @@ namespace frontend {
 		job.addInterceptedHeaderDir(getAllscaleAPICoreIncludeDir() + getAllscaleAPIInterceptionIncludePath());
 		job.addInterceptedHeaderDir(getAllscaleAPICoreIncludeDir() + getAllscaleAPIDataItemsInterceptionIncludePath());
 		job.addInterceptedHeaderDir(getAllscaleAPIUtilsIncludeDir()); // XXX temporary fix necessary to compile review programs
+		job.addInterceptionWhitelistEntry("allscale/utils/vector.h");
 		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
 		job.registerDefaultExtensions();
 		job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
