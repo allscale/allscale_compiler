@@ -15,13 +15,13 @@ import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
 import Data.Typeable
 import GHC.Generics (Generic)
-import Insieme.Analysis.Callable
+import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
+import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Inspire.NodeAddress
 import Insieme.Inspire.Query
 
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.BoundSet as BSet
 
 
@@ -58,124 +58,37 @@ data DataItemAccessesAnalysis = DataItemAccessesAnalysis
 --
 
 dataItemAccesses :: NodeAddress -> Solver.TypedVar DataItemAccesses
-dataItemAccesses addr = case getNode addr of
-
-    -- TODO: this is a modified copy from diagnoses; unify it in a common base analysis!
-
-    -- types have no issues
-    n | isType n -> noAccesses
-
-    -- also literals have no issues
-    IR.Node IR.Literal _ -> noAccesses
-
-    -- also variables have no issues
-    IR.Node IR.Variable _ -> noAccesses
-
-    -- also lambda expressions have no issues
-    IR.Node IR.LambdaExpr _ | not (isEntryPoint addr) -> noAccesses
-
-    -- for call expressions, we have to apply special rules
-    -- TODO: this is a modified copy of the data requirement analysis; unify it!
-    IR.Node IR.CallExpr _ -> var
-      where
-        var = Solver.mkVariable varId cons Solver.bot
-        
-        cons = callTargetConstraint : childConstraints
-        
-        -- the standard-child-aggregation constraints 
-        
-        childConstraints = map go $ getChildren addr
-          where
-            go addr = Solver.forward (dataItemAccesses addr) var
-        
-        
-        -- constraints considering the call targets
-        
-        callTargetConstraint = Solver.createConstraint dep val var
-          where
-            dep a = (Solver.toVar callableVar) : (Solver.toVar <$> referenceVars a) ++ (Solver.toVar <$> callableBodyVars a)
-            val a = Solver.join [(callTargetRequirements a),(localAccess a),(unknownTargetRequirements a)]
-            
-            
-            -- get access to functions targeted by this call
-            
-            callableVar = callableValue $ goDown 1 addr  
-            callableVal a = toValue $ Solver.get a callableVar  
-            
-            callableBodyVars a = case () of 
-            
-                _ | BSet.isUniverse callTargets -> [] 
-                _                               -> foldr go [] $ BSet.toList callTargets
-                    where
-                                
-                        go (Lambda addr) bs = (dataItemAccesses $ goDown 2 addr) : bs
-                        
-                        go _ bs = bs
-                        
-                
-              where
-                
-                callTargets = callableVal a
-                
-                
-            -- aggregate data item accesses of call targets 
-            
-            callTargetRequirements a = Solver.join $ Solver.get a <$> callableBodyVars a
-            
-            
-            -- add data requirements in case of unknown call targets
-            
-            unknownTargetRequirements a = case () of 
-                _ | BSet.isUniverse $ callableVal a -> Solver.top
-                _                                   -> Solver.bot
-            
-            
-            -- also add data requirements if this call is targeting a ref_deref or ref_assign
-            
-            referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
-            referenceVal a = toSet $ toValue $ Solver.get a referenceVar
-              where
-                toSet (ElementReferenceSet s) = s
-            
-            referenceVars a = case () of
-                _ | isRead a || isWrite a -> [referenceVar]
-                _                         -> []
-            
-            localAccess a = if isRead a || isWrite a then val else Solver.bot
-              where
-                val = DataItemAccesses $ case refVals of
-                    BSet.Universe -> BSet.Universe
-                    _ | BSet.isUniverse refVals -> BSet.Universe
-                      | BSet.null refVals       -> BSet.empty
-                      | otherwise               -> BSet.singleton addr
-
-                refVals = referenceVal a
-
-            -- utilities
-            
-            mayCall a lit = case () of 
-                _ | BSet.isUniverse targets -> False
-                _                           -> any ((\n -> isBuiltin n lit) . toAddress) $ BSet.toList targets
-              where
-                targets = callableVal a
-                
-            isRead a = mayCall a "ref_deref"
-            
-            isWrite a = mayCall a "ref_assign"
-
-    -- for everything else we aggregate the requirements of the child nodes
-    _ -> var
-      where
-        var = Solver.mkVariable varId (childConstraints var) Solver.bot
-
+dataItemAccesses addr = executionTreeValue analysis addr
   where
-    -- the standard-child-aggregation constraints
-    childConstraints var = map go $ getChildren addr
+  
+    -- configure the underlying execution tree analysis
+    analysis = (mkExecutionTreeAnalysis DataItemAccessesAnalysis "DI_Access" dataItemAccesses) {
+    
+        -- register analysis specific operator handler
+        opHandler = [accessHandler],
+        
+        -- all unhandled operators have no effect
+        unhandledOperatorHandler = \_ -> Solver.bot
+        
+    }
+    
+    -- an operator handler handling read/write accesses
+    accessHandler = OperatorHandler cov dep val
       where
-        go addr = Solver.forward (dataItemAccesses addr) var
+        cov a = any (isBuiltin a) ["ref_deref","ref_assign"]
+        dep _ _ = [Solver.toVar referenceVar]
+        val _ a = accessVal a
+        
+        referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+        referenceVal a = toSet $ toValue $ Solver.get a referenceVar
+          where
+            toSet (ElementReferenceSet s) = s
 
-    noAccesses = Solver.mkVariable varId [] Solver.bot
-    analysis = Solver.mkAnalysisIdentifier DataItemAccessesAnalysis "DI_Accesses"
-    idGen = Solver.mkIdentifierFromExpression analysis
-    varId = idGen addr
+        accessVal a = DataItemAccesses $ case refVals of
+            BSet.Universe -> BSet.Universe
+            _ | BSet.isUniverse refVals -> BSet.Universe
+              | BSet.null refVals       -> BSet.empty
+              | otherwise               -> BSet.singleton addr
+          where
+            refVals = referenceVal a
 
