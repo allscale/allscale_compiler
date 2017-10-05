@@ -17,21 +17,23 @@ import Control.Monad
 import Data.Foldable (or)
 import Data.Typeable
 import GHC.Generics (Generic)
+
+import Insieme.Inspire (NodeAddress)
+import qualified Insieme.Inspire as I
+import qualified Insieme.Query as Q
+import qualified Insieme.Utils.Arithmetic as Ar
+import qualified Insieme.Utils.BoundSet as BSet
+
 import Insieme.Analysis.Arithmetic (arithmeticValue, SymbolicFormulaSet(..))
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
-import Insieme.Inspire.NodeAddress
-import Insieme.Inspire.Query
-
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Utils.Arithmetic as Ar
-import qualified Insieme.Utils.BoundSet as BSet
 
 -- * Out Of Bounds
 
@@ -57,14 +59,14 @@ outOfBounds init addr = (result,ns')
 
     (arrayIndex',ns) = Solver.resolve init
                      $ Ref.referenceValue
-                     $ goDown 1 $ goDown 2 addr
+                     $ I.goDown 1 $ I.goDown 2 addr
 
     arrayIndex :: BSet.UnboundSet ArrayAccess
     arrayIndex = convertArrayIndex $ toValue arrayIndex'
 
     (arraySize',ns') = Solver.resolve ns
                      $ elementCount
-                     $ goDown 1 $ goDown 2 addr
+                     $ I.goDown 1 $ I.goDown 2 addr
 
     arraySize :: BSet.UnboundSet SymbolicFormula
     arraySize = BSet.changeBound $ unSFS $ toValue arraySize'
@@ -103,21 +105,21 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
   where
     refNull = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_null"
+        cov a = Q.isBuiltin a "ref_null"
         dep _ _ = []
         val _ _ = toComposed $ SymbolicFormulaSet $ BSet.singleton $ Ar.zero
 
     noChange = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) ["ref_cast", "ref_reinterpret" , "ref_narrow", "ref_expand"]
+        cov a = any (Q.isBuiltin a) ["ref_cast", "ref_reinterpret" , "ref_narrow", "ref_expand"]
         dep _ _ = [Solver.toVar baseRefVar]
         val _ a = Solver.get a baseRefVar
 
-        baseRefVar = elementCount $ goDown 1 $ goDown 2 addr
+        baseRefVar = elementCount $ I.goDown 1 $ I.goDown 2 addr
 
     creation = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) ["ref_decl", "ref_new"] && isRefArray
+        cov a = any (Q.isBuiltin a) ["ref_decl", "ref_new"] && isRefArray
         dep _ _ = [Solver.toVar arraySize]
         val _ a = Solver.get a $ arraySize
 
@@ -125,11 +127,11 @@ elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, 
 
     scalar = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) ["ref_decl", "ref_new"] && not isRefArray
+        cov a = any (Q.isBuiltin a) ["ref_decl", "ref_new"] && not isRefArray
         dep _ _ = []
         val _ _ = toComposed $ SymbolicFormulaSet $ BSet.singleton $ Ar.one
 
-    isRefArray = maybeToBool $ isArrayType <$> (getReferencedType $ goDown 0 addr)
+    isRefArray = maybeToBool $ Q.isArrayType <$> (Q.getReferencedType $ I.goDown 0 addr)
 
 -- * Utility
 
@@ -137,7 +139,7 @@ maybeToBool :: Maybe Bool -> Bool
 maybeToBool = Data.Foldable.or
 
 goesDown :: [Int] -> NodeAddress -> NodeAddress
-goesDown l = foldr1 (.) $ goDown <$> reverse l
+goesDown l = foldr1 (.) $ I.goDown <$> reverse l
 
 tracePrefix :: Show a => String -> a -> a
 tracePrefix prefix obj = traceShow (prefix ++ ": " ++ show obj) obj

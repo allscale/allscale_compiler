@@ -15,17 +15,20 @@ import Control.DeepSeq
 import Data.List
 import Data.Typeable
 import GHC.Generics (Generic)
+
+import Insieme.Inspire (NodeAddress)
+import qualified Insieme.Inspire as I
+import qualified Insieme.Query as Q
+import qualified Insieme.Utils.BoundSet as BSet
 import Insieme.Adapter.Utils (pprintTree)
+
 import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
-import Insieme.Inspire.NodeAddress
-import Insieme.Inspire.Query
-
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Inspire as IR
-import qualified Insieme.Utils.BoundSet as BSet
+
+
 
 --
 -- * Access Modes
@@ -41,7 +44,7 @@ data AccessMode = ReadOnly
 --
 
 data DataRequirement = DataRequirement {
-                            dataItemRef :: IR.Tree,
+                            dataItemRef :: I.Tree,
                             range       :: DataRange,
                             accessMode  :: AccessMode
                         }
@@ -82,10 +85,10 @@ data DataRequirementAnalysis = DataRequirementAnalysis
 --
 
 dataRequirements :: NodeAddress -> Solver.TypedVar DataRequirements
-dataRequirements addr = case getNode addr of
+dataRequirements addr = case I.getNode addr of
 
     -- special case: for for-loops, iterator bounds need to be included
-    IR.Node IR.ForStmt _ -> var
+    I.Node I.ForStmt _ -> var
       where
         var = Solver.mkVariable varId [con] Solver.bot
         con = Solver.createConstraint dep val var
@@ -96,11 +99,11 @@ dataRequirements addr = case getNode addr of
         val a = Solver.join [beginDepVal a,endDepVal a,stepDepVal a,bodyDepVal a]
 
         -- get the addresses of sub-elements
-        iter  = getNode $ goDown 1 $ goDown 0 addr
-        begin = goDown 1 $ goDown 0 $ goDown 0 addr
-        end   = goDown 1 addr
-        step  = goDown 2 addr
-        body  = goDown 3 addr
+        iter  = I.getNode $ I.goDown 1 $ I.goDown 0 addr
+        begin = I.goDown 1 $ I.goDown 0 $ I.goDown 0 addr
+        end   = I.goDown 1 addr
+        step  = I.goDown 2 addr
+        body  = I.goDown 3 addr
 
         -- get data requirement variables
         beginDepVar = dataRequirements begin
@@ -151,11 +154,11 @@ dataRequirements addr = case getNode addr of
     -- an operator handler handling read/write accesses
     accessHandler = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) ["ref_deref","ref_assign"]
+        cov a = any (Q.isBuiltin a) ["ref_deref","ref_assign"]
         dep _ _ = [Solver.toVar referenceVar]
         val = dataRequirements
 
-        referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+        referenceVar = elementReferenceValue $ I.goDown 1 $ I.goDown 2 addr
         referenceVal a = toSet $ toValue $ Solver.get a referenceVar
           where
             toSet (ElementReferenceSet s) = s
@@ -168,7 +171,7 @@ dataRequirements addr = case getNode addr of
                 accessMode  = mode
             }
 
-            mode = if isBuiltin o "ref_deref" then ReadOnly else ReadWrite
+            mode = if Q.isBuiltin o "ref_deref" then ReadOnly else ReadWrite
 
     -- utilities --
     idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis

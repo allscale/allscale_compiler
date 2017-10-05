@@ -13,6 +13,12 @@ import Allscale.Analysis.Entities.DataRange
 import Control.DeepSeq
 import Data.Typeable
 import GHC.Generics (Generic)
+
+import Insieme.Inspire (NodeAddress)
+import qualified Insieme.Inspire as I
+import qualified Insieme.Query as Q
+import qualified Insieme.Utils.BoundSet as BSet
+
 import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Framework.Dataflow
@@ -20,12 +26,7 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toVal
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), SymbolicValueLattice, symbolicValue, genericSymbolicValue)
 import Insieme.Analysis.Reference (isMaterializingDeclaration, isMaterializingCall)
-import Insieme.Inspire.NodeAddress
-import Insieme.Inspire.Query
-
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Inspire as IR
-import qualified Insieme.Utils.BoundSet as BSet
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 
 
@@ -52,7 +53,7 @@ symbolicValueWithIterators = genericSymbolicValue analysis
 
         varId = mkVarIdentifier analysis iter
 
-        val = toComposed $ SymbolicValueSet $ BSet.singleton $ getNode iter
+        val = toComposed $ SymbolicValueSet $ BSet.singleton $ I.node iter
 
 
 
@@ -61,7 +62,7 @@ symbolicValueWithIterators = genericSymbolicValue analysis
 --
 
 data ElementReference = ElementReference {
-            reference :: IR.Tree,
+            reference :: I.Tree,
             range     :: DataRange
         }
     deriving (Eq,Ord,Show,Generic,NFData)
@@ -101,16 +102,16 @@ data ElementReferenceAnalysis = ElementReferenceAnalysis
 --
 
 elementReferenceValue :: NodeAddress -> Solver.TypedVar (ValueTree.Tree SimpleFieldIndex ElementReferenceSet)
-elementReferenceValue addr = case getNodeType addr of
+elementReferenceValue addr = case Q.getNodeType addr of
 
     -- literals do not produce element references
-    IR.Literal -> noReference
+    I.Literal -> noReference
 
     -- materializing declarations do not produce element references
-    IR.Declaration | isMaterializingDeclaration (getNode addr) -> noReference
+    I.Declaration | isMaterializingDeclaration (I.node addr) -> noReference
 
     -- materializing calls do not produce element references
-    IR.CallExpr | isMaterializingCall (getNode addr) -> noReference
+    I.CallExpr | isMaterializingCall (I.node addr) -> noReference
 
     -- default handling through data flow
     _ -> dataflowValue addr analysis opsHandler
@@ -131,30 +132,30 @@ elementReferenceValue addr = case getNodeType addr of
 
     refElementHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "data_item_element_access"
+        cov a = Q.isBuiltin a "data_item_element_access"
         dep _ _ = Solver.toVar <$> [refVar,rangeVar]
         val _ a = compose $ ElementReferenceSet $ BSet.map go $ BSet.cartProduct (refVal a) (rangeVal a)
           where
             go (a,b) = ElementReference a (point b)
 
-        refVar = symbolicValue $ goDown 1 $ goDown 2 addr
+        refVar = symbolicValue $ I.goDown 1 $ I.goDown 2 addr
         refVal a = BSet.changeBound $ unSVS $ toValue $ Solver.get a refVar
 
-        rangeVar = symbolicValueWithIterators $ goDown 1 $ goDown 3 addr
+        rangeVar = symbolicValueWithIterators $ I.goDown 1 $ I.goDown 3 addr
         rangeVal a = BSet.changeBound $ unSVS $ toValue $ Solver.get a rangeVar
 
     refCreationHandler = OperatorHandler cov noDep val
       where
-        cov a = any (isBuiltin a) [ "ref_decl", "ref_alloc" ]
+        cov a = any (Q.isBuiltin a) [ "ref_decl", "ref_alloc" ]
         val _ _ = compose $ ElementReferenceSet $ BSet.empty
 
     refForwardHandler = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast", "ref_narrow", "ref_expand"]
+        cov a = any (Q.isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast", "ref_narrow", "ref_expand"]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
 
-        refVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+        refVar = elementReferenceValue $ I.goDown 1 $ I.goDown 2 addr
 
 
     noDep _ _ = []
