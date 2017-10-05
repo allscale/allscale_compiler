@@ -7,22 +7,24 @@ module Allscale.Analysis.Diagnostics where
 
 import Control.DeepSeq (NFData)
 import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
-import Allscale.Analysis.DataItemElementReference
+
+import Insieme.Inspire (NodeAddress)
+import qualified Insieme.Inspire as I
+import qualified Insieme.Query as Q
+import qualified Insieme.Utils.BoundSet as BSet
+
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
 import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.Reference
-import Insieme.Inspire.NodeAddress
-import Insieme.Inspire.Query
-
-import qualified Data.Set as Set
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Inspire as IR
-import qualified Insieme.Utils.BoundSet as BSet
+
+import Allscale.Analysis.DataItemElementReference
 
 -- * Issues
 
@@ -115,18 +117,18 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
 
     readHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_deref"
+        cov a = Q.isBuiltin a "ref_deref"
         val _ = handleOp ReadAccessToUnknownLocation
 
     writeHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_assign"
+        cov a = Q.isBuiltin a "ref_assign"
         val _ = handleOp WriteAccessToUnknownLocation
 
     dep _ _ = Solver.toVar <$> [referenceVar]
 
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
-    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+    referenceVar = referenceValue $ I.goDown 1 $ I.goDown 2 addr
 
     referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 
@@ -148,22 +150,22 @@ globalVariableDiagnosis addr = diagnosis diag addr
 
     readHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_deref"
+        cov a = Q.isBuiltin a "ref_deref"
         val _ = handleOp ReadAccessToGlobal
 
     writeHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_assign"
+        cov a = Q.isBuiltin a "ref_assign"
         val _ = handleOp WriteAccessToGlobal
 
     dep _ _ = Solver.toVar <$> [referenceVar]
 
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
-    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+    referenceVar = referenceValue $ I.goDown 1 $ I.goDown 2 addr
 
     referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 
-    globalAccess (Reference l _) = IR.Literal == getNodeType l
+    globalAccess (Reference l _) = I.Literal == Q.getNodeType l
     globalAccess _ = False
 
     handleOp _ a | BSet.isUniverse $ referenceVal a = Solver.bot
@@ -183,23 +185,23 @@ uncertainAccessDiagnosis addr = diagnosis diag addr
 
     readHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_deref"
+        cov a = Q.isBuiltin a "ref_deref"
         val _ = handleOp ReadAccessToPotentialDataItemElementReference
 
     writeHandler = OperatorHandler cov dep val
       where
-        cov a = isBuiltin a "ref_assign"
+        cov a = Q.isBuiltin a "ref_assign"
         val _ = handleOp WriteAccessToPotentialDataItemElementReference
 
     dep _ _ = [Solver.toVar diReferenceVar, Solver.toVar referenceVar]
 
     diReferenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex ElementReferenceSet)
-    diReferenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+    diReferenceVar = elementReferenceValue $ I.goDown 1 $ I.goDown 2 addr
 
     diReferenceVal a = unERS $ toValue $ Solver.get a diReferenceVar
 
     referenceVar :: Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (ReferenceSet SimpleFieldIndex))
-    referenceVar = referenceValue $ goDown 1 $ goDown 2 addr
+    referenceVar = referenceValue $ I.goDown 1 $ I.goDown 2 addr
 
     referenceVal a = unRS $ toValue $ Solver.get a referenceVar
 

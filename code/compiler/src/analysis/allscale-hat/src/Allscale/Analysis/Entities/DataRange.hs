@@ -15,7 +15,7 @@ module Allscale.Analysis.Entities.DataRange (
 import Control.DeepSeq
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
-import Insieme.Inspire.Transform (substitute)
+import Insieme.Inspire (substitute)
 
 import qualified Data.Map as Map
 import qualified Insieme.Inspire as IR

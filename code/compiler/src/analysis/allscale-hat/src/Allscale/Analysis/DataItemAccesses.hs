@@ -15,14 +15,17 @@ import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
 import Data.Typeable
 import GHC.Generics (Generic)
+
+import Insieme.Inspire (NodeAddress)
+import qualified Insieme.Inspire as I
+import qualified Insieme.Query as Q
+import qualified Insieme.Utils.BoundSet as BSet
+
 import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
-import Insieme.Inspire.NodeAddress
-import Insieme.Inspire.Query
-
 import qualified Insieme.Analysis.Solver as Solver
-import qualified Insieme.Utils.BoundSet as BSet
+
 
 
 --
@@ -75,11 +78,11 @@ dataItemAccesses addr = executionTreeValue analysis addr
     -- an operator handler handling read/write accesses
     accessHandler = OperatorHandler cov dep val
       where
-        cov a = any (isBuiltin a) ["ref_deref","ref_assign"]
+        cov a = any (Q.isBuiltin a) ["ref_deref","ref_assign"]
         dep _ _ = [Solver.toVar referenceVar]
         val _ a = accessVal a
 
-        referenceVar = elementReferenceValue $ goDown 1 $ goDown 2 addr
+        referenceVar = elementReferenceValue $ I.goDown 1 $ I.goDown 2 addr
         referenceVal a = toSet $ toValue $ Solver.get a referenceVar
           where
             toSet (ElementReferenceSet s) = s

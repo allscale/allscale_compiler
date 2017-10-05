@@ -52,7 +52,6 @@ import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Inspire.BinaryParser as BinPar
-import qualified Insieme.Inspire.NodeAddress as Addr
 import qualified Insieme.Inspire.Query as Q
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -64,7 +63,7 @@ main = do
     dump <- BS.getContents
 
     let Right ir = BinPar.parseBinaryDump dump
-    let (res, _) = Solver.resolve Solver.initState $ DR.dataRequirements $ Addr.mkNodeAddress [] ir
+    let (res, _) = Solver.resolve Solver.initState $ DR.dataRequirements $ IR.mkNodeAddress [] ir
 
     --timeout (read to * 1000000) (evaluate $ deepseq res)
     evaluate $ force res
