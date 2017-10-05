@@ -41,7 +41,25 @@
 
 #pragma once
 
+#include <assert.h>
 #include <string>
+
+// -- standard analysis --
+
+// alias tests
+void cba_expect_is_alias(void* a, void* b)  { assert(a==b); };
+void cba_expect_not_alias(void* a, void* b) { assert(a!=b); };
+void cba_expect_may_alias(void* a, void* b) {};
+
+// integer tests
+void cba_expect_undefined_int(int a)     {};                  // = is universe
+void cba_expect_defined_int(int a)       {};                  // = is not empty and not universe
+void cba_expect_single_int(int a)        {};                  // = is a single value
+void cba_expect_eq_int(int a, int b)     { assert(a==b); };
+void cba_expect_ne_int(int a, int b)     { assert(a!=b); };
+void cba_expect_may_eq_int(int a, int b) {};
+
+// -- allscale specific analysis --
 
 // assertions on the data requirements
 void cba_expect_data_requirements(const char* region)  { /* nothing */ };

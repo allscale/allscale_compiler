@@ -1,6 +1,5 @@
-#include "intercepted/dummy_array_item.h"
-
 #include "allscale_analysis.h"
+#include "data_requirements/intercepted/dummy_array_item.h"
 
 int main() {
 

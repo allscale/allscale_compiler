@@ -14,6 +14,9 @@
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/dump/json_dump.h"
 
+#include "insieme/analysis/cba/common/preprocessing.h"
+#include "insieme/analysis/cba/haskell/interface.h"
+
 #include "allscale/compiler/analysis/data_requirement.h"
 #include "allscale/compiler/frontend/allscale_frontend.h"
 #include "allscale/compiler/lang/allscale_ir.h"
@@ -25,12 +28,35 @@ namespace analysis {
 
 	using namespace std;
 	using namespace insieme::core;
+	using namespace insieme::analysis::cba;
 	using namespace std::literals::chrono_literals;
 
 	namespace fs = boost::filesystem;
 
+	namespace {
+
+		ArithmeticSet getValue(AnalysisContext& ctxt, const ExpressionAddress& x) {
+			return insieme::analysis::cba::getArithmeticValue<HaskellEngine>(ctxt, x);
+		}
+
+		ArithmeticSet getValues(AnalysisContext& ctxt, const ExpressionAddress& x) {
+			ArithmeticSet res;
+			visitDepthFirstInterruptible(x, [&](const InitExprAddress& init)->bool {
+				bool first = true;
+				for(const auto& a : init->getInitExprList()) {
+					if (first) { first = false; continue; }
+					res = merge(res, getValue(ctxt,a));
+				}
+				return true;
+			});
+			return res;
+		}
+	}
+
+
+
 	// the directory to load input files from
-	const auto ROOT_DIR = getAllscaleSourceRootDir() + "compiler/test/analysis/data_requirements_input_tests/";
+	const auto ROOT_DIR = getAllscaleSourceRootDir() + "compiler/test/analysis/input_tests/";
 
 	// the type definition (specifying the parameter type)
 	class DataRequirementInputTest : public ::testing::TestWithParam<std::string> {};
@@ -51,7 +77,7 @@ namespace analysis {
 		frontend::configureConversionJob(job);
 
 		job.addIncludeDirectory(ROOT_DIR);
-		job.addInterceptedHeaderDir(ROOT_DIR + "intercepted/");
+		job.addInterceptedHeaderDir(ROOT_DIR + "data_requirements/intercepted/");
 
 		// load file using the frontend
 		NodeManager mgr;
@@ -59,6 +85,7 @@ namespace analysis {
 
 		// normalize the program (for stable variable ids)
 		prog = IRBuilder(mgr).normalize(prog);
+		prog = preProcessing(prog);
 
 		// running semantic checks
 		auto res = checks::check(prog);
@@ -124,6 +151,88 @@ namespace analysis {
 				EXPECT_FALSE(requirements->isUniverse())
 					<< *annotations::getLocation(call) << std::endl;
 
+
+			// alias analysis
+			} else if (name == "cba_expect_ref_are_alias") {
+				EXPECT_TRUE(areAlias(ctxt, call.getArgument(0), call.getArgument(1)))
+					<< "lhs = " << call.getArgument(0) << "\n"
+					<< "rhs = " << call.getArgument(1) << "\n"
+					<< *annotations::getLocation(call) << std::endl;
+			} else if (name == "cba_expect_ref_may_alias") {
+				EXPECT_TRUE(mayAlias(ctxt, call.getArgument(0), call.getArgument(1)))
+					<< "lhs = " << call.getArgument(0) << "\n"
+					<< "rhs = " << call.getArgument(1) << "\n"
+					<< *annotations::getLocation(call) << std::endl;
+			} else if (name == "cba_expect_ref_not_alias") {
+				EXPECT_TRUE(notAlias(ctxt, call.getArgument(0), call.getArgument(1)))
+					<< "lhs = " << call.getArgument(0) << "\n"
+					<< "rhs = " << call.getArgument(1) << "\n"
+					<< *annotations::getLocation(call) << std::endl;
+
+
+			// arithmetic analysis
+			} else if (name == "cba_expect_undefined_int") {
+				ArithmeticSet res = getValue(ctxt,call.getArgument(0));
+				EXPECT_TRUE(res.isUniversal())
+					<< *annotations::getLocation(call) << std::endl
+					<< "ArithmeticSet evaluates to " << res << std::endl;
+
+			} else if (name == "cba_expect_defined_int") {
+				ArithmeticSet res = getValue(ctxt,call.getArgument(0));
+				EXPECT_TRUE(!res.isUniversal() && !res.empty())
+					<< *annotations::getLocation(call) << std::endl
+					<< "ArithmeticSet evaluates to " << res << std::endl;
+
+			} else if (name == "cba_expect_single_int") {
+				std::cerr << "Performing " << name << std::endl;
+				ArithmeticSet res = getValue(ctxt,call.getArgument(0));
+				EXPECT_TRUE(!res.isUniversal() && res.size() == 1)
+					<< *annotations::getLocation(call) << std::endl
+					<< "ArithmeticSet evaluates to " << res << std::endl;
+
+			} else if (name == "cba_expect_eq_int") {
+				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
+				ArithmeticSet rhs = getValue(ctxt,call.getArgument(1));
+				EXPECT_FALSE(lhs.empty());
+				EXPECT_FALSE(rhs.empty());
+				EXPECT_TRUE(!lhs.empty() && lhs == rhs)
+					<< *annotations::getLocation(call) << std::endl
+					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+
+			} else if (name == "cba_expect_ne_int") {
+				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
+				ArithmeticSet rhs = getValue(ctxt,call.getArgument(1));
+				EXPECT_FALSE(lhs.empty());
+				EXPECT_FALSE(rhs.empty());
+				EXPECT_TRUE(lhs != rhs)
+					<< *annotations::getLocation(call) << std::endl
+					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+
+			} else if (name == "cba_expect_may_eq_int") {
+				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
+				ArithmeticSet rhs = getValue(ctxt,call.getArgument(1));
+				EXPECT_FALSE(lhs.empty());
+				EXPECT_FALSE(rhs.empty());
+				ArithmeticSet inter = intersect(lhs, rhs);
+				EXPECT_TRUE(lhs.isUniversal() || rhs.isUniversal() || inter.size() > 0)
+					<< *annotations::getLocation(call) << std::endl
+					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+
+			} else if (name == "cba_expect_one_of_int") {
+				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
+				ArithmeticSet rhs = getValues(ctxt,call.getArgument(1));
+				EXPECT_FALSE(lhs.empty());
+				EXPECT_FALSE(rhs.empty());
+				EXPECT_TRUE(lhs == rhs)
+					<< *annotations::getLocation(call) << std::endl
+					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+
+
+
 			// debugging
 			} else if (name == "cba_print_code") {
 				// just dump the code
@@ -167,6 +276,7 @@ namespace analysis {
 
 			for(auto it = fs::directory_iterator(root); it != fs::directory_iterator(); ++it) {
 				fs::path file = it->path();
+
 				// collect c files
 				auto ext = file.extension().string();
 				if (ext == ".c" || ext == ".cpp") {
@@ -174,7 +284,7 @@ namespace analysis {
 				}
 				// collect files recursively
 				if (fs::is_directory(file)) {
-					const auto& name = file.filename().string();
+					std::string name = file.filename().string();
 					if (name != "_disabled") {
 						collectFiles(file, prefix + name + "/", res);
 					}

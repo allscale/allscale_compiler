@@ -1,6 +1,6 @@
 #pragma once
 
-#include "intercepted/dummy_item_interface.h"
+#include "data_requirements/intercepted/dummy_item_interface.h"
 
 struct DummyScalarItem {
 	using range_type = int;
