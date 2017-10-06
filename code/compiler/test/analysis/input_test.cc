@@ -93,6 +93,7 @@ namespace analysis {
 
 		// create a CBA analysis context
 		insieme::analysis::cba::haskell::Context ctxt;
+		std::unique_ptr<insieme::analysis::cba::haskell::Context> scope_ctxt;
 
 		// a utility to retrieve an instructions context
 		auto getScope = [](const NodeAddress& addr) {
@@ -136,9 +137,9 @@ namespace analysis {
 				expected = expected.substr(1,expected.size()-2);
 
 				// for now, we have to create a temporary context
-				insieme::analysis::cba::haskell::Context ctxt_(compound);
-				ctxt_.setTimelimit(60s);
-				auto requirements = getDataRequirements(ctxt_, compound);
+				scope_ctxt = std::make_unique<insieme::analysis::cba::haskell::Context>(compound);
+				scope_ctxt->setTimelimit(60s);
+				auto requirements = getDataRequirements(*scope_ctxt, compound);
 
 				ASSERT_TRUE(requirements);
 
@@ -231,16 +232,14 @@ namespace analysis {
 					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
 					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
 
-
-
 			// debugging
 			} else if (name == "cba_print_code") {
 				// just dump the code
-				dumpReadable(getScope(call));
+				dumpReadable(prog);
 
 			} else if (name == "cba_dump_json") {
 				// dump the code as a json file
-				dump::json::dumpIR("code.json", getScope(call));
+				dump::json::dumpIR("code.json", prog);
 
 			} else if (name == "cba_dump_statistic") {
 				// dump the current statistic
@@ -249,6 +248,23 @@ namespace analysis {
 			} else if (name == "cba_dump_solution") {
 				// dump the current solution
 				ctxt.dumpSolution();
+
+				// dump the code as a json file (as it is required by inspyer)
+				dump::json::dumpIR("code.json", prog);
+
+
+			// debugging for data requirements
+			} else if (name == "cba_print_scope") {
+				// just dump the code
+				dumpReadable(getScope(call));
+
+			} else if (name == "cba_dump_scope_json") {
+				// dump the code as a json file
+				dump::json::dumpIR("code.json", getScope(call));
+
+			} else if (name == "cba_dump_scope_solution") {
+				// dump the current solution
+				if (scope_ctxt) scope_ctxt->dumpSolution();
 
 				// dump the code as a json file (as it is required by inspyer)
 				dump::json::dumpIR("code.json", getScope(call));

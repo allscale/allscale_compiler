@@ -71,4 +71,12 @@ void cba_dump_json() {};
 void cba_dump_statistic() {};
 void cba_dump_solution() {};
 
+// debugging specifically for data requirements
+void cba_print_scope() {};
+void cba_dump_scope_json() {};
+void cba_dump_scope_solution() {};
+
+
 #define cba_debug() cba_print_code(); cba_dump_json(); cba_dump_solution();
+
+#define cba_debug_requirements() cba_print_scope(); cba_dump_scope_json(); cba_dump_scope_solution();
