@@ -36,3 +36,39 @@ TEST(AllscaleChecks, CppLambdaToClosureCheck) {
 	auto wrongCall2 = buildCppLambdaToClosure(init, wrongFunType2);
 	EXPECT_FALSE(check(wrongCall2).empty());
 }
+
+TEST(AllscaleChecks, CppLambdaToLambdaCheck) {
+	NodeManager nm;
+	IRBuilder builder(nm);
+
+	auto correctInit = builder.parseExpr(R"(
+		def struct S {
+			lambda IMP__operator_call_ = (i : int<4>) -> int<8> {
+				return 5;
+			}
+		};
+		<ref<S,f,f,cpp_rref>>(ref_cast(ref_temp(type_lit(S)), type_lit(f), type_lit(f), type_lit(cpp_rref))) {}
+	)");
+	ASSERT_TRUE(correctInit);
+	EXPECT_TRUE(check(correctInit).empty()) << check(correctInit);
+
+	auto wrongInit = builder.parseExpr(R"(
+		def struct S {
+			i : int<4>;
+			lambda IMP__operator_call_ = (i : int<4>) -> int<8> {
+				return 5;
+			}
+		};
+		<ref<S,f,f,cpp_rref>>(ref_cast(ref_temp(type_lit(S)), type_lit(f), type_lit(f), type_lit(cpp_rref))) { 5 }
+	)");
+	ASSERT_TRUE(wrongInit);
+	EXPECT_TRUE(check(wrongInit).empty()) << check(wrongInit);
+
+	auto correctFunType = builder.parseType("(int<4>) -> int<8>").as<FunctionTypePtr>();
+
+	auto correctCall = buildCppLambdaToLambda(correctInit, correctFunType);
+	EXPECT_TRUE(check(correctCall).empty()) << check(correctCall);
+
+	auto wrongCall = buildCppLambdaToLambda(wrongInit, correctFunType);
+	EXPECT_FALSE(check(wrongCall).empty());
+}

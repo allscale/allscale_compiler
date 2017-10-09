@@ -101,9 +101,15 @@ namespace checks {
 		}
 
 		auto funType = address->getType().as<FunctionTypePtr>();
+		auto structType = lambdaType.getStruct();
+
+		// check that the struct does not capture anything - i.e. has no fields
+		if(structType->getFields()->size() != 0) {
+			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, "passed lambda captures fields", Message::ERROR));
+			return res;
+		}
 
 		//check that we found a call operator with the correct number of arguments
-		auto structType = lambdaType.getStruct();
 		auto operatorType = utils::extractCallOperatorType(structType);
 		if(!operatorType || operatorType->getParameterTypeList().size() != funType.getParameterTypeList().size() + 1) {
 			add(res, Message(address, EC_TYPE_INVALID_ARGUMENT_TYPE, "passed lambda does not provide a valid call operator", Message::ERROR));
