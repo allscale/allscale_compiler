@@ -346,9 +346,9 @@ namespace lang {
 
 	// lambda utils
 
-	insieme::core::ExpressionPtr buildCppLambdaToClosure(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType = nullptr);
+	insieme::core::ExpressionPtr buildCppLambdaToClosure(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType);
 
-	insieme::core::ExpressionPtr buildCppLambdaToLambda(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType = nullptr);
+	insieme::core::ExpressionPtr buildCppLambdaToLambda(const insieme::core::ExpressionPtr& lambdaExpr, insieme::core::FunctionTypePtr closureType);
 }
 }
 }
