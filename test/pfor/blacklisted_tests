@@ -11,22 +11,9 @@ sync_after_2d
 
 
 ####################################################################################
-#               Test cases which fail at runtime, either because of                #
-#                     differences in output or a dying runtime                     #
-####################################################################################
-
-sync_neighbor
-sync_neighbor_2d
-sync_neighbor_different_size
-sync_one_on_one
-sync_one_on_one_2d
-sync_one_on_one_different_size
-
-
-####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
 # All test names preceded with a '+' will not be executed by default but only when #
 # the integration test driver is run with the option to run these long tests also. #
 ####################################################################################
 
-
++sync_neighbor_2d
