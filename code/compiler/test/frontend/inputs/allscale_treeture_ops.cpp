@@ -166,10 +166,17 @@ int main() {
 
 	#pragma test expect_ir(R"(
 		decl struct __any_string__combine;
+		decl struct __any_string__combine_variable;
 		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
+		decl IMP__conversion_operator_int_space__lparen__star__rparen__lparen_int_comma__space_int_rparen_:const __any_string__combine_variable::() -> ptr<(int<4>, int<4>) -> int<4>,t,f>;
 		def struct __any_string__combine {
 			const function IMP__operator_call_ = (v673 : ref<int<4>,f,f,plain>, v674 : ref<int<4>,f,f,plain>) -> int<4> {
 				return *v673+*v674;
+			}
+		};
+		def struct __any_string__combine_variable {
+			const function IMP__operator_call_ = (v1 : ref<int<4>,f,f,plain>, v2 : ref<int<4>,f,f,plain>) -> int<4> {
+				return *v1-*v2;
 			}
 		};
 		{
@@ -179,6 +186,8 @@ int main() {
 			treeture_sequential(*v2, *v0, *v1);
 			treeture_parallel(*v2, *v0, *v1);
 			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {}, type_lit((int<4>, int<4>) -> int<4>)), true);
+			var ref<__any_string__combine_variable,f,f,plain> v3 = <ref<__any_string__combine_variable,f,f,cpp_rref>>(ref_cast(ref_temp(type_lit(__any_string__combine_variable)), type_lit(f), type_lit(f), type_lit(cpp_rref))) {};
+			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*v3, type_lit((int<4>, int<4>) -> int<4>)), true);
 		}
 	)")
 	{ // this code is not actually correct, but it is sufficient for testing
@@ -188,6 +197,10 @@ int main() {
 		sequential(dep, std::move(a), std::move(b));
 		parallel(dep, std::move(a), std::move(b));
 		combine(dep, std::move(a), std::move(b), [](int m, int n) { return m + n; });
+
+		// check that we also support passing the combine operation lambda from somewhere else instead of specifying it directly in the call
+		auto combineOp = [](int m, int n) { return m - n; };
+		combine(dep, std::move(a), std::move(b), combineOp);
 	}
 
 
