@@ -1,8 +1,8 @@
 
-#include "allscale/api/user/operator/async.h"
+#include "allscale/api/user/algorithm/async.h"
 #include "allscale/api/user/data/scalar.h"
 
-using namespace allscale::api::user;
+using namespace allscale::api::user::algorithm;
 using namespace allscale::api::user::data;
 
 int main() {

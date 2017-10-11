@@ -1,8 +1,8 @@
 
 #include "allscale/utils/vector.h"
-#include "allscale/api/user/operator/pfor.h"
+#include "allscale/api/user/algorithm/pfor.h"
 
-using namespace allscale::api::user;
+using namespace allscale::api::user::algorithm;
 using namespace allscale::utils;
 
 int main() {
