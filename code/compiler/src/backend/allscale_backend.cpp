@@ -91,6 +91,9 @@ namespace backend {
 			compiler.addFlag("-DALLSCALE_RUNTIME_WITH_DATA_REQUIREMENT_CHECKS=On");
 		}
 
+		// ad compiler flag for serialization code in API to use the HPX variant
+		compiler.addFlag("-DALLSCALE_WITH_HPX");
+
 		// include directories
 		compiler.addIncludeDir(getAllscaleAPICoreIncludeDir());
 		compiler.addIncludeDir(getAllscaleAPIUtilsIncludeDir());

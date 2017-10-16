@@ -1,6 +1,7 @@
 files=
 definitions=
 compFlags=
+compFlags[insiemecc_seq_cpp_compile]="-DALLSCALE_WITH_HPX"
 excludeSteps="*_ocl_*","*_c_*","*_run_*"
 use_omp=0
 use_opencl=0
@@ -16,4 +17,4 @@ use_cpp[insiemecc_seq_cpp_compile]=1
 use_libmath=1
 use_libpthread=1
 outputAwk=
-executionFlags="--hpx:threads=4"
+executionFlags="--hpx:threads=4 --hpx:bind=none"
