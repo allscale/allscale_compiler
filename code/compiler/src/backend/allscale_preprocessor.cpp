@@ -16,6 +16,7 @@
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/printer/error_printer.h"
 #include "insieme/core/analysis/type_utils.h"
+#include "insieme/core/transform/manipulation_utils.h"
 
 #include "insieme/backend/preprocessor.h"
 #include "insieme/backend/name_manager.h"
@@ -100,6 +101,18 @@ namespace backend {
 			// get the main entry point
 			assert_eq(1, prog->getEntryPoints().size());
 			core::LambdaExprPtr main = prog->getEntryPoints().front().as<core::LambdaExprPtr>();
+
+			// if the original main function didn't accept parameters, we create a new one which does, as the parameters need to be passed on to the runtime
+			if(main->getParameterList().size() == 0) {
+				auto firstParamType = builder.getLangBasic().getInt4();
+				auto firstParamVar = builder.variable(builder.refType(firstParamType));
+				auto secondParamType = core::lang::buildPtrType(core::lang::buildPtrType(builder.getLangBasic().getChar()));
+				auto secondParamVar = builder.variable(builder.refType(secondParamType));
+				auto newMainFunType = builder.functionType(toVector<core::TypePtr>(firstParamType, secondParamType), builder.getLangBasic().getInt4());
+				auto newMain = builder.lambdaExpr(newMainFunType, toVector(firstParamVar, secondParamVar), main.getBody());
+				core::transform::utils::migrateAnnotations(main, newMain);
+				main = newMain;
+			}
 
 			// convert main to accept a tuple of parameters
 			auto closureType = builder.tupleType(main->getFunctionType()->getParameterTypeList());
