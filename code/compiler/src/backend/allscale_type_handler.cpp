@@ -1,5 +1,7 @@
 #include "allscale/compiler/backend/allscale_type_handler.h"
 
+#include <sstream>
+
 #include "insieme/core/lang/enum.h"
 #include "insieme/core/lang/pointer.h"
 #include "insieme/backend/c_ast/c_ast_utils.h"
@@ -147,8 +149,21 @@ namespace backend {
 			auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::runtime::DataItemReference"));
 			namedType->parameters.push_back(dataItemTypeInfo.rValueType);
 
+			auto& fragmentManager = converter.getFragmentManager();
+
+			std::stringstream ss;
+			static unsigned dataItemReferenceCounter = 0;
+			std::string dataItemName = format("data_item_type_%d", ++dataItemReferenceCounter);
+			ss << "using " << dataItemName << " = " << *dataItemTypeInfo.rValueType << ";\n"
+					<< "REGISTER_DATAITEMSERVER_DECLARATION(" << dataItemName << ")\n"
+					<< "REGISTER_DATAITEMSERVER(" << dataItemName << ")";
+			auto macro = mgr->create<backend::c_ast::OpaqueCode>(ss.str());
+			auto decl = fragmentManager->create<backend::c_ast::CCodeFragment>(mgr, macro);
+			decl->addDependency(dataItemTypeInfo.declaration);
+			decl->addInclude("allscale/data_item_server.hpp");
+
 			// create resulting code fragment
-			return type_info_utils::createInfo(namedType, dataItemTypeInfo.declaration);
+			return type_info_utils::createInfo(namedType, decl);
 		}
 
 		const TypeInfo* handleDataItemRequirementType(ConversionContext& context, const insieme::core::TypePtr& type) {
