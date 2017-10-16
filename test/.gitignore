@@ -1,6 +1,7 @@
 # Ignore all generated files
 build*
 *.insieme
+*.insieme.seq
 *.insieme.c
 *.insieme.cpp
 *.insieme.*.c
@@ -25,4 +26,6 @@ worker_efficiency_log
 *.out.match
 *.test.match
 *.ref.match
+
+report.html
 
