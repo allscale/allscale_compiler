@@ -244,6 +244,7 @@ namespace analysis {
 			} else if (name == "cba_dump_statistic") {
 				// dump the current statistic
 				ctxt.dumpStatistics();
+				if (scope_ctxt) scope_ctxt->dumpStatistics();
 
 			} else if (name == "cba_dump_solution") {
 				// dump the current solution

@@ -7,7 +7,7 @@
 
 module Allscale.Analysis.DataRequirements where
 
---import Debug.Trace
+-- import Debug.Trace
 
 import Allscale.Analysis.Entities.DataRange
 import Allscale.Analysis.DataItemElementReference hiding (range)
@@ -147,7 +147,7 @@ dataRequirements addr = case I.getNode addr of
         opHandler = [accessHandler],
 
         -- all unhandled operators cause no data requirements
-        unhandledOperatorHandler = \_ -> Solver.bot
+        unhandledOperatorHandler = const Solver.bot
 
     }
 

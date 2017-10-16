@@ -30,7 +30,13 @@ void check2D() {
 	// check default initialization
 	Vector<int,2> a;
 
+	// known bug:
+
 //	cba_expect_is_alias(&a.x,&a[0]);
+//	cba_expect_is_alias(&a.y,&a[1]);
+
+//	cba_expect_may_alias(&a.x,&a[0]);
+//	cba_expect_may_alias(&a.y,&a[1]);
 
 	cba_expect_undefined_int(a[0]);
 	cba_expect_undefined_int(a[1]);
@@ -46,6 +52,37 @@ void check2D() {
 
 	cba_expect_eq_int(1,b.x);
 	cba_expect_eq_int(2,b.y);
+
+	// known bug:
+
+//	// check mutating assignments
+//	Vector<int,2> c;
+//
+//	c.x = 1;
+//	c.y = 2;
+//
+//	cba_expect_eq_int(1,c.x);
+//	cba_expect_eq_int(1,c[0]);
+//
+//	cba_expect_eq_int(2,c.y);
+//	cba_expect_eq_int(2,c[1]);
+//
+//	c.x = 3;
+//
+//	cba_expect_eq_int(3,c.x);
+//	cba_expect_eq_int(3,c[0]);
+//
+//	cba_expect_eq_int(2,c.y);
+//	cba_expect_eq_int(2,c[1]);
+//
+//	c[1] = 4;
+//
+//	cba_expect_eq_int(3,c.x);
+//	cba_expect_eq_int(3,c[0]);
+//
+//	cba_expect_eq_int(4,c.y);
+//	cba_expect_eq_int(4,c[1]);
+
 
 //	cba_debug();
 
