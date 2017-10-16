@@ -1142,7 +1142,7 @@ namespace backend {
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
-				#include "allscale/api/user/operator/pfor.h"
+				#include "allscale/api/user/algorithm/pfor.h"
 
 				using namespace allscale::api::core;
 				using namespace allscale::api::user;
@@ -1184,10 +1184,10 @@ namespace backend {
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
-				#include "allscale/api/user/operator/pfor.h"
+				#include "allscale/api/user/algorithm/pfor.h"
 
 				using namespace allscale::api::core;
-				using namespace allscale::api::user;
+				using namespace allscale::api::user::algorithm;
 
 				int main(int argc, char** argv) {
 
@@ -1220,10 +1220,10 @@ namespace backend {
 
 		auto code = R"(
 				#include "allscale/api/core/prec.h"
-				#include "allscale/api/user/operator/pfor.h"
+				#include "allscale/api/user/algorithm/pfor.h"
 
 				using namespace allscale::api::core;
-				using namespace allscale::api::user;
+				using namespace allscale::api::user::algorithm;
 
 				int main(int argc, char** argv) {
 					

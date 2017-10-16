@@ -1,5 +1,5 @@
 
-#include "allscale/api/user/operator/pfor.h"
+#include "allscale/api/user/algorithm/pfor.h"
 #include "allscale/api/core/prec.h"
 
 #include <vector>
@@ -14,7 +14,7 @@ int main() {
 
 	{
 		std::vector<int> v;
-		user::pfor(v, [](const auto& elem) {
+		user::algorithm::pfor(v, [](const auto& elem) {
 			elem;
 		});
 	}

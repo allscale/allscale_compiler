@@ -147,17 +147,38 @@ namespace detail {
 			return core::lang::buildRefCast(exprIn, core::lang::buildRefType(innerType, true, false, core::lang::ReferenceType::Kind::CppReference));
 		}
 
-		core::FunctionTypePtr extractLambdaOperationType(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter, bool deref) {
-			if(auto mat = llvm::dyn_cast<clang::MaterializeTemporaryExpr>(clangExpr)) clangExpr = mat->GetTemporaryExpr();
-			if(auto lambda = llvm::dyn_cast<clang::LambdaExpr>(clangExpr)) {
-				auto ret = converter.convertType(lambda->getCallOperator()->getType()).as<core::FunctionTypePtr>();
-				if(deref) {
-					auto dereffedParamTypes = ::transform(ret->getParameterTypeList(), [](const core::TypePtr& t) {
-						return core::analysis::isRefType(t) ? core::transform::dematerialize(t) : t;
-					});
-					ret = converter.getIRBuilder().functionType(dereffedParamTypes, ret->getReturnType(), ret->getKind());
+		core::FunctionTypePtr extractLambdaOperationTypeFromIR(const core::TypePtr& exprType, const clang::SourceLocation& locStart,
+		                                                       insieme::frontend::conversion::Converter& converter) {
+			auto typeIn = exprType;
+
+			// if the passed type is a GenericType, we look up the mapped Struct in the IrTU
+			if(const auto& genType = typeIn.isa<core::GenericTypePtr>()) {
+				const auto& typeMap = converter.getIRTranslationUnit().getTypes();
+				auto typeIt = typeMap.find(genType);
+				if(typeIt != typeMap.end()) {
+					typeIn = typeIt->second;
 				}
-				return ret;
+			}
+
+			// if the type has a call operator (and thus also is a struct)
+			if(utils::hasCallOperator(typeIn)) {
+				// ensure we didn't capture anything here
+				auto structType = typeIn.as<core::TagTypePtr>();
+				if(structType->getStruct()->getFields().size() != 0) {
+					assert_fail() << "Passed Lambda at \""
+							<< insieme::frontend::utils::getLocationAsString(locStart, converter.getSourceManager(), false) << "\" must not capture anything.";
+				}
+
+				// get the operator type
+				const auto& callOperatorType = utils::extractCallOperatorType(typeIn);
+				// change the function kind, as that is used to build the call to cpp_lambda_to_lambda
+				// we also have to dematerialize the parameter types and remove the this parameter
+				const auto& callOperatorParams = callOperatorType->getParameterTypeList();
+				core::TypeList dereffedParamTypes;
+				for(auto paramIt = callOperatorParams.cbegin() + 1; paramIt != callOperatorParams.cend(); ++paramIt) {
+					dereffedParamTypes.push_back(core::analysis::isRefType(*paramIt) ? core::transform::dematerialize(*paramIt) : *paramIt);
+				}
+				return core::IRBuilder(exprType.getNodeManager()).functionType(dereffedParamTypes, callOperatorType->getReturnType(), core::FK_PLAIN);
 			}
 			return {};
 		}
@@ -351,7 +372,7 @@ namespace detail {
 	core::ExpressionPtr AggregationCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 		auto ret = SimpleCallMapper::convertArgument(clangArg, converter);
 		ret = derefOrDematerialize(ret);
-		if(auto lambdaType = extractLambdaOperationType(clangArg, converter, true)) {
+		if(auto lambdaType = extractLambdaOperationTypeFromIR(ret->getType(), clangArg->getLocStart(), converter)) {
 			ret = lang::buildCppLambdaToLambda(ret, lambdaType);
 		}
 		return ret;

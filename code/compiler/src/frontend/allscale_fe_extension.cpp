@@ -184,8 +184,13 @@ namespace frontend {
 			core::visitDepthFirstOnce(prog, [](const core::NodePtr& node) {
 				if(insieme::annotations::c::hasIncludeAttached(node)) {
 					auto include = insieme::annotations::c::getAttachedInclude(node);
-					assert_false(boost::starts_with(include, getAllscaleAPIInterceptionIncludePath()))
-							<< "Found attached include of core API to \"" << include << "\" on node: " << dumpReadable(node);
+					const auto& coreIncludePath = getAllscaleAPIInterceptionIncludePath();
+					if(include == coreIncludePath + "/data.h"
+							|| include == coreIncludePath + "/prec.h"
+							|| include == coreIncludePath + "/treeture.h"
+							|| boost::starts_with(include, coreIncludePath + "/impl")) {
+						assert_fail() << "Found attached include of core API to \"" << include << "\" on node: " << dumpReadable(node);
+					}
 				}
 			});
 		});

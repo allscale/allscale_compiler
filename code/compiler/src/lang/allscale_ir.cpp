@@ -619,10 +619,6 @@ namespace lang {
 	}
 
 	ic::ExpressionPtr buildCppLambdaToClosure(const ic::ExpressionPtr& lambdaExpr, ic::FunctionTypePtr closureType) {
-		if(!closureType) {
-			assert_true(utils::hasCallOperator(lambdaExpr));
-			closureType = utils::extractCallOperatorType(lambdaExpr);
-		}
 		assert_eq(closureType.getKind(), ic::FK_CLOSURE) << "Trying to build a closure of non-closure type.";
 		ic::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();
@@ -630,10 +626,6 @@ namespace lang {
 	}
 
 	ic::ExpressionPtr buildCppLambdaToLambda(const ic::ExpressionPtr& lambdaExpr, ic::FunctionTypePtr closureType) {
-		if(!closureType) {
-			assert_true(utils::hasCallOperator(lambdaExpr));
-			closureType = utils::extractCallOperatorType(lambdaExpr);
-		}
 		assert_eq(closureType.getKind(), ic::FK_PLAIN) << "Trying to build a lambda of non-plain type.";
 		ic::IRBuilder builder(lambdaExpr->getNodeManager());
 		auto& allS = lambdaExpr->getNodeManager().getLangExtension<AllscaleModule>();

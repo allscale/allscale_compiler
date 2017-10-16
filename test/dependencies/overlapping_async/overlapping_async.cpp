@@ -2,13 +2,13 @@
 #include "allscale/utils/assert.h"
 
 #include "allscale/api/core/prec.h"
-#include "allscale/api/user/operator/async.h"
+#include "allscale/api/user/algorithm/async.h"
 
 #include <vector>
 #include <unistd.h>
 
 using namespace allscale::api::core;
-using namespace allscale::api::user;
+using namespace allscale::api::user::algorithm;
 
 int main() {
 
