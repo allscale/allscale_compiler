@@ -2,11 +2,6 @@ get_filename_component(GMP_LIBRARIES_DIR ${GMP_LIBRARIES} PATH)
 get_filename_component(ZLIB_LIBRARIES_DIR ${ZLIB_LIBRARIES} PATH)
 
 file(GLOB_RECURSE allscale_hat_srcs allscale-hat.cabal src/*.hs)
-file(GLOB_RECURSE insieme_hat_srcs
-	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/insieme-hat.cabal
-	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/src/*.chs
-	${PROJECT_SOURCE_DIR}/../insieme/code/analysis/src/cba/haskell/insieme-hat/src/*.hs
-)
 
 get_filename_component(CABAL_PATH_ENTRY "${CABAL_EXECUTABLE}" DIRECTORY)
 set(CABAL_PATH_ENTRY "${CABAL_PATH_ENTRY}:")
@@ -32,23 +27,18 @@ set(cabal ${haskell_env} ${CABAL_EXECUTABLE})
 set(runhaskell ${haskell_env} runhaskell)
 set(cabal_file ${CMAKE_CURRENT_SOURCE_DIR}/allscale-hat.cabal)
 
-add_custom_command(
-	OUTPUT liballscale-hat.so
-
-	# insieme_hat ought to already have done 'cabal update'
-
+add_custom_target(allscale_hat
 	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project -v1 --enable-tests
 
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
-	DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${allscale_hat_srcs} insieme_hat
+	DEPENDS insieme_hat
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+
 	COMMENT "Building AllScale HAT"
 )
-
-add_custom_target(allscale_hat DEPENDS liballscale-hat.so)
 
 add_custom_target(clean_allscale_hat
 	COMMAND ${CMAKE_COMMAND} -E remove "${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so"
