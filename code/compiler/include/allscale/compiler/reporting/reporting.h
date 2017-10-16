@@ -26,7 +26,7 @@ namespace reporting {
 
 		using PrecCall = insieme::core::CallExprAddress;
 
-		using VariantId = int;
+		using VariantId = std::string;
 
 		using VariantIssues = std::map<VariantId, Issues>;
 
@@ -84,8 +84,8 @@ namespace reporting {
 	 * Severity of the Diagnostics Message
 	 */
 	enum class Severity : int {
-		Warning = 0,
-		Error = 1,
+		Error = 0,
+		Warning = 1,
 		Info = 2
 	};
 
