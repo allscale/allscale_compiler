@@ -1,25 +1,25 @@
-Error: [Basic] Write access to global
+Error: [Basic] Invalid write access to global memory location
                 from: "main"
 <input_filepath>@14:5-14:10
     *b = 42;
     ^~~~~~
-Error: [Basic] Write access to global
+Error: [Basic] Invalid write access to global memory location
                 from: "main"
 <input_filepath>@15:5-15:15
     *b = *b + 1;
     ^~~~~~~~~~~
-Error: [Basic] Read access to global
+Error: [Basic] Invalid read access to global memory location
                 from: "main"
 <input_filepath>@15:10-15:11
     *b = *b + 1;
          ^~
-Error: [Basic] Read access to global
+Error: [Basic] Invalid read access to global memory location
                 from: "gen_post_inc" (builtin)
                 from: "main"
 <input_filepath>@16:5-16:9
     (*b)++;
     ^~~~~
-Error: [Basic] Write access to global
+Error: [Basic] Invalid write access to global memory location
                 from: "gen_post_inc" (builtin)
                 from: "main"
 <input_filepath>@16:5-16:9

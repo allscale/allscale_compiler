@@ -1,10 +1,10 @@
-Error: [Basic] Write access to global
+Error: [Basic] Invalid write access to global memory location
                 from: "bar" (<input_filepath>@17:5)
                 from: "main"
 <input_filepath>@7:5-7:9
     x = 5;
     ^~~~~
-Error: [Basic] Read access to global
+Error: [Basic] Invalid read access to global memory location
                 from: "baz" (<input_filepath>@18:12)
                 from: "main"
 <input_filepath>@12:12
