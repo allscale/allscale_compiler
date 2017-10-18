@@ -1168,14 +1168,23 @@ namespace core {
 
 				// print some debug information
 				if (debug) {
+
+					std::cout << "\n";
+					std::cout << "------------------------------------------------------------------------------------\n";
+					std::cout << "                        Prec #" << precIndex << " - variant " << variantId << "\n";
+					std::cout << "------------------------------------------------------------------------------------\n";
+
+					// print the analysed target code
+					std::cout << dumpReadable(target) << "\n";
+
 					// dump analysis statistics
 					context.dumpStatistics();
 
 					// dump prec operator code in json format
-					if (counter == 1) core::dump::json::dumpIR(format("analysis_p%d_code.json",precIndex),target);
+					core::dump::json::dumpIR(format("analysis_p%d_v%d_code.json",precIndex, counter),target);
 
 					// dump analysis solution as json meta file
-					context.dumpSolution(format("analysis_p%d_solution_v%d", precIndex, counter));
+					context.dumpSolution(format("analysis_p%d_v%d_solution", precIndex, counter));
 				}
 
 			}
