@@ -174,7 +174,7 @@ namespace analysis {
 			// arithmetic analysis
 			} else if (name == "cba_expect_undefined_int") {
 				ArithmeticSet res = getValue(ctxt,call.getArgument(0));
-				EXPECT_TRUE(res.isUniversal())
+				EXPECT_TRUE(res.empty() || res.isUniversal())
 					<< *annotations::getLocation(call) << std::endl
 					<< "ArithmeticSet evaluates to " << res << std::endl;
 
@@ -244,7 +244,6 @@ namespace analysis {
 			} else if (name == "cba_dump_statistic") {
 				// dump the current statistic
 				ctxt.dumpStatistics();
-				if (scope_ctxt) scope_ctxt->dumpStatistics();
 
 			} else if (name == "cba_dump_solution") {
 				// dump the current solution
@@ -269,6 +268,11 @@ namespace analysis {
 
 				// dump the code as a json file (as it is required by inspyer)
 				dump::json::dumpIR("code.json", getScope(call));
+
+			} else if (name == "cba_dump_scope_statistic") {
+				// dump the current solution
+				EXPECT_TRUE(scope_ctxt) << "No current scope context available!";
+				if (scope_ctxt) scope_ctxt->dumpStatistics();
 
 			// the rest
 			} else {
