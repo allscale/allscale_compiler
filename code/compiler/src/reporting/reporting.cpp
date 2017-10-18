@@ -148,9 +148,8 @@ namespace reporting {
 
 				boost::property_tree::ptree variant_issues;
 				{
-					int variant_counter = 0;
 					for(const auto& pp : p.second.second) {
-						variant_issues.push_back(make_pair(toString(++variant_counter), toPropertyTree(pp.second)));
+						variant_issues.push_back(make_pair(pp.first, toPropertyTree(pp.second)));
 					}
 				}
 				entry.push_back(make_pair("variant_issues", variant_issues));
@@ -210,11 +209,10 @@ namespace reporting {
 			}
 
 			// output issues associated with a specific variant
-			int variant_counter = 0;
 			for(const auto& pp : variants) {
 				const auto& issues = pp.second;
 
-				out << "\tVariant #" << (++variant_counter) << "\n";
+				out << "\tVariant #" << pp.first << "\n";
 				for(const auto& issue : issues) {
 					out << "\t\t" << issue << "\n";
 				}
@@ -302,14 +300,14 @@ namespace reporting {
 		switch(err) {
 		case ErrorCode::Timeout:                                         return {Severity::Warning, {},                        Category::Basic, "Timeout"};
 		case ErrorCode::CallToUnknownFunction:                           return {Severity::Warning, {},                        Category::Basic, "Call to unknown function"};
-		case ErrorCode::ReadAccessToUnknownLocation:                     return {Severity::Error,   {Tag::Read},               Category::Basic, "Read access to unknown location"};
-		case ErrorCode::WriteAccessToUnknownLocation:                    return {Severity::Error,   {Tag::Write},              Category::Basic, "Write access to unknown location"};
-		case ErrorCode::ReadAccessToGlobal:                              return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Read access to global"};
-		case ErrorCode::WriteAccessToGlobal:                             return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Write access to global"};
+		case ErrorCode::ReadAccessToUnknownLocation:                     return {Severity::Warning, {Tag::Read},               Category::Basic, "Compiler has been unable to reliably determine targeted memory location of read access"};
+		case ErrorCode::WriteAccessToUnknownLocation:                    return {Severity::Warning, {Tag::Write},              Category::Basic, "Compiler has been unable to reliably determine targeted memory location of write access"};
+		case ErrorCode::ReadAccessToGlobal:                              return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic, "Invalid read access to global memory location"};
+		case ErrorCode::WriteAccessToGlobal:                             return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic, "Invalid write access to global memory location"};
 		case ErrorCode::ReadAccessToPotentialDataItemElementReference:   return {Severity::Error,   {Tag::Read},               Category::Basic, "Unable to determine data item element reference targeted by read operation"};
 		case ErrorCode::WriteAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Write},              Category::Basic, "Unable to determine data item element reference targeted by write operation"};
-		case ErrorCode::UnobtainableDataRequirement:                     return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirement"};
-		case ErrorCode::ObtainedDataRequirement:                         return {Severity::Info,    {},                        Category::Basic, "Obtained data requirement"};
+		case ErrorCode::UnobtainableDataRequirement:                     return {Severity::Error,   {},                        Category::Basic, "Unable to obtain data requirements for given code variant"};
+		case ErrorCode::ObtainedDataRequirement:                         return {Severity::Info,    {},                        Category::Basic, "Successfully obtained data requirements for given code variant"};
 		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:    return {Severity::Info,    {},                        Category::Basic, "Converted parallel region into shared-memory parallel runtime code."};
 		case ErrorCode::UnableToInstrumentVariantForDataItemAccessCheck: return {Severity::Error,   {},                        Category::Basic, "Unable to instrument data item accesses as requested due to unknown targets of read/write operations."};
 		case ErrorCode::InstrumentedVariantForDataItemAccessCheck:       return {Severity::Info,    {},                        Category::Basic, "Successfully instrumented data item accesses."};
@@ -332,12 +330,22 @@ namespace reporting {
 	}
 
 	bool Issue::operator<(const Issue& other) const {
+		auto thisDetails = lookupDetails(error_code);
+		auto thatDetails = lookupDetails(other.error_code);
+
+		// first by severity
+		if (thisDetails.severity < thatDetails.severity) return true;
+		if (!(thisDetails.severity == thatDetails.severity)) return false;
+
+		// than by target
 		if (target < other.target) return true;
 		if (!(target == other.target)) return false;
 
+		// finally by issue code
 		if (error_code < other.error_code) return true;
 		if (!(error_code == other.error_code)) return false;
 
+		// and if this is all the same, than by message (quite unlikely)
 		return message < other.message;
 	}
 

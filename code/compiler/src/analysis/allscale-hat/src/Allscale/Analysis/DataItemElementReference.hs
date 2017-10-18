@@ -123,7 +123,8 @@ elementReferenceValue addr = case Q.getNodeType addr of
 
     analysis = (mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue) {
         freeVariableHandler = noReferenceGen,
-        unknownOperatorHandler = const Solver.top       -- all unknown targets are considered non-reference sources
+        unknownOperatorHandler = const Solver.bot,      -- all unknown targets are considered non-reference sources
+        uninitializedValue = Solver.bot                   -- initialized values do not point to data item elements
     }
 
     idGen = mkVarIdentifier analysis
@@ -151,7 +152,18 @@ elementReferenceValue addr = case Q.getNodeType addr of
 
     refForwardHandler = OperatorHandler cov dep val
       where
-        cov a = any (Q.isBuiltin a) [ "ref_member_access", "ref_component_access", "ref_cast", "ref_narrow", "ref_expand"]
+        cov a = any (Q.isBuiltin a) [ 
+                "ref_reinterpret", 
+                "ref_member_access", 
+                "ref_component_access", 
+                "ref_cast", 
+                "ref_narrow", 
+                "ref_expand"
+            ] ||
+            any (Q.isOperator a) [
+                "IMP_std_colon__colon_array::IMP__operator_subscript_",
+                "IMP_std_colon__colon_array::IMP_at"
+            ]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
 

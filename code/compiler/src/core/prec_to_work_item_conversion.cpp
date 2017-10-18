@@ -994,7 +994,7 @@ namespace core {
 			/**
 			 * Instruments all work item accesses.
 			 */
-			void instrumentDataItemAccesses(reporting::ConversionReport& report, analysis::AnalysisContext& context, const CallExprAddress& precCall, backend::WorkItemVariant& variant, int variantId) {
+			void instrumentDataItemAccesses(reporting::ConversionReport& report, analysis::AnalysisContext& context, const CallExprAddress& precCall, backend::WorkItemVariant& variant, const std::string& variantId) {
 
 				auto& mgr = precCall->getNodeManager();
 				IRBuilder builder(mgr);
@@ -1065,7 +1065,7 @@ namespace core {
 
 
 		ExpressionPtr integrateDataRequirements(const ConversionConfig& config, const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
-			const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
+			static const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
 
 			// this feature may be skipped for now
 			if(std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
@@ -1094,6 +1094,14 @@ namespace core {
 			int counter = 0;
 			for(auto& variant : desc.getVariants()) {
 				counter++;
+
+				// produce an id for this variant
+				auto variantId = format("%d_%s", counter,
+					(counter == 1) ? "progress" :
+					(counter == 2) ? "split"    :
+								     "custom"
+				);
+
 				auto target = variant.getImplementation()->getBody();
 
 				// obtaining data requirements for the body of this variant
@@ -1137,25 +1145,25 @@ namespace core {
 				// add summary to report
 				if (!requirements) {
 					// a time-out occurred
-					report.addMessage(precCall, counter, reporting::Issue::timeout(precCall));
+					report.addMessage(precCall, variantId, reporting::Issue::timeout(precCall));
 				} else if (requirements->isUniverse()) {
 					// if dependencies could not be narrowed down => report a warning
-					report.addMessage(precCall, counter, reporting::Issue(precCall, reporting::ErrorCode::UnobtainableDataRequirement));
+					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::UnobtainableDataRequirement));
 				} else {
 					// otherwise report a summary info
 					auto issue = reporting::Issue(precCall, reporting::ErrorCode::ObtainedDataRequirement);
 					auto issueDetail = std::make_shared<analysis::DataRequirements>(*requirements);
 					issue.setDetail(issueDetail);
-					report.addMessage(precCall, counter, issue);
+					report.addMessage(precCall, variantId, issue);
 				}
 
 				// run diagnosis
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
-				report.addMessages(precCall, counter, issues);
+				report.addMessages(precCall, variantId, issues);
 
 				// integrate data item access instrumentation
 				if (config.checkDataItemAccesses) {
-					instrumentDataItemAccesses(report, context, precCall, variant, counter);
+					instrumentDataItemAccesses(report, context, precCall, variant, variantId);
 				}
 
 				// print some debug information
