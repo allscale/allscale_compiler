@@ -19,14 +19,14 @@ int main() {
 		}
 
 		dataB[i] = 2;
-	}, neighborhood_sync(As));
+	}, small_neighborhood_sync(As));
 
 	auto Cs = pfor(0, N - 2, [&](int i) {
 		if ((i != 0 && dataB[i - 1] != 2) || dataB[i] != 2 || dataB[i + 1] != 2) {
 			std::cout << i << std::endl;
 		}
 		dataA[i] = 3;
-	}, neighborhood_sync(Bs));
+	}, small_neighborhood_sync(Bs));
 
 	auto Ds = pfor(0, N + 20, [&](int i) {
 
@@ -62,7 +62,7 @@ int main() {
 
 		dataB[i] = 4;
 
-	}, neighborhood_sync(Cs));
+	}, small_neighborhood_sync(Cs));
 
 	Ds.wait();
 

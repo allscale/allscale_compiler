@@ -19,7 +19,7 @@ int main() {
 		}
 
 		dataB[i] = 2;
-	}, neighborhood_sync(As));
+	}, small_neighborhood_sync(As));
 
 	auto Cs = pfor(0, N, [&](int i) {
 		if ((i != 0 && dataB[i - 1] != 2) || dataB[i] != 2 || (i != N - 1 && dataB[i + 1] != 2)) {
@@ -27,7 +27,7 @@ int main() {
 		}
 
 		dataA[i] = 3;
-	}, neighborhood_sync(Bs));
+	}, small_neighborhood_sync(Bs));
 
 	Cs.wait();
 

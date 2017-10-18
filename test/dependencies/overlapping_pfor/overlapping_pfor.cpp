@@ -24,12 +24,12 @@ int main() {
 		assert(v[i] == 0);
 		if(i < N/2) sleep(1);
 		v[i] = 1;
-	}, neighborhood_sync(a));
+	}, small_neighborhood_sync(a));
 
 	pfor(0, N, [&v](int i) {
 		assert(v[i] == 1);
 		v[i] = 2;
-	}, neighborhood_sync(b));
+	}, small_neighborhood_sync(b));
 
 	for(int i : v) {
 		assert(i == 2);
