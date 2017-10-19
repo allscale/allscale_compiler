@@ -278,10 +278,6 @@ namespace core {
 			ClosureField field;
 
 			core::ExpressionPtr value;
-
-			friend std::ostream& operator<<(std::ostream& out, const CapturedValue& value) {
-				return out << value.field << " = " << *value.value;
-			}
 		};
 
 		class CapturedValueIndex {
