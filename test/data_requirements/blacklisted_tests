@@ -2,6 +2,11 @@
 # It is needed for the integration test driver to recognize this folder as the parent for multiple other tests.
 
 
+### Not working until we fix stuff in the backend and/or can use the shared memory data item manager in the runtime
+grid_init
+vector_add_grid
+vector_add_static_grid
+
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #

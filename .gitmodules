@@ -4,9 +4,6 @@
 [submodule "api"]
 	path = api
 	url = https://github.com/allscale/allscale_api.git
-[submodule "runtime/allscale-runtime"]
-	path = runtime/allscale-runtime
-	url = https://github.com/allscale/allscale_runtime.git
-[submodule "runtime/hpx"]
-	path = runtime/hpx
-	url = https://github.com/STEllAR-GROUP/hpx.git
+[submodule "runtime/allscale_runtime"]
+	path = runtime/allscale_runtime
+	url = https://github.com/allscale/allscale_runtime
