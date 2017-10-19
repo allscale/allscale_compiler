@@ -124,7 +124,8 @@ elementReferenceValue addr = case Q.getNodeType addr of
     analysis = (mkDataFlowAnalysis ElementReferenceAnalysis "DataItem_ElemRef" elementReferenceValue) {
         freeVariableHandler = noReferenceGen,
         unknownOperatorHandler = const Solver.bot,      -- all unknown targets are considered non-reference sources
-        uninitializedValue = Solver.bot                   -- initialized values do not point to data item elements
+        initialValue = Solver.bot,                      -- default-initialized values do also not point to any data item
+        uninitializedValue = Solver.bot                 -- uninitialized values do not point to data item elements
     }
 
     idGen = mkVarIdentifier analysis
