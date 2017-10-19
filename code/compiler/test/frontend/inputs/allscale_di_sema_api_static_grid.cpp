@@ -10,7 +10,7 @@ int main() {
 		def IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_StaticGrid<ref<real<8>,f,f,qualified>,10> :: const function IMP__operator_subscript_ = (v1 : ref<__any_type__,t,f,cpp_ref>) -> ref<real<8>,t,f,cpp_ref> {
 			return data_item_element_access(
 				ref_kind_cast(this, type_lit(cpp_ref)),
-				ref_kind_cast(instantiate(lit("target_type" : IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion<1>::(ref<__any_type__,t,f,cpp_ref>)), lit("IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion::ctor" : IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion<'T_0_0>::(ref<IMP_allscale_colon__colon_utils_colon__colon_Vector<'TX_0,'TX_1>,t,f,cpp_ref>)))(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion<1>)), v1), type_lit(cpp_ref)),
+				ref_kind_cast(instantiate(lit("target_type" : (ref<__any_type__,t,f,cpp_ref>) -> IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion<1>), lit("IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single" : (ref<IMP_allscale_colon__colon_utils_colon__colon_Vector<'TX_0,'TX_1>,t,f,cpp_ref>) -> IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion<'T_0_0>))(v1) materialize , type_lit(cpp_ref)),
 				type_lit(ref<real<8>,f,f,cpp_ref>));
 		};
 		{
