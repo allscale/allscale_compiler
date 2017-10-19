@@ -54,7 +54,7 @@ namespace backend {
 		auto result = allscale::compiler::core::convert(code);
 
 		// check that it was a success
-		assert_true(result.successful())
+		assert_true(result.result)
 			<< "Conversion of input code failed in the core:\n" << result.report;
 
 		// .. and then through the backend
