@@ -9,7 +9,7 @@ endif()
 # add the external HPX project
 ExternalProject_Add(
 	hpx
-	SOURCE_DIR ${PROJECT_SOURCE_DIR}/../runtime/hpx
+	SOURCE_DIR ${PROJECT_SOURCE_DIR}/../runtime/allscale_runtime/hpx
 	CMAKE_ARGS
 		${CMAKE_EXTERNALPROJECT_FORWARDS}
 		-DHPX_WITH_THREAD_IDLE_RATES=On
@@ -35,7 +35,7 @@ string(REPLACE ";" ":" CMAKE_PREFIX_PATH_STR "${CMAKE_PREFIX_PATH}")
 ExternalProject_Add(
 	allscale_runtime
 	DEPENDS hpx
-	SOURCE_DIR ${PROJECT_SOURCE_DIR}/../runtime/allscale-runtime
+	SOURCE_DIR ${PROJECT_SOURCE_DIR}/../runtime/allscale_runtime
 	LIST_SEPARATOR : # Use the alternate list separator
 	CMAKE_ARGS
 		${CMAKE_EXTERNALPROJECT_FORWARDS}
