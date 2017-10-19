@@ -18,9 +18,9 @@ ExternalProject_Add(
 		-DHPX_WITH_NETWORKING=${HPX_WITH_NETWORKING}
 		-DHPX_WITH_MALLOC=system
 		-DHPX_WITH_MAX_CPU_COUNT=128
-		INSTALL_COMMAND ""
-		EXCLUDE_FROM_ALL 1
-		BUILD_ALWAYS 1
+	INSTALL_COMMAND ""
+	EXCLUDE_FROM_ALL 1
+	BUILD_ALWAYS 1
 )
 
 ExternalProject_Get_Property(hpx source_dir binary_dir)
@@ -45,9 +45,9 @@ ExternalProject_Add(
 		-DALLSCALE_WITH_TESTS=off
 		-DALLSCALE_API_DIR=${PROJECT_SOURCE_DIR}/../api
 		-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH_STR}"
-		INSTALL_COMMAND ""
-		EXCLUDE_FROM_ALL 1
-		BUILD_ALWAYS 1
+	INSTALL_COMMAND ""
+	EXCLUDE_FROM_ALL 1
+	BUILD_ALWAYS 1
 )
 
 ExternalProject_Get_Property(allscale_runtime source_dir binary_dir)
