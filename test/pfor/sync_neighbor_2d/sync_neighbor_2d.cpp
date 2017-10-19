@@ -57,7 +57,7 @@ int main() {
 			}
 
 			(*B)[p.x][p.y]=t+1;
-		}, neighborhood_sync(ref));
+		}, full_neighborhood_sync(ref));
 
 		std::swap(A, B);
 	}
@@ -67,7 +67,7 @@ int main() {
 		if((*A)[p.x][p.y] != T) {
 			std::cout << p.x << std::endl;
 		}
-	}, neighborhood_sync(ref));
+	}, small_neighborhood_sync(ref));
 
     delete bufferA;
     delete bufferB;
