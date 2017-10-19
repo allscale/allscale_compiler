@@ -225,6 +225,38 @@ namespace reporting {
 		return out;
 	}
 
+	namespace {
+
+		template<Severity Level>
+		bool has(const Issues& issues) {
+			for(const auto& cur : issues) {
+				if (cur.getSeverity() == Level) return true;
+			}
+			return false;
+		}
+
+		template<Severity Level, typename Issues>
+		bool has(const Issues& issues) {
+			for(const auto& cur : issues) {
+				if (has<Level>(cur.second.first)) return true;
+				for(const auto& variant : cur.second.second) {
+					if (has<Level>(variant.second)) return true;
+				}
+			}
+			return false;
+		}
+
+	}
+
+	bool ConversionReport::containsErrors() const {
+		return has<Severity::Error>(issues);
+	}
+
+	bool ConversionReport::containsWarnings() const {
+		return has<Severity::Warning>(issues);
+	}
+
+
 	void ConversionReport::toJSON(const std::string& filename) const {
 		write_json(filename, toPropertyTree(*this));
 	}

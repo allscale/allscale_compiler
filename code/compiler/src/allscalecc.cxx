@@ -46,7 +46,10 @@ int main(int argc, char** argv) {
 	insieme::frontend::path dumpJSON;
 
 	// Allows to enable the instrumentation of data item accesses (for access validation and statistics)
-	bool checkDataItemAccesses;
+	bool checkDataItemAccesses = false;
+
+	// If set, analysis failures will be ignored and target code will be anyway created
+	bool ignoreAnalysisFailures = false;
 
 	// -------------- processing ---------------
 
@@ -60,6 +63,7 @@ int main(int argc, char** argv) {
 	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),  "dump intermediate representation (JSON)");
 	parser.addParameter("backend",   backendString, std::string(""),            "backend selection (for compatibility reasons - ignored)");
 	parser.addFlag("check-data-item-accesses",      checkDataItemAccesses,      "enables data item access instrumentation (debugging)");
+	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,     "ignore analysis failures and generate code anyway");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -169,11 +173,15 @@ int main(int argc, char** argv) {
 
 	// abort if not successful so far
 	if (!summary.successful()) {
-		std::cout << "Conversion aborted.\n";
-		return EXIT_FAILURE;
+		if (!ignoreAnalysisFailures) {
+			std::cout << "Conversion aborted due to errors (see report, use --ignore-analysis-failure to force code generation).\n";
+			return EXIT_FAILURE;
+		}
+		std::cout << "Errors encountered, yet code generation enforced (--ignore-analysis-failure).\n";
 	}
 
 	// extract the converted program
+	assert(summary.result);
 	program = summary.result.as<insieme::core::ProgramPtr>();
 
 	// report time usage

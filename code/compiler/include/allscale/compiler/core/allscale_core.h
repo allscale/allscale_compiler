@@ -83,7 +83,7 @@ namespace core {
 		insieme::core::NodePtr result;
 
 		bool successful() const {
-			return result;
+			return result && !report.containsErrors();
 		}
 
 	};

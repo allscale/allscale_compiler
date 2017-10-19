@@ -49,6 +49,10 @@ namespace reporting {
 			issues[prec].second[variant].insert(is.begin(), is.end());
 		}
 
+		bool containsErrors() const;
+
+		bool containsWarnings() const;
+
 		void toJSON(const std::string& filename) const;
 
 		void toJSON(std::ostream& out) const;

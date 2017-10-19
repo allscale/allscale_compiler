@@ -4,6 +4,7 @@
 
 ### Not working until we fix stuff in the backend and/or can use the shared memory data item manager in the runtime
 grid_init
+grid_init_2d
 vector_add_grid
 vector_add_static_grid
 
