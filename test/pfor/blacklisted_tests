@@ -8,6 +8,7 @@
 
 sync_after
 sync_after_2d
+sync_neighbor_2d
 
 
 ####################################################################################
@@ -16,4 +17,3 @@ sync_after_2d
 # the integration test driver is run with the option to run these long tests also. #
 ####################################################################################
 
-+sync_neighbor_2d

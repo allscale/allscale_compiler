@@ -3,6 +3,9 @@
 
 
 01_basic
+02_data_structure
+03_pfor_simple
+04_pfor_collapsed
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
@@ -10,6 +13,3 @@
 # the integration test driver is run with the option to run these long tests also. #
 ####################################################################################
 
-+02_data_structure
-+03_pfor_simple
-+04_pfor_collapsed
