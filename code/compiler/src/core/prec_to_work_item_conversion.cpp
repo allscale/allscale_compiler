@@ -1303,7 +1303,8 @@ namespace core {
 
 		// check that the result is properly typed
 		assert_true(core::checks::check(res).empty())
-			<< core::printer::dumpErrors(core::checks::check(res));
+			<< core::printer::dumpErrors(core::checks::check(res))
+			<< core::checks::check(res);
 
 		// return result
 		return ConversionResult { std::move(report), res };

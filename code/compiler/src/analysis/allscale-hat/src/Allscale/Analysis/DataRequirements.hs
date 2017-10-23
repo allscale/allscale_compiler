@@ -18,6 +18,7 @@ import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
 import qualified Insieme.Inspire as I
+import qualified Insieme.Inspire.Builder as Builder
 import qualified Insieme.Query as Q
 import qualified Insieme.Utils.BoundSet as BSet
 import Insieme.Adapter.Utils (pprintTree)
@@ -129,7 +130,7 @@ dataRequirements addr = case I.getNode addr of
                   then bodyRequirements 
                   else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )  
 
-            fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- BSet.toList toVals ]
+            fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- Builder.minusOne <$> BSet.toList toVals ]
 
             fromVals = unSVS $ toValue $ Solver.get a beginValVar
             toVals   = unSVS $ toValue $ Solver.get a endValVar

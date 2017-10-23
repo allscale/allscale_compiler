@@ -9,10 +9,10 @@ int main() {
 	// test a stencil with fixed boundaries
 	{
 		cba_expect_data_requirements("{"
-				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RO },"
-				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0+1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10+1), type_lit(cpp_ref)))] RO },"
-				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0-1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1), type_lit(cpp_ref)))] RO },"
-				  "Requirement { ref_kind_cast(v1, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RW }"
+				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RO },"
+				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0+1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u+1), type_lit(cpp_ref)))] RO },"
+				  "Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0-1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u-1), type_lit(cpp_ref)))] RO },"
+				  "Requirement { ref_kind_cast(v1, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RW }"
 				"}");
 
 		// compute a 1D stencil

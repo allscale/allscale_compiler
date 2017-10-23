@@ -55,7 +55,7 @@ int main() {
 	// test some loop over elements (read only)
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b), type_lit(cpp_ref)))] RO }"
+				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b-1u), type_lit(cpp_ref)))] RO }"
 			"}");
 
 		// fabricate an artificial access
@@ -70,7 +70,7 @@ int main() {
 	// test some loop over elements (read only)
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b), type_lit(cpp_ref)))] RW }"
+				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b-1u), type_lit(cpp_ref)))] RW }"
 			"}");
 
 		// fabricate an artificial access
@@ -85,8 +85,8 @@ int main() {
 	// test some loop over elements (read only)
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b), type_lit(cpp_ref)))] RO },"
-				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b), type_lit(cpp_ref)))] RW }"
+				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b-1u), type_lit(cpp_ref)))] RO },"
+				"Requirement { ref_kind_cast(v0.X, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v0.a), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v0.b-1u), type_lit(cpp_ref)))] RW }"
 			"}");
 
 		// fabricate an artificial access

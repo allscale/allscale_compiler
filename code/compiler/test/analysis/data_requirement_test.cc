@@ -358,7 +358,7 @@ namespace analysis {
 
 		// read from a data structure inside a for loop
 		EXPECT_EQ(
-			"{Requirement { A[span(0,10)] RO }}",
+			"{Requirement { A[span(0,10-1u)] RO }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{
@@ -372,7 +372,7 @@ namespace analysis {
 
 		// read from a data structure inside a for loop
 		EXPECT_EQ(
-			"{Requirement { A[span(point(0),point(10))] RO }}",
+			"{Requirement { A[span(point(0),point(10-1u))] RO }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{
@@ -392,7 +392,7 @@ namespace analysis {
 
 		// read from a data structure inside a for loop
 		EXPECT_EQ(
-			"{Requirement { A[span(point(0, 4),point(10, 12))] RO }}",
+			"{Requirement { A[span(point(0, 4),point(10-1u, 12-1u))] RO }}",
 			toString(getDataRequirements(mgr,
 				R"(
 
@@ -417,7 +417,7 @@ namespace analysis {
 
 		// compute stencil with fixed boundary
 		EXPECT_EQ(
-			"{Requirement { A[span(10+1,20+1)] RO },Requirement { A[span(10-1,20-1)] RO },Requirement { A[span(10,20)] RO },Requirement { B[span(10,20)] RW }}",
+			"{Requirement { A[span(10+1,20-1u+1)] RO },Requirement { A[span(10-1,20-1u-1)] RO },Requirement { A[span(10,20-1u)] RO },Requirement { B[span(10,20-1u)] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
@@ -463,10 +463,10 @@ namespace analysis {
 			)"
 		));
 
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y+1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y)] RW }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y-1u)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1u-1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y-1u+1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y-1u)] RW }");
 
 		// compute stencil with literal boundary and local variables
 		requirement = toString(getDataRequirements(mgr,
@@ -492,10 +492,10 @@ namespace analysis {
 			)"
 		));
 
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y+1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y)] RW }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y-1u)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1u-1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y-1u+1)] RO }");
+		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y-1u)] RW }");
 
 	}
 

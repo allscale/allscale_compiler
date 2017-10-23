@@ -80,7 +80,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RO }}");
 
 		// fabricate an artificial access
 		int sum = 0;
@@ -91,7 +91,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RW }}");
 
 		// fabricate an artificial access
 		for(int i=0; i<10; i++) {
@@ -101,7 +101,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RO }}");
 
 		// fabricate an artificial access
 		int sum = 0;
@@ -112,7 +112,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref)))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RW }}");
 
 		// fabricate an artificial access
 		for(int i=0; i<10; i++) {
@@ -125,7 +125,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3), type_lit(cpp_ref)))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3-1u), type_lit(cpp_ref)))] RO }}");
 
 		// fabricate an artificial access
 		int sum = 0;
@@ -136,7 +136,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3), type_lit(cpp_ref)))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3-1u), type_lit(cpp_ref)))] RW }}");
 
 		// fabricate an artificial access
 		for(int i=a; i<b; i++) {
@@ -146,7 +146,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3), type_lit(cpp_ref)))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3-1u), type_lit(cpp_ref)))] RO }}");
 
 		// fabricate an artificial access
 		int sum = 0;
@@ -157,7 +157,7 @@ int main() {
 
 	// test some loop over elements
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3), type_lit(cpp_ref)))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v2), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v3-1u), type_lit(cpp_ref)))] RW }}");
 
 		// fabricate an artificial access
 		for(int i=a; i<b; i++) {
