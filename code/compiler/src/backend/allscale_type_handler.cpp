@@ -160,7 +160,6 @@ namespace backend {
 			auto macro = mgr->create<backend::c_ast::OpaqueCode>(ss.str());
 			auto decl = fragmentManager->create<backend::c_ast::CCodeFragment>(mgr, macro);
 			decl->addDependency(dataItemTypeInfo.declaration);
-			decl->addInclude("allscale/data_item_server.hpp");
 
 			// create resulting code fragment
 			return type_info_utils::createInfo(namedType, decl);
