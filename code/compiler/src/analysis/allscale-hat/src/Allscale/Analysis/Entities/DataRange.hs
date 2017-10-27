@@ -15,7 +15,7 @@ module Allscale.Analysis.Entities.DataRange (
 import Control.DeepSeq
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
-import Insieme.Inspire (substitute)
+import Insieme.Inspire (substituteInLocalScope)
 
 import qualified Data.Map as Map
 import qualified Insieme.Inspire as IR
@@ -61,7 +61,7 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
       where
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
         
-        sub' o n t = substitute (Map.singleton o n) t
+        sub' o n t = substituteInLocalScope (Map.singleton o n) t
 
 printRange :: DataRange -> String
 printRange (DataRange BSet.Universe) = "-all-"

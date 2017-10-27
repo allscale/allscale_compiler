@@ -127,8 +127,8 @@ dataRequirements addr = case I.getNode addr of
             DataRequirements bodyRequirements  = (Solver.get a bodyDepVar)
 
             val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)  
-                  then bodyRequirements 
-                  else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )  
+                  then BSet.Universe
+                  else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )
 
             fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- Builder.minusOne <$> BSet.toList toVals ]
 
