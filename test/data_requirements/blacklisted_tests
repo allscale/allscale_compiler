@@ -3,7 +3,8 @@
 
 
 ### Not working until we fix stuff in the backend and/or can use the shared memory data item manager in the runtime
-
+grid_stencil
+grid_stencil_2d
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
