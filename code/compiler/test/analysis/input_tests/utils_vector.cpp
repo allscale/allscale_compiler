@@ -10,8 +10,6 @@ void check1D() {
 	// check default initialization
 	Vector<int,1> a;
 
-//	cba_expect_is_alias(&a.x,&a[0]);
-
 	cba_expect_undefined_int(a[0]);
 
 	// check initialization
@@ -20,6 +18,7 @@ void check1D() {
 	cba_expect_eq_int(7,b[0]);
 
 
+//	cba_dump_statistic();
 //	cba_debug();
 
 }
@@ -30,13 +29,8 @@ void check2D() {
 	// check default initialization
 	Vector<int,2> a;
 
-	// known bug:
-
-//	cba_expect_is_alias(&a.x,&a[0]);
-//	cba_expect_is_alias(&a.y,&a[1]);
-
-//	cba_expect_may_alias(&a.x,&a[0]);
-//	cba_expect_may_alias(&a.y,&a[1]);
+	cba_expect_is_alias(&a.x,&a[0]);
+	cba_expect_is_alias(&a.y,&a[1]);
 
 	cba_expect_undefined_int(a[0]);
 	cba_expect_undefined_int(a[1]);
@@ -47,41 +41,40 @@ void check2D() {
 	// check initialization
 	Vector<int,2> b { 1, 2 };
 
-//	cba_expect_eq_int(1,b[0]);
-//	cba_expect_eq_int(2,b[1]);
+	cba_expect_eq_int(1,b[0]);
+	cba_expect_eq_int(2,b[1]);
 
 	cba_expect_eq_int(1,b.x);
 	cba_expect_eq_int(2,b.y);
 
-	// known bug:
 
-//	// check mutating assignments
-//	Vector<int,2> c;
-//
-//	c.x = 1;
-//	c.y = 2;
-//
-//	cba_expect_eq_int(1,c.x);
-//	cba_expect_eq_int(1,c[0]);
-//
-//	cba_expect_eq_int(2,c.y);
-//	cba_expect_eq_int(2,c[1]);
-//
-//	c.x = 3;
-//
-//	cba_expect_eq_int(3,c.x);
-//	cba_expect_eq_int(3,c[0]);
-//
-//	cba_expect_eq_int(2,c.y);
-//	cba_expect_eq_int(2,c[1]);
-//
-//	c[1] = 4;
-//
-//	cba_expect_eq_int(3,c.x);
-//	cba_expect_eq_int(3,c[0]);
-//
-//	cba_expect_eq_int(4,c.y);
-//	cba_expect_eq_int(4,c[1]);
+	// check mutating assignments
+	Vector<int,2> c;
+
+	c.x = 1;
+	c.y = 2;
+
+	cba_expect_eq_int(1,c.x);
+	cba_expect_eq_int(1,c[0]);
+
+	cba_expect_eq_int(2,c.y);
+	cba_expect_eq_int(2,c[1]);
+
+	c.x = 3;
+
+	cba_expect_eq_int(3,c.x);
+	cba_expect_eq_int(3,c[0]);
+
+	cba_expect_eq_int(2,c.y);
+	cba_expect_eq_int(2,c[1]);
+
+	c[1] = 4;
+
+	cba_expect_eq_int(3,c.x);
+	cba_expect_eq_int(3,c[0]);
+
+	cba_expect_eq_int(4,c.y);
+	cba_expect_eq_int(4,c[1]);
 
 
 //	cba_debug();
@@ -107,9 +100,9 @@ void check3D() {
 	// check initialization
 	Vector<int,3> b { 1, 2, 3 };
 
-//	cba_expect_eq_int(1,b[0]);
-//	cba_expect_eq_int(2,b[1]);
-//	cba_expect_eq_int(3,b[2]);
+	cba_expect_eq_int(1,b[0]);
+	cba_expect_eq_int(2,b[1]);
+	cba_expect_eq_int(3,b[2]);
 
 	cba_expect_eq_int(1,b.x);
 	cba_expect_eq_int(2,b.y);
@@ -126,7 +119,6 @@ void check4D() {
 	// check default initialization
 	Vector<int,4> a;
 
-//	cba_expect_is_alias(&a.x,&a[0]);
 
 	cba_expect_undefined_int(a[0]);
 	cba_expect_undefined_int(a[1]);
