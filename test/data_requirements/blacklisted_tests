@@ -3,7 +3,6 @@
 
 
 ### Not working until we fix stuff in the backend and/or can use the shared memory data item manager in the runtime
-grid_init_2d
 
 
 ####################################################################################
