@@ -4,11 +4,10 @@
 # assumes you are running on a recent version of Ubuntu or Debian. See the
 # README file if you are using a different distribution.
 
-set -e
-set -u
+set -eu
 
 # Let us first create a build directory and enter it.
-mkdir build
+mkdir -p build
 cd build
 
 # The follow script will install the needed dependencies and setup the build
