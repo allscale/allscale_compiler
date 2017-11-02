@@ -4,8 +4,9 @@ The AllScale compiler is a source-to-source compiler for C++ applications that u
 
 ## Quickstart Guide
 
-To build the AllScale compiler, clone this repository and take a peek at `QUICKSTART`.
-You can directly execute it, given you are running a recent Ubuntu / Debian.
+To build the AllScale compiler, clone this repository and take a peek at
+`QUICKSTART`.  You can directly execute it, given you are running a recent
+Ubuntu / Debian (and have `sudo` installed).
 
     $ git clone --recursive https://github.com/allscale/allscale_compiler
     $ cd insieme
