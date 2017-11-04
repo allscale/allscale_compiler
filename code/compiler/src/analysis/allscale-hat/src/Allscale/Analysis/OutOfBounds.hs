@@ -13,9 +13,9 @@ module Allscale.Analysis.OutOfBounds (
 import Debug.Trace
 
 import Control.DeepSeq
-import Control.Monad
 import Data.Foldable (or)
 import Data.Typeable
+import Data.Maybe
 import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
@@ -28,7 +28,7 @@ import Insieme.Analysis.Arithmetic (arithmeticValue, SymbolicFormulaSet(..))
 import Insieme.Analysis.Entities.FieldIndex
 import Insieme.Analysis.Entities.SymbolicFormula (SymbolicFormula)
 import Insieme.Analysis.Framework.Dataflow
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toValue, getElement, isValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
@@ -46,63 +46,92 @@ outOfBounds :: Solver.SolverState -> NodeAddress -> (OutOfBoundsResult,Solver.So
 outOfBounds init addr = (result,ns')
   where
     result = case () of
-        _ | BSet.isUniverse arrayIndex -> MayBeOutOfBounds
-          | BSet.isUniverse arraySize  -> MayBeOutOfBounds
-          | or oobs                    -> IsOutOfBounds
-          | otherwise                  -> IsNotOutOfBounds
+        _ | BSet.isUniverse arrayIndex                 -> MayBeOutOfBounds
+          | all isOutOfBound $ BSet.toList arrayIndex  -> IsOutOfBounds
+          | any mayOutOfBound $ BSet.toList arrayIndex -> MayBeOutOfBounds
+          | otherwise                                  -> IsNotOutOfBounds
 
-    oobs = BSet.toList $ BSet.lift2 isOutOfBound arrayIndex arraySize
 
-    isOutOfBound :: ArrayAccess -> SymbolicFormula -> Bool
-    isOutOfBound (ArrayAccess i)    s = Ar.numCompare i s /= Ar.NumLT
-    isOutOfBound InvalidArrayAccess _ = True
+    checkBounds :: Bool -> ArrayAccess -> Bool
+    checkBounds unknown (ArrayAccess d i) = case getElement d arraySize of
+        v | isValue v -> case sizes of
+                BSet.Universe -> unknown
+                _             -> any tooSmall $ BSet.toList sizes
+              where
+                sizes = unSFS $ toValue v
+                tooSmall s = Ar.numCompare i s /= Ar.NumLT
 
-    (arrayIndex',ns) = Solver.resolve init
+        _ -> unknown
+
+    checkBounds _       NotAnArrayAccess   = False
+    checkBounds unknown UnknownIndexAccess = unknown
+
+    isOutOfBound = checkBounds False
+    mayOutOfBound = checkBounds True
+
+    (targetRef',ns) = Solver.resolve init
                      $ Ref.referenceValue
                      $ I.goDown 1 $ I.goDown 2 addr
 
     arrayIndex :: BSet.UnboundSet ArrayAccess
-    arrayIndex = convertArrayIndex $ toValue arrayIndex'
+    arrayIndex = convertArrayIndex $ toValue targetRef'
 
-    (arraySize',ns') = Solver.resolve ns
+    (arraySize,ns') = Solver.resolve ns
                      $ elementCount
                      $ I.goDown 1 $ I.goDown 2 addr
 
-    arraySize :: BSet.UnboundSet SymbolicFormula
-    arraySize = BSet.changeBound $ unSFS $ toValue arraySize'
 
 -- * Array Index
 
-data ArrayAccess = ArrayAccess SymbolicFormula
-                 | InvalidArrayAccess
+data ArrayAccess = ArrayAccess (DP.DataPath SimpleFieldIndex) SymbolicFormula
+                 | NotAnArrayAccess
+                 | UnknownIndexAccess
   deriving (Eq,Ord,Show,Generic,NFData)
 
 convertArrayIndex :: Ref.ReferenceSet SimpleFieldIndex -> BSet.UnboundSet ArrayAccess
 convertArrayIndex = BSet.changeBound
-                  . BSet.map (maybe InvalidArrayAccess ArrayAccess)
-                  . BSet.map (toDataPath >=> toFormula)
+                  . BSet.map (maybe NotAnArrayAccess toAccess)
+                  . BSet.map toDataPath
                   . Ref.unRS
   where
     toDataPath :: Ref.Reference i -> Maybe (DP.DataPath i)
     toDataPath (Ref.Reference _ dp) = Just dp
     toDataPath _                    = Nothing
 
-    toFormula :: DP.DataPath SimpleFieldIndex -> Maybe SymbolicFormula
-    toFormula  DP.Root                               = Just Ar.zero
-    toFormula (DP.DataPath _ DP.Down (ArrayIndex i)) = Just $ Ar.mkConst $ fromIntegral i
-    toFormula  _                                     = Nothing
+    toAccess :: DP.DataPath SimpleFieldIndex -> ArrayAccess
+    toAccess  DP.Root                                = NotAnArrayAccess
+    toAccess (DP.DataPath dp DP.Down (ArrayIndex i)) = ArrayAccess dp $ Ar.mkConst $ fromIntegral i
+    toAccess (DP.DataPath _  DP.Down UnknownIndex)   = UnknownIndexAccess
+    toAccess  _                                      = NotAnArrayAccess
+
 
 -- * Element Count
 
 data ElementCountAnalysis = ElementCountAnalysis
   deriving (Typeable)
 
-elementCountAnalysis :: DataFlowAnalysis ElementCountAnalysis (ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10)) SimpleFieldIndex
-elementCountAnalysis = (mkDataFlowAnalysis ElementCountAnalysis "EC" elementCount)
 
-elementCount :: NodeAddress -> Solver.TypedVar (ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10))
-elementCount addr = dataflowValue addr elementCountAnalysis [refNull, noChange, creation, scalar]
+type ArraySize = ValueTree.Tree SimpleFieldIndex (SymbolicFormulaSet BSet.Bound10)
+
+elementCount :: NodeAddress -> Solver.TypedVar ArraySize
+elementCount addr = case Q.getNodeType addr of
+
+    I.Literal -> Solver.mkVariable id [] $ toComposed $ SymbolicFormulaSet $ BSet.singleton size
+      where
+        size = if isRefArray then s else Ar.one
+          where
+            s = Ar.mkConst $ fromIntegral $ Q.getArraySize $ fromJust $ Q.getReferencedType addr
+
+
+    _ -> dataflowValue addr analysis [refNull, noChange, creation, scalar]
+
   where
+
+    analysis = (mkDataFlowAnalysis ElementCountAnalysis "EC" elementCount) {
+        entryPointParameterHandler = const $ Solver.mkVariable id [] Solver.bot
+    }
+    id = mkVarIdentifier analysis addr
+
     refNull = OperatorHandler cov dep val
       where
         cov a = Q.isBuiltin a "ref_null"
