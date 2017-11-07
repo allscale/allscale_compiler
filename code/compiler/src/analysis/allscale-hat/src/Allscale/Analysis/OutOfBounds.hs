@@ -47,6 +47,7 @@ outOfBounds init addr = (result,ns')
   where
     result = case () of
         _ | BSet.isUniverse arrayIndex                 -> MayBeOutOfBounds
+          | BSet.null arrayIndex                       -> MayBeOutOfBounds
           | all isOutOfBound $ BSet.toList arrayIndex  -> IsOutOfBounds
           | any mayOutOfBound $ BSet.toList arrayIndex -> MayBeOutOfBounds
           | otherwise                                  -> IsNotOutOfBounds

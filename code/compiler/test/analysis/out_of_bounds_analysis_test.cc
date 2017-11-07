@@ -2,6 +2,8 @@
 
 #include "allscale/compiler/analysis/out_of_bounds_analysis.h"
 
+#include <fstream>
+
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/printer/error_printer.h"
@@ -294,42 +296,152 @@ namespace analysis {
 		ASSERT_EQ(OutOfBoundsResult::IsNotOutOfBounds, getOutOfBounds(ctx, call));
 	}
 
-	TEST(OutOfBounds, InputCode) {
-		NodeManager mgr;
-		IRBuilder builder(mgr);
-		Context ctxt;
+	namespace {
 
-		// load some input code
-		auto testCase = insieme::driver::integration::getCase("seq/c/pendulum");
-		ASSERT_TRUE(testCase);
-		ProgramPtr prog = testCase->load(mgr);
-		ASSERT_TRUE(prog);
+		struct summary {
+			std::vector<CallExprAddress> notOutOfBounds;
+			std::vector<CallExprAddress> mayOutOfBounds;
+			std::vector<CallExprAddress> isOutOfBounds;
 
-		// collect all reads
-		std::vector<CallExprAddress> reads;
-		auto& refExt = mgr.getLangExtension<lang::ReferenceExtension>();
-		visitDepthFirst(ProgramAddress(prog),[&](const CallExprAddress& call){
-			if (refExt.isCallOfRefDeref(call)) {
-				reads.push_back(call);
+			std::size_t numAccesses() const {
+				return notOutOfBounds.size() + mayOutOfBounds.size() + isOutOfBounds.size();
 			}
-		});
+		};
 
-//		std::cout << "Total number of reads: " << reads.size() << "\n";
+		summary eval(const NodePtr& code, bool debug = false) {
+			NodeManager& mgr = code.getNodeManager();
 
-		// check all those for out-of-bound violations
-		std::map<OutOfBoundsResult,int> counter;
-		for(const auto& read : reads) {
-			auto cur = getOutOfBounds(ctxt,read);
-			counter[cur]++;
+			summary res;
+
+			// collect all reads
+			std::vector<CallExprAddress> reads;
+			auto& refExt = mgr.getLangExtension<lang::ReferenceExtension>();
+			visitDepthFirst(NodeAddress(code),[&](const CallExprAddress& call){
+				if (refExt.isCallOfRefDeref(call) ) {
+					reads.push_back(call);
+				}
+			});
+
+
+			// check all those for out-of-bound violations
+			Context ctxt;
+			std::map<OutOfBoundsResult,int> counter;
+			for(const auto& read : reads) {
+				switch (getOutOfBounds(ctxt,read)) {
+					case OutOfBoundsResult::IsNotOutOfBounds: res.notOutOfBounds.push_back(read); break;
+					case OutOfBoundsResult::MayBeOutOfBounds: res.mayOutOfBounds.push_back(read); break;
+					case OutOfBoundsResult::IsOutOfBounds:    res.isOutOfBounds.push_back(read); break;
+				}
+			}
+
+			// for debugging, print report
+			if (debug) {
+
+				std::cout << "MayOutOfBounds:\n";
+				for(const auto& cur : res.mayOutOfBounds) {
+					std::cout << cur << "\n";
+				}
+
+				std::cout << "IsOutOfBounds:\n";
+				for(const auto& cur : res.isOutOfBounds) {
+					std::cout << cur << "\n";
+				}
+
+				dump::json::dumpIR("code.json",code);
+				ctxt.dumpSolution();
+
+			}
+
+			// done
+			return res;
 		}
 
-//		std::cout << "Not out-of-bound: " << counter[OutOfBoundsResult::IsNotOutOfBounds] << "\n";
-//		std::cout << " Is out-of-bound: " << counter[OutOfBoundsResult::IsOutOfBounds] << "\n";
-//		std::cout << "May out-of-bound: " << counter[OutOfBoundsResult::MayBeOutOfBounds] << "\n";
+		summary eval(const std::string& caseName, bool debug = false) {
+			NodeManager mgr;
 
-		EXPECT_LE(2155,counter[OutOfBoundsResult::IsNotOutOfBounds]);
-		EXPECT_GE(   0,counter[OutOfBoundsResult::IsOutOfBounds]);
-		EXPECT_GE(  39,counter[OutOfBoundsResult::MayBeOutOfBounds]);
+			// parse test case configuration
+			auto testCase = insieme::driver::integration::getCase(caseName);
+			EXPECT_TRUE(testCase) << "No such test case: " << caseName;
+			if (!testCase) exit(1);
+
+			// load the input program
+			ProgramPtr prog = testCase->load(mgr);
+			EXPECT_TRUE(prog);
+			if (!prog) exit(1);
+
+			// evaluate the out-of-bound query
+			return eval(prog,debug);
+		}
+
+
+	}
+
+
+	TEST(OutOfBounds, InputCode) {
+
+		// evaluate out-of-bounds for pendulum
+		auto res = eval("seq/c/pendulum");
+
+//		std::cout << "Total number of accesses: " << res.numAccesses() << "\n";
+//		std::cout << "Not out-of-bound: " << res.notOutOfBounds.size() << "\n";
+//		std::cout << " Is out-of-bound: " << res. isOutOfBounds.size() << "\n";
+//		std::cout << "May out-of-bound: " << res.mayOutOfBounds.size() << "\n";
+
+		EXPECT_LE(2155,res.notOutOfBounds.size());
+		EXPECT_GE(   0,res. isOutOfBounds.size());
+		EXPECT_GE(  39,res.mayOutOfBounds.size());
+
+	}
+
+	TEST(DISABLED_OutOfBounds, Survey) {
+
+		// load list of programs
+		std::vector<std::string> programs;
+		{
+			std::ifstream file("integration_tests_actual.txt");
+			std::string str;
+			while (std::getline(file, str)) {
+				programs.push_back(str);
+			}
+		}
+
+		std::cout << "Number of test cases: " << programs.size() << "\n";
+
+		std::map<std::string,std::tuple<std::size_t,std::size_t,std::size_t>> data;
+
+		auto printData = [&]() {
+			std::cout << "Name,NotOutOfBound,MayOutOfBound,IsOutOfBound\n";
+			for(const auto& cur : data) {
+				std::cout << cur.first
+						<< "," << std::get<0>(cur.second)
+						<< "," << std::get<1>(cur.second)
+						<< "," << std::get<2>(cur.second)
+						<< "\n";
+			}
+			std::cout << "\n";
+		};
+
+
+		for(const auto& name : programs) {
+			std::cout << "Evaluating: " << name << " (" << (data.size() + 1) << "/" << programs.size() << ")\n";
+
+			auto res = eval(name);
+			std::cout << "Total number of accesses: " << res.numAccesses() << "\n";
+			std::cout << "Not out-of-bound: " << res.notOutOfBounds.size() << "\n";
+			std::cout << " Is out-of-bound: " << res. isOutOfBounds.size() << "\n";
+			std::cout << "May out-of-bound: " << res.mayOutOfBounds.size() << "\n";
+			std::cout << "\n";
+
+			// record data
+			data[name] = std::make_tuple(
+					res.notOutOfBounds.size(),
+					res.mayOutOfBounds.size(),
+					res.isOutOfBounds.size()
+			);
+
+			// print all data
+			printData();
+		}
 
 	}
 
