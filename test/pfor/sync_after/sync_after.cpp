@@ -36,7 +36,7 @@ int main() {
 
 			B[i] = t + 1;
 
-		}, neighborhood_sync(ref));
+		}, small_neighborhood_sync(ref));
 
 		if (t % 2 == 0) {
 			ref = after(ref, N / 2, [B, t, &counter, N] {
@@ -54,7 +54,7 @@ int main() {
 		if(A[i] != T) {
 			std::cout << T << std::endl;
 		}
-	}, neighborhood_sync(ref));
+	}, small_neighborhood_sync(ref));
 
 	if(T / 2 != counter) {
 		std::cout << T << std::endl;

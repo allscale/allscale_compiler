@@ -60,7 +60,7 @@ int main() {
 
 			(*B)[p.x][p.y]=t+1;
 
-		}, neighborhood_sync(ref));
+		}, full_neighborhood_sync(ref));
 
 		if (t % 2 == 0) {
 			ref = after(ref, center, [&,B,t] {
@@ -78,7 +78,7 @@ int main() {
 		if((*A)[p.x][p.y] != T) {
 			std::cout << p.x << std::endl;
 		}
-	}, neighborhood_sync(ref));
+	}, small_neighborhood_sync(ref));
 
 	if(T / 2 != counter) {
 		std::cout << counter << std::endl;
