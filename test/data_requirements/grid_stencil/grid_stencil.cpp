@@ -35,8 +35,7 @@ int main() {
         Grid<int>& B = (t % 2) ? dataB : dataA;
 
         // update state
-        pfor(1,N-1,[t,&A,&B](int i) {
-
+        pfor(0,N,[t,&A,&B](int i) {
             // check the last state
             if (i > 0)   expect_eq(t,A[i-1]);
             expect_eq(t,A[i]);
