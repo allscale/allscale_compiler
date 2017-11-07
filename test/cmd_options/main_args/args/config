@@ -1,1 +1,3 @@
 executionFlags="foo"
+# We also need to set the exec flags for the seq execute step here explicitely, since the generic setting above won't overwrite the step-specific setting
+executionFlags[insiemecc_seq_cpp_execute]="foo"

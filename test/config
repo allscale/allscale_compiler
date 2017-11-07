@@ -17,4 +17,4 @@ use_cpp[insiemecc_seq_cpp_compile]=1
 use_libmath=1
 use_libpthread=1
 outputAwk=
-executionFlags="--hpx:threads=4 --hpx:bind=none"
+executionFlags[insiemecc_seq_cpp_execute]="--hpx:threads=4 --hpx:bind=none"
