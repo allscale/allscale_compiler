@@ -1,10 +1,12 @@
 #include <allscale/api/user/algorithm/pfor.h>
 #include <allscale/utils/vector.h>
 
+#include <memory>
+
 using namespace allscale::api::user::algorithm;
 
 int main() {
-	const int N = 10000000;
+	const int N = 1000;
 	const int T = 100;
 
 	using Point = allscale::utils::Vector<int,2>;
@@ -12,11 +14,11 @@ int main() {
 	Point size = { N, N };
 	Point center = { N / 2, N / 2 };
 
-	std::array<std::array<int, N>, N> bufferA;
-	std::array<std::array<int, N>, N> bufferB;
+	auto bufferA = std::make_unique<std::array<std::array<int, N>, N>>();
+	auto bufferB = std::make_unique<std::array<std::array<int, N>, N>>();
 
-	auto* A = &bufferA;
-	auto* B = &bufferB;
+	auto* A = &*bufferA;
+	auto* B = &*bufferB;
 
 	auto ref = pfor(size, [A,B](const Point& p) {
 		(*A)[p.x][p.y] = 0;
