@@ -52,7 +52,7 @@ import qualified Insieme.Analysis.Reference as Ref
 import qualified Insieme.Analysis.Solver as Solver
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Inspire.BinaryParser as BinPar
-import qualified Insieme.Inspire.Query as Q
+import qualified Insieme.Query as Q
 import qualified Insieme.Utils.BoundSet as BSet
 
 import Allscale.Analysis.DataRequirements as DR
