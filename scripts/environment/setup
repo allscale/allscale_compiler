@@ -23,7 +23,7 @@ elif ! already_installed $(cat "$DIR/system_packages"); then
 fi
 
 # Run installer with default settings to install additional dependencies.
-"$DIR/../../insieme/scripts/dependencies/installer" llvm boost cudd
+"$DIR/../../insieme/scripts/dependencies/installer" llvm boost cudd gmp zlib ghc cabal
 
 # Run third party linker to ensure that all links are up-to-date.
 "$DIR/../../insieme/scripts/dependencies/third_party_linker"
