@@ -2,6 +2,7 @@ bison
 build-essential
 cmake
 flex
+git
 groff-base
 libcpufreq-dev
 libgmp10
