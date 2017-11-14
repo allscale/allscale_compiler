@@ -9,7 +9,7 @@ namespace allscale {
 namespace compiler {
 namespace core {
 
-	struct DataItemTag {};
+	struct DataItemTag : public insieme::core::value_annotation::copy_on_migration {};
 
 	void markAsDataItem(const insieme::core::TypePtr& node);
 	bool isDataItem(const insieme::core::NodePtr& node);
