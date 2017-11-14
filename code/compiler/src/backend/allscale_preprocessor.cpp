@@ -205,15 +205,12 @@ namespace backend {
 			// collect all structs in the closure type
 			core::visitDepthFirstOnce(call->getArgument(0)->getType(),[&](const core::RecordPtr& record){
 
-				// check whether there is a field of a reference type
-				bool hasReferenceField = any(record->getFields(),[](const core::FieldPtr& field) {
-					return core::lang::isReference(field->getType());
-				});
+				// Goal: add a all-field forward constructor to support initializer expressions
 
-				// only interested if there is a reference field
-				if (!hasReferenceField) return;
+				// if there are no fields, the default constructor is sufficient
+				if (record->getFields().empty()) return;
 
-				// Step 1: re-write the default to force code generation (it is no longer defaulted)
+				auto newRecord = record;
 
 				// search default constructor
 				core::LambdaExprAddress defaultConstructor;
@@ -224,18 +221,6 @@ namespace backend {
 						}
 					}
 				}
-
-				// make sure it has been found
-				assert_true(defaultConstructor)
-					<< "Unable to locate pre-existing default constructor!";
-
-				// replace body of this constructor
-				auto newRecord = core::transform::replaceNode(mgr,defaultConstructor->getBody(),builder.compoundStmt(
-						builder.stringLit("Forced auto-generated default constructor.")
-				)).as<core::RecordPtr>();
-
-
-				// Step 2: add a all-field forward constructor to support initializer expressions
 
 				core::VariablePtr thisVar = defaultConstructor->getParameterList()[0];
 				core::VariableList parameters;
