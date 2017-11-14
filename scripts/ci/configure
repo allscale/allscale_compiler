@@ -14,4 +14,4 @@ mkdir -p "$BUILD_DIR"
 # symlinks corresponding to the installed version selected in the dependency
 # installer.
 cd "$BUILD_DIR"
-PREFIX="$THIRD_PARTY_LIBS" "$WORKSPACE/scripts/dependencies/third_party_linker"
+PREFIX="$THIRD_PARTY_LIBS" "$WORKSPACE/insieme/scripts/dependencies/third_party_linker"
