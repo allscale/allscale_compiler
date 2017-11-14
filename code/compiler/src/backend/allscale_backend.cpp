@@ -51,7 +51,7 @@ namespace backend {
 				backendInterceptionPreprocessor,
 				be::getBasicPreProcessorSequence(),
 				be::makePreProcessor<EntryPointWrapper>(),
-				be::makePreProcessor<ClosureDefaultConstructorEnforcer>()
+				be::makePreProcessor<ClosureConstructorEnforcer>()
 			));
 
 			// register support for additional types

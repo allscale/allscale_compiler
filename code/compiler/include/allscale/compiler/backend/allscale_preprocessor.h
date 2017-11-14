@@ -22,14 +22,14 @@ namespace backend {
 
 	/**
 	 * A pre-processor step ensuring that all records captured in a closure own a default
-	 * constructor.
+	 * constructor and an all-fields constructor.
 	 */
-	class ClosureDefaultConstructorEnforcer : public insieme::backend::PreProcessor {
+	class ClosureConstructorEnforcer : public insieme::backend::PreProcessor {
 	  public:
 
 		virtual insieme::core::NodePtr process(const insieme::backend::Converter& converter, const insieme::core::NodePtr& code) override;
 
-		virtual std::ostream& printTo(std::ostream& out) const override { return out << "ClosureDefaultConstructorEnforcer"; }
+		virtual std::ostream& printTo(std::ostream& out) const override { return out << "ClosureConstructorEnforcer"; }
 	};
 
 

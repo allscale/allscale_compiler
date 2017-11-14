@@ -187,7 +187,7 @@ namespace backend {
 	}
 
 
-	insieme::core::NodePtr ClosureDefaultConstructorEnforcer::process(const insieme::backend::Converter&, const insieme::core::NodePtr& code) {
+	insieme::core::NodePtr ClosureConstructorEnforcer::process(const insieme::backend::Converter&, const insieme::core::NodePtr& code) {
 
 		core::NodeManager& mgr = code.getNodeManager();
 		core::IRBuilder builder(mgr);
@@ -262,7 +262,8 @@ namespace backend {
 					);
 
 					// create the init expression
-					auto initExpr = builder.initExpr(fieldAccess,parameter);
+					auto arg = core::lang::isReference(fieldType) ? parameter : builder.deref(parameter);
+					auto initExpr = builder.initExpr(fieldAccess,arg);
 
 					// TODO: actually call constructor of copied elements if necessary
 					//  - so fare everything is initialized through an init expression
