@@ -37,14 +37,14 @@ int main() {
         Grid<int,2>& B = (t % 2) ? dataB : dataA;
 
         // update state
-        pfor(Point{0,0},Point{N,N},[t,&A,&B](Point p) {
+        pfor(Point{1,1},Point{N-1,N-1},[t,&A,&B](Point p) {
 
             // check the last state
             expect_eq(t,A[p]);
-            if (p.x > 0)   expect_eq(t,A[Point{p.x-1,p.y}]);
-            if (p.x < N-1) expect_eq(t,A[Point{p.x+1,p.y}]);
-            if (p.y > 0)   expect_eq(t,A[Point{p.x,p.y-1}]);
-            if (p.y < N-1) expect_eq(t,A[Point{p.x,p.y+1}]);
+            if (p.x > 1)   expect_eq(t,A[Point{p.x-1,p.y}]);
+            if (p.x < N-2) expect_eq(t,A[Point{p.x+1,p.y}]);
+            if (p.y > 1)   expect_eq(t,A[Point{p.x,p.y-1}]);
+            if (p.y < N-2) expect_eq(t,A[Point{p.x,p.y+1}]);
 
             // update time
             B[p] = t + 1;
