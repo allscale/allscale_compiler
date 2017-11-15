@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
 	parser.addParameter("backend",   backendString, std::string(""),                        "backend selection (for compatibility reasons - ignored)");
 	parser.addFlag("check-data-item-accesses",      conversionConfig.checkDataItemAccesses, "enables data item access instrumentation (debugging)");
 	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
+	parser.addFlag("allow-sm-only",                 conversionConfig.allowSharedMemoryOnly, "only create shared memory conversion variant");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero

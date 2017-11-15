@@ -23,6 +23,9 @@ namespace core {
 		// Allows to enable the instrumentation of data item accesses (for access validation and statistics).
 		bool checkDataItemAccesses = false;
 
+		// Accept shared memory being the only viable conversion variant.
+		bool allowSharedMemoryOnly = false;
+
 	};
 
 	/**

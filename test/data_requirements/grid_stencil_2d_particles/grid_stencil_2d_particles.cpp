@@ -23,9 +23,9 @@ struct Cell {
 
 void expect_eq(int a, int b) {
     if (a != b) {
-        std::cout << "Expected: " << a << "\n";
-        std::cout << "      Is: " << b << "\n";
-//        exit(1);
+        std::cerr << "Expected: " << a << "\n";
+        std::cerr << "      Is: " << b << "\n";
+        exit(1);
     }
 }
 
@@ -36,8 +36,8 @@ int main() {
     const int N = 1000;
     const int T = 100;
 
-    Space dataA({N,N}); 
-    Space dataB({N,N}); 
+    Space dataA({N,N});
+    Space dataB({N,N});
 
     using Point = Space::coordinate_type;
 
