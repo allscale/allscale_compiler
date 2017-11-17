@@ -45,8 +45,7 @@ int main(int argc, char** argv) {
 	// Allows the AllScale driver to dump an input code as JSON.
 	insieme::frontend::path dumpJSON;
 
-	// Allows to enable the instrumentation of data item accesses (for access validation and statistics)
-	bool checkDataItemAccesses = false;
+	allscale::compiler::core::ConversionConfig conversionConfig;
 
 	// If set, analysis failures will be ignored and target code will be anyway created
 	bool ignoreAnalysisFailures = false;
@@ -59,11 +58,11 @@ int main(int argc, char** argv) {
 	commonOptions.addFlagsAndParameters(parser);
 
 	// register allscalecc specific flags and parameters
-	parser.addParameter(",O",        opt_level,     0u,                         "optimization level");
-	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),  "dump intermediate representation (JSON)");
-	parser.addParameter("backend",   backendString, std::string(""),            "backend selection (for compatibility reasons - ignored)");
-	parser.addFlag("check-data-item-accesses",      checkDataItemAccesses,      "enables data item access instrumentation (debugging)");
-	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,     "ignore analysis failures and generate code anyway");
+	parser.addParameter(",O",        opt_level,     0u,                                     "optimization level");
+	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),              "dump intermediate representation (JSON)");
+	parser.addParameter("backend",   backendString, std::string(""),                        "backend selection (for compatibility reasons - ignored)");
+	parser.addFlag("check-data-item-accesses",      conversionConfig.checkDataItemAccesses, "enables data item access instrumentation (debugging)");
+	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -155,8 +154,6 @@ int main(int argc, char** argv) {
 
 	// Step 4: apply source-to-source conversions
 	std::cout << "Converting to AllScale Runtime code ... \n" << std::flush;
-	allscale::compiler::core::ConversionConfig conversionConfig;
-	conversionConfig.checkDataItemAccesses = checkDataItemAccesses;
 	auto summary = allscale::compiler::core::convert(conversionConfig,program,[&](const allscale::compiler::core::ProgressUpdate& update){
 		std::cout << "\t" << update.msg;
 		if (update.totalSteps > 0) {
@@ -207,7 +204,7 @@ int main(int argc, char** argv) {
 	std::cout << "Compiling target code (-O" << opt_level << ") ... " << std::flush;
 	allscale::compiler::backend::CompilerConfig compilerConfig;
 	compilerConfig.optimization_level = opt_level;
-	compilerConfig.checkDataItemAccesses = checkDataItemAccesses;
+	compilerConfig.checkDataItemAccesses = conversionConfig.checkDataItemAccesses;
 	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), compilerConfig);
 	std::cout << timer.step() << "s\n";
 
