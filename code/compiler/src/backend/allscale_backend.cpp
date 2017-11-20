@@ -50,8 +50,7 @@ namespace backend {
 			converter.setPreProcessor(be::makePreProcessorSequence(
 				backendInterceptionPreprocessor,
 				be::getBasicPreProcessorSequence(),
-				be::makePreProcessor<EntryPointWrapper>(),
-				be::makePreProcessor<ClosureConstructorEnforcer>()
+				be::makePreProcessor<EntryPointWrapper>()
 			));
 
 			// register support for additional types
