@@ -10,6 +10,7 @@
 
 #include "allscale/compiler/config.h"
 #include "allscale/compiler/backend/allscale_preprocessor.h"
+#include "allscale/compiler/backend/allscale_postprocessor.h"
 #include "allscale/compiler/backend/allscale_type_handler.h"
 #include "allscale/compiler/backend/allscale_operator.h"
 
@@ -55,6 +56,9 @@ namespace backend {
 
 			// register support for additional types
 			converter.getTypeManager().addTypeHandler(AllScaleTypeHandler);
+
+			// register the post-processor which will change DataItemReference& to DataItemReference for fields of structs
+			converter.setPostProcessor(be::makePostProcessor<AllScalePostProcessor>());
 
 			// register support for additional operators
 			addRuntimeSpecificOps(manager,converter.getFunctionManager().getOperatorConverterTable());
