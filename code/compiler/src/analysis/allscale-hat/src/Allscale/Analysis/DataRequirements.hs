@@ -29,7 +29,7 @@ import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import qualified Insieme.Analysis.Solver as Solver
 
-
+import qualified Insieme.Analysis.Utils.CppSemantic as Sema
 
 --
 -- * Access Modes
@@ -135,6 +135,31 @@ dataRequirements addr = case I.getNode addr of
             fromVals = unSVS $ toValue $ Solver.get a beginValVar
             toVals   = unSVS $ toValue $ Solver.get a endValVar
 
+
+    -- handle implicit constructor calls in declarations
+    I.Node I.Declaration _ | Sema.callsImplicitConstructor addr -> var
+      where
+        var = Solver.mkVariable varId [con] Solver.bot
+        con = Solver.createConstraint dep val var
+
+        dep _ = [Solver.toVar referenceVar]
+        val a = DataRequirements $ BSet.map go $ referenceVal a
+          where
+            go (ElementReference ref range) = DataRequirement {
+                dataItemRef = ref,
+                range       = range,
+                accessMode  = mode
+            }
+
+            mode = case () of 
+                _ | Sema.callsImplicitCopyConstructor addr -> ReadOnly
+                  | Sema.callsImplicitMoveConstructor addr -> ReadWrite
+                  | otherwise -> error "Unsupported constructor call"
+
+        referenceVar = elementReferenceValue $ I.goDown 1 addr
+        referenceVal a = toSet $ toValue $ Solver.get a referenceVar
+          where
+            toSet (ElementReferenceSet s) = s
 
     -- default handling through execution tree value analysis 
     _ -> executionTreeValue analysis addr
