@@ -77,7 +77,7 @@ int main() {
                 expect_eq(0,A[p].particles.size());
             }
 
-            // move the particel
+            // move the particle
             auto& src = A[Point{p.x-1,p.y-1}].particles;
             B[p].particles = src;
             src.clear();
