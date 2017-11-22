@@ -13,8 +13,8 @@ struct Data {
 
 void expect_eq(int a, int b) {
     if (a != b) {
-        std::cout << "Expected: " << a << "\n";
-        std::cout << "      Is: " << b << "\n";
+        std::cerr << "Expected: " << a << "\n";
+        std::cerr << "      Is: " << b << "\n";
         exit(1);
     }
 }
@@ -24,8 +24,8 @@ int main() {
     const int N = 1000;
     const int T = 100;
 
-    Grid<Data,2> dataA({N,N}); 
-    Grid<Data,2> dataB({N,N}); 
+    Grid<Data,2> dataA({N,N});
+    Grid<Data,2> dataB({N,N});
 
     using Point = Grid<Data,2>::coordinate_type;
 

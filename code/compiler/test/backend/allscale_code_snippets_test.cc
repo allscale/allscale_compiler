@@ -12,7 +12,7 @@
 #include "allscale/compiler/checks/allscale_checks.h"
 #include "allscale/compiler/core/allscale_core.h"
 
-#include "test_utils.inc"
+#include "../test_utils.inc"
 
 namespace allscale {
 namespace compiler {

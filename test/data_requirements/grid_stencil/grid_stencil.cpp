@@ -8,8 +8,8 @@ using namespace allscale::api::user::data;
 
 void expect_eq(int a, int b) {
     if (a != b) {
-        std::cout << "Expected: " << a << "\n";
-        std::cout << "      Is: " << b << "\n";
+        std::cerr << "Expected: " << a << "\n";
+        std::cerr << "      Is: " << b << "\n";
         exit(1);
     }
 }
@@ -19,8 +19,8 @@ int main() {
     const int N = 1000;
     const int T = 100;
 
-    Grid<int> dataA(N); 
-    Grid<int> dataB(N); 
+    Grid<int> dataA(N);
+    Grid<int> dataB(N);
 
     // initialize first vector
     pfor(0,N,[&](int i){

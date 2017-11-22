@@ -1,6 +1,7 @@
 files=
 definitions=
 compFlags=
+compFlags[insiemecc_seq_cpp_convert]="--allow-sm-only"
 compFlags[insiemecc_seq_cpp_compile]="-DALLSCALE_WITH_HPX"
 excludeSteps="*_ocl_*","*_c_*","*_run_*"
 use_omp=0

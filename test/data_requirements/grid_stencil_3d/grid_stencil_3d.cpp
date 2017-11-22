@@ -8,8 +8,8 @@ using namespace allscale::api::user::data;
 
 void expect_eq(int a, int b) {
     if (a != b) {
-        std::cout << "Expected: " << a << "\n";
-        std::cout << "      Is: " << b << "\n";
+        std::cerr << "Expected: " << a << "\n";
+        std::cerr << "      Is: " << b << "\n";
         exit(1);
     }
 }
@@ -19,8 +19,8 @@ int main() {
     const int N = 100;
     const int T = 100;
 
-    Grid<int,3> dataA({N,N,N}); 
-    Grid<int,3> dataB({N,N,N}); 
+    Grid<int,3> dataA({N,N,N});
+    Grid<int,3> dataB({N,N,N});
 
     using Point = Grid<int,3>::coordinate_type;
 
