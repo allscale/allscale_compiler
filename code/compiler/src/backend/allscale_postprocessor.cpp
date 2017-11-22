@@ -18,7 +18,7 @@ namespace backend {
 							if(const auto& elementType = referenceType->elementType.isa<c_ast::NamedTypePtr>()) {
 								if(elementType->name->name == "allscale::runtime::DataItemReference") {
 									// if we found it, we change the type of the field from reference to value
-//									variable->type = elementType;
+									variable->type = elementType;
 								}
 							}
 						}
