@@ -24,7 +24,7 @@ import qualified Insieme.Utils.BoundSet as BSet
 import Insieme.Adapter.Utils (pprintTree)
 
 import Insieme.Analysis.Framework.ExecutionTree
-import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
+import Insieme.Analysis.Framework.PropertySpace.ComposedValue (isValue,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
 import qualified Insieme.Analysis.Solver as Solver
@@ -154,12 +154,17 @@ dataRequirements addr = case I.getNode addr of
             mode = case () of 
                 _ | Sema.callsImplicitCopyConstructor addr -> ReadOnly
                   | Sema.callsImplicitMoveConstructor addr -> ReadWrite
-                  | otherwise -> error "Unsupported constructor call"
+                  | otherwise -> error "Unsupported implicit constructor call"
 
         referenceVar = elementReferenceValue $ I.goDown 1 addr
-        referenceVal a = toSet $ toValue $ Solver.get a referenceVar
+        referenceVal a = toSet dataItemRefs
           where
+            dataItemRefs = if isValue val then toValue val else ElementReferenceSet BSet.empty
+              where
+                val = Solver.get a referenceVar
+
             toSet (ElementReferenceSet s) = s
+
 
     -- default handling through execution tree value analysis 
     _ -> executionTreeValue analysis addr
@@ -170,7 +175,7 @@ dataRequirements addr = case I.getNode addr of
     analysis = (mkExecutionTreeAnalysis DataRequirementAnalysis "DR" dataRequirements) {
 
         -- register analysis specific operator handler
-        opHandler = [accessHandler],
+        opHandler = [accessHandler,interceptedAccessHandler],
 
         -- all unhandled operators cause no data requirements
         unhandledOperatorHandler = const Solver.bot
@@ -198,6 +203,57 @@ dataRequirements addr = case I.getNode addr of
             }
 
             mode = if Q.isBuiltin o "ref_deref" then ReadOnly else ReadWrite
+
+    -- an operator handler handling intercepted operations
+    --   references being passed to external functions are read-accesses if passed as const,
+    --   and write accesses if passt as non-const value
+    interceptedAccessHandler = OperatorHandler cov dep val
+      where
+        cov a = (Q.isLiteral a) && (not $ Q.isaBuiltin a)
+        dep _ _ = Solver.toVar <$> referenceVars
+        val _ = dataRequirements
+
+        -- get the full ist of parameter type / argument pairs
+        paramArgList = zip params args
+          where
+            Just params = Q.getParameterTypes $ I.child 0 $ I.child 1 $ I.node addr
+            args   = I.goDown 1 <$> (tail $ tail $ I.children addr)
+
+        -- filter out those who pass values by reference
+        passedReferences = filter pred paramArgList
+          where
+            pred p = (Q.isReference $ fst p) && (not . Sema.callsImplicitConstructor $ snd p)
+
+        -- map parameter types to reference vars
+        paramVarList = zip params vars
+          where
+            params = fst <$> paramArgList
+            vars = elementReferenceValue . snd <$> passedReferences
+
+        -- get data item reference variables for those arguments
+        referenceVars = snd <$> paramVarList
+
+        -- compute the data requirements of this call
+        dataRequirements a = DataRequirements $ foldr BSet.union BSet.empty requirements
+          where
+            requirements = toRequirements <$> paramVarList
+
+            toRequirements (p,v) = BSet.map go $ toSet dataItemRefs
+              where
+                dataItemRefs = if isValue val then toValue val else ElementReferenceSet BSet.empty
+                  where
+                    val = Solver.get a v
+
+                toSet (ElementReferenceSet s) = s
+
+                go (ElementReference ref range) = DataRequirement {
+                    dataItemRef = ref,
+                    range       = range,
+                    accessMode  = mode
+                }
+
+                mode = if Q.isConstReference p then ReadOnly else ReadWrite
+
 
     -- utilities --
     idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis

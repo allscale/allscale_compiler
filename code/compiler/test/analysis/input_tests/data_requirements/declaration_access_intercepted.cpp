@@ -41,17 +41,17 @@ int main() {
 		f(grid[{4,5}]);
 	}
 
-//	// passing the reference to a function reading the value should cause a read dependency
-//	{
-//		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
-//		read(grid[{4,5}]);
-//	}
-//
-//	// passing the value to a function with write access should cause a write dependency
-//	{
-//		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RW }}");
-//		write(grid[{4,5}]);
-//	}
+	// passing the reference to a function reading the value should cause a read dependency
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+		read(grid[{4,5}]);
+	}
+
+	// passing the value to a function with write access should cause a write dependency
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RW }}");
+		write(grid[{4,5}]);
+	}
 
 	return 0;
 }

@@ -10,9 +10,14 @@ int f(int x) {
 	return x;
 }
 
-void read(int& x) {
+void read(const int& x) {
 	if (x > 12) {};
 }
+
+void read2(int& x) {
+	if (x > 12) {};
+}
+
 
 void write(int& x) {
 	x = 2;
@@ -38,6 +43,12 @@ int main() {
 	{
 		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
 		read(grid[{4,5}]);
+	}
+
+	// also if passed by non-const reference but only read, it should remain a read access only
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate(target_type, IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_data_colon__colon_GridRegion_colon__colon_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), 4, 5), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+		read2(grid[{4,5}]);
 	}
 
 	// passing the value to a function with write access should cause a write dependency
