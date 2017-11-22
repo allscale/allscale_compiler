@@ -1,11 +1,16 @@
 #include "allscale/compiler/core/prec_to_work_item_conversion.h"
 
 #include "insieme/core/ir_builder.h"
+#include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/checks/full_check.h"
+#include "insieme/core/lang/list.h"
+#include "insieme/core/lang/pointer.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/dump/json_dump.h"
+
+#include "insieme/utils/name_mangling.h"
 
 #include "allscale/compiler/analysis/diagnostics.h"
 #include "allscale/compiler/lang/allscale_ir.h"
@@ -1059,6 +1064,139 @@ namespace core {
 
 		}
 
+		namespace {
+
+			const std::vector<std::string> INVALID_FUNCTIONS = {
+				"IMP_printf", "IMP_fprintf", "IMP_sprintf", "IMP_snprintf",
+				"IMP_vprintf", "IMP_vfprintf", "IMP_vsprintf", "IMP_vsnprintf",
+
+				"IMP_puts", "IMP_putchar",
+			};
+
+			const std::vector<std::string> VALID_GLOBALS = {
+				"IMP_std_colon__colon_cerr",
+			};
+
+			bool checkForRefOrPtrCaptures(const CallExprAddress& precCall, const std::string& variantId, const backend::WorkItemVariant& variant, reporting::ConversionReport& report) {
+				bool valid = true;
+
+				visitDepthFirstOncePrunable(variant.getClosureType(), [&](const NodePtr& node) {
+					if(node.isa<LambdaExprPtr>()) {
+						return Action::Prune;
+					}
+
+					auto type = node.isa<TypePtr>();
+					if(!type) {
+						return Action::Continue;
+					}
+
+					bool invalid_capture_by_ref = core::lang::isReference(type)
+					                            && !core::lang::isQualifiedReference(type)
+					                            && !backend::isDataItemReference(insieme::core::analysis::getReferencedType(type)); // data items are captured by reference, this is ok
+
+					if(!invalid_capture_by_ref && !core::lang::isPointer(type)) {
+						return Action::Continue;
+					}
+
+					valid = false;
+
+					std::string msg = "Variable capture by ";
+					{
+						std::string type_string;
+
+						if(core::lang::isReference(type)) {
+							msg += "reference to ";
+							type_string = toString(*core::analysis::getReferencedType(type));
+						} else {
+							msg += "pointer pointing to ";
+							type_string = toString(*core::lang::PointerType{type}.getElementType());
+						}
+
+						msg += type_string.substr(0, 35);
+
+						if(type_string.size() > 35) {
+							msg += "...";
+						}
+					}
+
+					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::RefOrPtrFoundInCaptureList, msg));
+
+					return Action::Continue;
+				});
+
+				return valid;
+			}
+
+			bool validForDistributedMemory(const CallExprAddress& precCall, const std::string& variantId, const backend::WorkItemVariant& variant, reporting::ConversionReport& report) {
+				bool valid = true;
+
+				auto target = variant.getImplementation().getBody();
+
+				// check for invalid functions
+				{
+					std::vector<CallExprPtr> invalid_calls;
+					visitDepthFirstOnce(target, [&](const CallExprPtr& call) {
+						auto fun = call->getFunctionExpr();
+						if(fun.isa<LiteralPtr>()) {
+							if (::contains(INVALID_FUNCTIONS, fun.as<LiteralPtr>().getStringValue())) {
+								valid = false;
+								invalid_calls.push_back(call);
+							}
+						}
+					});
+					for(const auto& invalid_call : invalid_calls) {
+						visitDepthFirstOnceInterruptible(precCall, [&](const CallExprAddress& node) {
+							if(node.getAddressedNode() == invalid_call) {
+								auto msg = "Use of blacklisted function " + insieme::utils::demangle(invalid_call->getFunctionExpr().as<LiteralPtr>()->getValue()->getValue());
+								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::CallToInvalidFunctionForDistributedMemory, msg));
+								return Action::Interrupt;
+							}
+							return Action::Continue;
+						});
+					}
+				}
+
+				// check for use of global variables
+				{
+					std::vector<LiteralPtr> uses_of_global;
+					visitDepthFirstOnce(target, [&](const LiteralPtr& lit) {
+						// ignore strings
+						std::string value = lit.getValue().getValue();
+						if(!value.empty() && value[0] == '"') {
+							return;
+						}
+
+						if(::contains(VALID_GLOBALS, value)) {
+							return;
+						}
+
+						if(!lit.getType().isa<FunctionTypePtr>() && core::lang::isReference(lit)) {
+							valid = false;
+							uses_of_global.push_back(lit);
+						}
+					});
+					for(const auto& use : uses_of_global) {
+						visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
+							if(node.getAddressedNode() == use) {
+								std::string msg = "Use of global " + use->getValue()->getValue();
+								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory, msg));
+								return Action::Interrupt;
+							}
+							return Action::Continue;
+						});
+					}
+				}
+
+				valid &= checkForRefOrPtrCaptures(precCall, variantId, variant, report);
+
+				if(valid) {
+					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::ValidForDistributedMemory));
+				}
+
+				return valid;
+			}
+
+		}
 
 		ExpressionPtr integrateDataRequirements(const ConversionConfig& config, const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
 			static const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
@@ -1099,6 +1237,11 @@ namespace core {
 				);
 
 				auto target = variant.getImplementation()->getBody();
+
+				if(!validForDistributedMemory(precCall, variantId, variant, report) && !config.allowSharedMemoryOnly) {
+					report.addMessage(precCall, variantId, reporting::Issue{precCall, reporting::ErrorCode::InvalidForDistributedMemory});
+					continue;
+				}
 
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;

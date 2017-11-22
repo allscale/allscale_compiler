@@ -64,6 +64,13 @@ data ErrorCode = Timeout
                | UnobtainableDataRequirement
                | ObtainedDataRequirement
                | ConvertParRegionToSharedMemoryParRuntimeCode
+               | UnableToInstrumentVariantForDataItemAccessCheck
+               | InstrumentedVariantForDataItemAccessCheck
+               | CallToInvalidFunctionForDistributedMemory
+               | InvalidUseOfGlobalForDistributedMemory
+               | ValidForDistributedMemory
+               | InvalidForDistributedMemory
+               | RefOrPtrFoundInCaptureList
   deriving (Eq, Ord, Enum, Show, Read, Generic, NFData)
 
 -- * Analysis Dispatcher

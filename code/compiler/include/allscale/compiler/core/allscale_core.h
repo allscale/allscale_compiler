@@ -20,8 +20,11 @@ namespace core {
 	 */
 	struct ConversionConfig {
 
-		// will enable / disable runtime based data item access checks
+		// Allows to enable the instrumentation of data item accesses (for access validation and statistics).
 		bool checkDataItemAccesses = false;
+
+		// Accept shared memory being the only viable conversion variant.
+		bool allowSharedMemoryOnly = false;
 
 	};
 

@@ -65,6 +65,8 @@ namespace reporting {
 
 	/**
 	 * Error Code to easily identify a given Issue.
+	 *
+	 * Needs to be kept in sync with Diagnostics.hs!
 	 */
 	enum class ErrorCode : int {
 		Timeout,
@@ -80,6 +82,11 @@ namespace reporting {
 		ConvertParRegionToSharedMemoryParRuntimeCode,
 		UnableToInstrumentVariantForDataItemAccessCheck,
 		InstrumentedVariantForDataItemAccessCheck,
+		CallToInvalidFunctionForDistributedMemory,
+		InvalidUseOfGlobalForDistributedMemory,
+		ValidForDistributedMemory,
+		InvalidForDistributedMemory,
+		RefOrPtrFoundInCaptureList,
 	};
 
 	std::ostream& operator<<(std::ostream& out, ErrorCode err);
@@ -100,6 +107,7 @@ namespace reporting {
 	 */
 	enum class Category : int {
 		Basic = 0,
+		DistributedMemory,
 	};
 
 	std::ostream& operator<<(std::ostream& out, Category category);

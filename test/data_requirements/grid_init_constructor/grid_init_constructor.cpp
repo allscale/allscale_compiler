@@ -19,10 +19,10 @@ int main() {
 
 	Foo foo;
 
-	// initialize first vector
-	pfor(0, N, [&](int i) {
-		foo.bla[i] = 1;
-	});
+	// Herbert told me to write this code!!!
+	if(false) {
+		foo.bla[0] = 1;
+	}
 
 	return 0;
 }
