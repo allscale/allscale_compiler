@@ -2,6 +2,7 @@
 
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/checks/full_check.h"
+#include "insieme/core/analysis/ir++_utils.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/analysis/type_utils.h"
 #include "insieme/core/lang/reference.h"
@@ -19,7 +20,7 @@ namespace core {
 	NodePtr convertDataItemReferences(const NodePtr& code, const ProgressCallback&) {
 
 		// To be transformed:
-		//  - every ref<data_item,_,_,_> is transforemd to a art_data_item_ref<data_item>
+		//  - every ref<data_item,_,_,_> is transformed to a art_data_item_ref<data_item>
 		//  - when accessing a art_data_item_ref<data_item>, it is converted back to a ref<data_item,_,_,_> through a art_data_item_get
 		//  - constructor calls of data items are replaced by art_data_item_create calls
 		//  - todo: destruction of data items must be marked!
@@ -38,52 +39,41 @@ namespace core {
 				return type;
 			}
 
-			// check for constructor calls
-			if (auto decl = node.isa<DeclarationStmtPtr>()) {
-
-				// get the variable
-				auto var = decl->getVariable();
-
-				// only interested in references
-				if (!insieme::core::lang::isReference(var)) {
-					return decl;
-				}
-
-				// extract the potential data item reference type
-				auto dataItemRefType = insieme::core::analysis::getReferencedType(var->getType());
-
-				// if the declared value is a DataItemReference, we have to fix the constructor
-				if (backend::isDataItemReference(dataItemRefType)) {
-
-					// retrieve the initialization value
-					auto init = decl->getDeclaration()->getInitialization();
-
-					// check the init expression
-					if (init.isa<VariablePtr>()) return decl;
-
-					// this should be a call expression
-					assert_true(init.isa<CallExprPtr>()) << "Non-call-expression found: " << dumpReadable(init) << " of type " << init->getNodeType();
-
-					// only interested in constructor calls
-					auto call = init.as<CallExprPtr>();
-					if (!call->getFunctionExpr()->getType().as<FunctionTypePtr>()->isConstructor()) return decl;
-
-					// => replace it by a data item creation call
-					ExpressionList args = call->getArgumentList();
-					args[0] = builder.getTypeLiteral(backend::getReferencedDataItemType(dataItemRefType));
-
-					// build the substitution declaration statement
-					auto res = builder.declarationStmt(
-						builder.declaration(var->getType(),builder.callExpr(ext.getCreateDataItem(),args)),
-						var
-					);
-
-					return res;
-				}
-			}
-
 			// check for accesses
-			if (auto call = node.isa<CallExprPtr>()) {
+			if (const auto& call = node.isa<CallExprPtr>()) {
+
+				if(core::analysis::isConstructorCall(call)) {
+
+					// TODO: use utilities in core::analysis when available
+					auto isCopyOrMoveConstructorType = [](const FunctionTypePtr& type) {
+						if(type->getParameterTypeList().size() != 2) { return false; }
+
+						auto thisType = core::analysis::getObjectType(type);
+
+						if(!core::lang::isReference(type->getParameterType(1))) { return false; }
+
+						auto refType = core::lang::ReferenceType(type->getParameterType(1));
+
+						if(refType.getElementType() != thisType) { return false; }
+
+						return refType.getKind() == core::lang::ReferenceType::Kind::CppReference || refType.getKind() == core::lang::ReferenceType::Kind::CppRValueReference;
+					};
+
+					ExpressionPtr callee = call->getFunctionExpr();
+
+					// must not modify copy or move constructor calls to avoid nested "create data item" calls to data item manager
+					if(isCopyOrMoveConstructorType(callee->getType().as<FunctionTypePtr>())) { return node; }
+
+					core::TypePtr objectType = core::analysis::getObjectType(callee->getType());
+					if(backend::isDataItemReference(objectType)) {
+						// replace constructor call with call to getCreateDataItem
+						ExpressionList args = call->getArgumentList();
+						args[0] = builder.getTypeLiteral(backend::getReferencedDataItemType(objectType));
+
+						return builder.callExpr(ext.getCreateDataItem(), args);
+					}
+				}
+
 				// if the targeted function is a member function
 				auto funType = call->getFunctionExpr()->getType().as<FunctionTypePtr>();
 				if (funType->isMemberFunction()) {
