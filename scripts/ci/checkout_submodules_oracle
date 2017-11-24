@@ -7,6 +7,17 @@ if [[ -z "${WORKSPACE+x}" ]]; then
 	source defaults.sh
 fi
 
+if ! $RUNNING_ON_CI_SERVER; then
+	exit 0
+fi
+
 pushd "$WORKSPACE"
-$RUNNING_ON_CI_SERVER && git submodule update --remote --recursive --init
+git submodule update --remote --recursive --init -- api
+git submodule update --remote --recursive --init -- insieme
+
+# Use HPX version dictated by AllScale Runtime.
+git submodule update --remote --init -- runtime/allscale_runtime
+pushd "$WORKSPACE/runtime/allscale_runtime"
+git submodule update --recursive --init
+popd
 popd
