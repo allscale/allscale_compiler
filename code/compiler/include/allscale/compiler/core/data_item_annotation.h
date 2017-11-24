@@ -9,6 +9,7 @@ namespace compiler {
 namespace core {
 
 	void markAsDataItem(const insieme::core::TypePtr& node);
+	void removeDataItemMark(const insieme::core::TypePtr& node);
 	bool isDataItem(const insieme::core::NodePtr& node);
 
 } // end namespace core

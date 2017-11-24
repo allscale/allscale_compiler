@@ -61,7 +61,6 @@ namespace backend {
 
 		LANG_EXT_LITERAL(CreateDataItem,  "art_data_item_create",  "(type<'a>, 'args...) -> ref<art_data_item_ref<'a>,'c,'v,cpp_ref>");
 		LANG_EXT_LITERAL(GetDataItem,     "art_data_item_get",     "(ref<art_data_item_ref<'a>,'c,'v,cpp_ref>) -> ref<art_data_item_ref<'a>,'c,'v,cpp_ref>");
-		LANG_EXT_LITERAL(DestroyDataItem, "art_data_item_destroy", "(ref<art_data_item_ref<'a>,'c,'v,'k>) -> unit");
 
 
 		// --- data item access modes ---

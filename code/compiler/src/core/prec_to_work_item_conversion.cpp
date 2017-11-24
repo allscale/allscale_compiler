@@ -964,16 +964,62 @@ namespace core {
 			core::ExpressionPtr cleanSymbolicValue(const core::ExpressionPtr& value) {
 
 				auto& mgr = value->getNodeManager();
+				IRBuilder builder(mgr);
 				const auto& ext = mgr.getLangExtension<core::lang::ReferenceExtension>();
 
+				auto isSomeCast = [&](const ExpressionPtr& expr) {
+					return ext.isCallOfRefCast(expr) || ext.isCallOfRefKindCast(expr) || ext.isCallOfRefKindCast(expr);
+				};
 
 				// some simple cleanup steps
 				auto res = core::transform::transformBottomUpGen(value,[&](CallExprPtr call)->core::ExpressionPtr {
+
 					// filter out ref decl calls
 					if (ext.isCallOfRefDecl(call)) {
 						// replace by ref temp and reference cast call
 						return core::lang::buildRefTemp(call->getType());
 					}
+
+					// handle special case of nested casts and field accesses
+					if (ext.isCallOfRefCast(call)) {
+						auto access = call->getArgument(0);
+						if (ext.isCallOfRefMemberAccess(access)) {
+							auto inner = access.as<CallExprPtr>()->getArgument(0);
+							auto field = access.as<CallExprPtr>()->getArgument(1).as<LiteralPtr>()->getValue();
+							if (ext.isCallOfRefCast(inner)) {
+								auto tuple = inner.as<CallExprPtr>()->getArgument(0);
+
+								// skip all those casts
+								return builder.refMember(tuple,field);
+							}
+						}
+					}
+
+					// re-process kind casts to get updated types
+					if (ext.isCallOfRefKindCast(call)) {
+						auto arg = call->getArgument(0);
+						auto kind = call->getArgument(1);
+						call = builder.callExpr(ext.getRefKindCast(),arg,kind);
+					}
+
+					// aggregate ref-casts
+					if (isSomeCast(call)) {
+
+						auto cur = call->getArgument(0);
+						auto start = cur;
+						while(isSomeCast(cur)) {
+							cur = cur.as<CallExprPtr>()->getArgument(0);
+						}
+
+						// if they are not nested => leaf it
+						if (cur == start) {
+							return call;
+						}
+
+						// aggregate casts
+						return core::lang::buildRefCast(cur,call->getType());
+					}
+
 
 					// skip creation of memory if immediately dereferenced
 					if (ext.isCallOfRefDeref(call)) {

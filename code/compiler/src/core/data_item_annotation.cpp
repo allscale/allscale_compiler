@@ -41,6 +41,10 @@ void markAsDataItem(const insieme::core::TypePtr& node) {
 	node->attachValue<DataItemTag>();
 }
 
+void removeDataItemMark(const insieme::core::TypePtr& node) {
+	node->detachValue<DataItemTag>();
+}
+
 bool isDataItem(const insieme::core::NodePtr& node) {
 	return node->hasAttachedValue<DataItemTag>();
 }

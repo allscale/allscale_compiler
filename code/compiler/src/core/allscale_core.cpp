@@ -38,16 +38,18 @@ namespace core {
 		}
 
 		// Step 3: introduce data item references
+		callback(ProgressUpdate("Converting Data Items ..."));
 		res = convertDataItemReferences(res, callback);
 
-		// Step 4: convert prec calls
+		// Step 4: capture data item references by value
+		callback(ProgressUpdate("Capturing Data-Item-References by value ..."));
+		res = convertCapturedDataItemReferences(res,callback);
+
+		// Step 5: convert prec calls
 		auto precConversionResult = convertPrecToWorkItem(config, res, callback);
 		res = precConversionResult.result;
 
-		// Step 5: convert the entry point into a work item
-		// TODO: move this step from the backend to the core
-
-		// Step 6: add default constructors to all closure types
+		// Step 6: convert the entry point into a work item
 		// TODO: move this step from the backend to the core
 
 		// make sure the result is correct
