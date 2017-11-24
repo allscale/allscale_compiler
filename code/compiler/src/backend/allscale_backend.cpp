@@ -58,7 +58,7 @@ namespace backend {
 			converter.getTypeManager().addTypeHandler(AllScaleTypeHandler);
 
 			// register the post-processor which will change DataItemReference& to DataItemReference for fields of structs
-			converter.setPostProcessor(be::makePostProcessor<AllScalePostProcessor>());
+			converter.setPostProcessors({be::makePostProcessor<AllScalePostProcessor>()});
 
 			// register support for additional operators
 			addRuntimeSpecificOps(manager,converter.getFunctionManager().getOperatorConverterTable());
