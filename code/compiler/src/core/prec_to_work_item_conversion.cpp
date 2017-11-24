@@ -980,6 +980,14 @@ namespace core {
 						return core::lang::buildRefTemp(call->getType());
 					}
 
+					// strip of temporary init expressions
+					if (ext.isCallOfRefTempInit(call)) {
+						auto arg = call->getArgument(0);
+						if (ext.isCallOfRefDeref(arg)) {
+							return arg.as<CallExprPtr>()->getArgument(0);
+						}
+					}
+
 					// handle special case of nested casts and field accesses
 					if (ext.isCallOfRefCast(call)) {
 						auto access = call->getArgument(0);
