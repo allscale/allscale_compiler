@@ -3,12 +3,30 @@
 #include <allscale/api/user/algorithm/pfor.h>
 #include <allscale/api/user/data/grid.h>
 
+#include <allscale/utils/serializer.h>
+
 using namespace allscale::api::user::algorithm;
 using namespace allscale::api::user::data;
+using namespace allscale::utils;
 
 struct Data {
+
+    // -- some values --
+
     int time;
     int value;      // < is actually ignored
+
+    // -- make this struct serializable --
+
+    static Data load(ArchiveReader& reader) {
+        int t = reader.read<int>();
+        int v = reader.read<int>();
+        return Data{t,v};
+	}
+	void store(ArchiveWriter& writer) const {
+        writer.write(time);
+        writer.write(value);
+    }
 };
 
 void expect_eq(int a, int b) {
