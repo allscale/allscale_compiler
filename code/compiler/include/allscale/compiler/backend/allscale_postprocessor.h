@@ -18,7 +18,7 @@ namespace backend {
 	class AllScalePostProcessor : public insieme::backend::PostProcessor {
 	  public:
 
-		insieme::backend::c_ast::NodePtr process(insieme::backend::c_ast::CNodeManager& manager, const insieme::backend::c_ast::NodePtr& code) override;
+		insieme::backend::c_ast::NodePtr process(const insieme::backend::Converter& converter, const insieme::backend::c_ast::NodePtr& code) override;
 	};
 
 } // end namespace backend

@@ -7,7 +7,7 @@ namespace backend {
 
 	using namespace insieme::backend;
 
-	c_ast::NodePtr AllScalePostProcessor::process(c_ast::CNodeManager& manager, const c_ast::NodePtr& code) {
+	c_ast::NodePtr AllScalePostProcessor::process(const Converter&, const c_ast::NodePtr& code) {
 		// only postprocess type definitions for structs
 		if(const auto& typeDefinition = code.isa<c_ast::TypeDefinitionPtr>()) {
 			if(const auto& structType = typeDefinition->type.isa<c_ast::StructTypePtr>()) {
