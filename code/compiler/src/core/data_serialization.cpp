@@ -31,18 +31,19 @@ namespace core {
 		static const std::string FUN_NAME_LOAD  = insieme::utils::mangle("load");
 		static const std::string FUN_NAME_STORE = insieme::utils::mangle("store");
 
-		bool hasLoadFunction(const TagTypePtr& tagType) {
-			auto& mgr = tagType->getNodeManager();
-			auto& basic = mgr.getLangBasic();
+		bool hasLoadFunction(const TagTypeBindingPtr& binding) {
+			if (!binding) return false;
+
+			// get some utilities
+			auto& mgr = binding->getNodeManager();
 			auto& ext = mgr.getLangExtension<SerializationModule>();
 
 			// look for load function in static members
-			// TODO: look through static members
-			return true;
-			for(const MemberFunctionPtr& cur : tagType->getStruct()->getMemberFunctions()) {
+			for(const StaticMemberFunctionPtr& cur : binding->getRecord()->getStaticMemberFunctions()) {
 
 				// check the name
-				if (cur->getNameAsString() != FUN_NAME_LOAD) continue;
+//				if (cur->getNameAsString() != FUN_NAME_LOAD) continue;
+				if (cur->getNameAsString() != "load") continue;
 
 				// check the function type
 				auto funType = cur->getImplementation()->getType().as<FunctionTypePtr>();
@@ -60,7 +61,7 @@ namespace core {
 				if (!ext.isArchiveReader(readerType.getElementType())) continue;
 
 				// check return type
-				if (!basic.isUnit(funType->getReturnType())) continue;
+				if (*funType->getReturnType() != *binding->getTag()) continue;
 
 				// this is a valid load function
 				return true;
@@ -70,13 +71,17 @@ namespace core {
 			return false;
 		}
 
-		bool hasStoreFunction(const TagTypePtr& tagType) {
-			auto& mgr = tagType->getNodeManager();
+		bool hasLoadFunction(const TagTypePtr& tagType) {
+			return hasLoadFunction(tagType->getDefinition()->getBindingOf(tagType->getTag()));
+		}
+
+		bool hasStoreFunction(const TagTypeBindingPtr& binding) {
+			auto& mgr = binding->getNodeManager();
 			auto& basic = mgr.getLangBasic();
 			auto& ext = mgr.getLangExtension<SerializationModule>();
 
 			// look through set of member functions
-			for(const MemberFunctionPtr& cur : tagType->getStruct()->getMemberFunctions()) {
+			for(const MemberFunctionPtr& cur : binding->getRecord()->getMemberFunctions()) {
 
 				// check the name
 				if (cur->getNameAsString() != FUN_NAME_STORE) continue;
@@ -111,27 +116,35 @@ namespace core {
 			return false;
 		}
 
+		bool hasStoreFunction(const TagTypePtr& tagType) {
+			return hasStoreFunction(tagType->getDefinition()->getBindingOf(tagType->getTag()));
+		}
 
-		MemberFunctionPtr tryBuildLoadFunction(const TagTypePtr& tagType) {
-			auto& mgr = tagType->getNodeManager();
+		StaticMemberFunctionPtr tryBuildLoadFunction(const TagTypeBindingPtr& binding) {
+			auto& mgr = binding->getNodeManager();
 			auto& ext = mgr.getLangExtension<SerializationModule>();
 			IRBuilder builder(mgr);
 
-			// create a reader instance
-			auto reader = builder.variable(
-				core::lang::ReferenceType::create(ext.getArchiveReader(),false,false,core::lang::ReferenceType::Kind::CppReference)
-			);
+			// check that the given record is a struct
+			auto record = binding->getRecord().isa<StructPtr>();
+			if (!record) return nullptr;
 
 			// block out derived classes for now
-			if (!tagType->getStruct()->getParents().empty()) {
+			if (!record->getParents().empty()) {
 				// TODO: add support for parents
-				return MemberFunctionPtr();
+				return StaticMemberFunctionPtr();
 			}
+
+			// create a reader instance
+			auto reader = builder.variable(
+				core::lang::ReferenceType::create(ext.getArchiveReader(),false,false,core::lang::ReferenceType::Kind::CppReference),
+				0
+			);
 
 			// build up body
 			std::vector<StatementPtr> stmts;
 			std::vector<ExpressionPtr> values;
-			for(const auto& field : tagType->getFields()) {
+			for(const auto& field : record->getFields()) {
 
 				// create a read call
 				auto read = builder.callExpr(
@@ -141,7 +154,10 @@ namespace core {
 				);
 
 				// create a variable declaration
-				auto decl = builder.declarationStmt(read);
+				auto decl = builder.declarationStmt(
+						builder.variable(read->getType(),stmts.size()),
+						read
+				);
 
 				// add to body statements
 				stmts.push_back(decl);
@@ -151,8 +167,8 @@ namespace core {
 			}
 
 			// add final return statement
-			auto retType = tagType->getTag();
-			auto refRetType = builder.refType(tagType->getTag());
+			auto retType = binding->getTag();
+			auto refRetType = builder.refType(retType);
 			stmts.push_back(
 					builder.returnStmt(
 						builder.initExpr(
@@ -170,9 +186,7 @@ namespace core {
 			auto impl = builder.lambdaExpr(retType,{reader},body,"load");
 
 			// done
-			assert_not_implemented() << "The resulting type is not available yet!";
-			return nullptr;
-			return builder.memberFunction(false,FUN_NAME_LOAD,impl);
+			return builder.staticMemberFunction(FUN_NAME_LOAD,impl);
 		}
 
 
@@ -326,59 +340,54 @@ namespace core {
 		auto record = binding->getRecord().as<StructPtr>();
 		if (!record) return notSerializable;
 
+
+		// Part I: check that the serialization is allowed
+
 		// collect a set of changes to be performed
 		NodeMap changes;
 
 		// start with parent types
 		for(const auto& cur : record->getParents()) {
-			// attempt to serialize the parent type
-			auto serializableType = tryMakeSerializable(cur->getType());
-			if (!serializableType) return notSerializable;
-			if (serializableType != cur->getType()) {
-				changes[cur->getType()] = serializableType;
-			}
+			if (!isSerializable(cur->getType())) return notSerializable;
 		}
 
-		// serialize field types
+		// check field types
 		for(const auto& cur : record->getFields()) {
-			// attempt to serialize the field type
-			auto serializableType = tryMakeSerializable(cur->getType());
-			if (!serializableType) return notSerializable;
-			if (serializableType != cur->getType()) {
-				changes[cur->getType()] = serializableType;
-			}
+			if (!isSerializable(cur->getType())) return notSerializable;
 		}
 
-		// apply those changes
-		NodeManager& mgr = binding->getNodeManager();
-		auto res = transform::replaceAllGen(mgr,binding,changes,transform::globalReplacement);
+		// also check that there is no load / store function
+		if (hasLoadFunction(binding) || hasStoreFunction(binding)) return notSerializable;
+
 
 		// Part II: add load/store member functions
+
+		// get load and store functions (if possible)
+		auto res = binding;
+		auto load = tryBuildLoadFunction(res);
+		auto store = tryBuildStoreFunction(res);
+
+		// if one of those could not be created => fail conversion
+		if (!load || !store) return notSerializable;
+
+		// add load function
+		auto& mgr = binding->getNodeManager();
 		std::map<NodeAddress,NodePtr> replacements;
 
-		// add store function // TODO: move to the static member function
-//		auto staticMemberFuns = res->getRecord()->getMemberFunctions()->getChildList();
-//		staticMemberFuns.push_back(buildLoadFunction(res));
-//		replacements[TagTypeAddress(res)->getRecord()->getMemberFunctions()] = MemberFunctions::get(mgr,staticMemberFuns);
+		{
+			auto staticMemberFuns = record->getStaticMemberFunctions()->getChildList();
+			staticMemberFuns.push_back(load);
+			replacements[TagTypeBindingAddress(res)->getRecord()->getStaticMemberFunctions()] = StaticMemberFunctions::get(mgr,staticMemberFuns);
+		}
 
-		// add store function (if possible)
-		if (auto store = tryBuildStoreFunction(res)) {
+		{
 			auto memberFuns = record->getMemberFunctions()->getChildList();
 			memberFuns.push_back(store);
 			replacements[TagTypeBindingAddress(res)->getRecord()->getMemberFunctions()] = MemberFunctions::get(mgr,memberFuns);
 		}
 
 		// conduct replacement
-		if (!replacements.empty()) {
-			res = core::transform::replaceAll(mgr,replacements).as<TagTypeBindingPtr>();
-		}
-
-		// check that the resulting IR is error-free
-		assert_correct_ir(res);
-
-		// done
-		return res;
-
+		return core::transform::replaceAll(mgr,replacements).as<TagTypeBindingPtr>();
 	}
 
 	TypePtr tryMakeSerializable(const TypePtr& type) {
