@@ -1,9 +1,12 @@
 #include "allscale/compiler/backend/allscale_operator.h"
 
+#include "insieme/core/analysis/ir_utils.h"
+
 #include "insieme/backend/c_ast/c_ast_utils.h"
 #include "insieme/backend/type_manager.h"
 #include "insieme/backend/function_manager.h"
 
+#include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 #include "allscale/compiler/backend/allscale_code_fragments.h"
@@ -587,6 +590,65 @@ namespace backend {
 
 				// return result
 				return access;
+			};
+
+		}
+
+
+		// add support for serialization operations
+		{
+			auto& ext = manager.getLangExtension<core::SerializationModule>();
+
+			table[ext.getRead()] = OP_CONVERTER {
+
+				// signature of operation:
+				//		ArchiveReader::(type<'a>)->'a
+
+				// add include file defining this operator
+				context.addInclude("allscale/utils/serializer.h");
+
+				// get the type info for type 'a
+				auto& info = GET_TYPE_INFO(insieme::core::analysis::getRepresentedType(ARG(1)));
+
+				// add a dependency to the type definition
+				context.addDependency(info.definition);
+
+				// create the function to be called
+				auto fun = c_ast::instantiate(
+						C_NODE_MANAGER->create("read"),
+						info.lValueType
+				);
+
+				// create the resulting call
+				return C_NODE_MANAGER->create<c_ast::MemberCall>(
+						fun, CONVERT_ARG(0), std::vector<c_ast::NodePtr>()
+				);
+			};
+
+			table[ext.getWrite()] = OP_CONVERTER {
+
+				// signature of operation:
+				//		ArchiveWriter::(type<'a>,ref<'a,t,f,cpp_ref>)->unit
+
+				// add include file defining this operator
+				context.addInclude("allscale/utils/serializer.h");
+
+				// get the type info for type 'a
+				auto& info = GET_TYPE_INFO(insieme::core::analysis::getRepresentedType(ARG(1)));
+
+				// add a dependency to the type definition
+				context.addDependency(info.definition);
+
+				// create the function to be called
+				auto fun = c_ast::instantiate(
+						C_NODE_MANAGER->create("write"),
+						info.lValueType
+				);
+
+				// create the resulting call
+				return C_NODE_MANAGER->create<c_ast::MemberCall>(
+						fun, CONVERT_ARG(0), std::vector<c_ast::NodePtr>{ CONVERT_ARG(2) }
+				);
 			};
 
 		}

@@ -7,6 +7,7 @@
 #include "insieme/backend/c_ast/c_ast_utils.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
+#include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 
 namespace allscale {
@@ -185,6 +186,32 @@ namespace backend {
 			return type_info_utils::createInfo(namedType, dataItemTypeInfo.declaration);
 		}
 
+		const TypeInfo* handleArchiveUtility(ConversionContext& context, const std::string& typeName) {
+
+			auto& converter = context.getConverter();
+			auto& mgr = converter.getCNodeManager();
+
+			// this type should be mapped to
+			//		allscale::utils::ArchiveReader
+
+			// create a dummy fragment
+			auto decl = context.getConverter().getFragmentManager()->create<insieme::backend::c_ast::IncludeFragment>("allscale/utils/serializer.h");
+
+			// convert the type
+			auto namedType = mgr->create<c_ast::NamedType>(mgr->create(typeName));
+
+			// create resulting code fragment
+			return type_info_utils::createInfo(namedType, decl);
+		}
+
+		const TypeInfo* handleArchiveReader(ConversionContext& context, const insieme::core::TypePtr& type) {
+			return handleArchiveUtility(context,"allscale::utils::ArchiveReader");
+		}
+
+		const TypeInfo* handleArchiveWriter(ConversionContext& context, const insieme::core::TypePtr& type) {
+			return handleArchiveUtility(context,"allscale::utils::ArchiveWriter");
+		}
+
 		const TypeInfo* handleType(ConversionContext& context, const TypePtr& type) {
 
 			// intercept tuple types (use hpx types instead)
@@ -222,8 +249,17 @@ namespace backend {
 				return handleDataItemRequirementType(context,type);
 			}
 
+			// intercept archive reader
+			auto& ext = type->getNodeManager().getLangExtension<core::SerializationModule>();
+			if (ext.isArchiveReader(type)) {
+				return handleArchiveReader(context,type);
+			}
+			if (ext.isArchiveWriter(type)) {
+				return handleArchiveWriter(context,type);
+			}
+
 			// it is not a special runtime type => let somebody else try
-			return 0;
+			return nullptr;
 		}
 	}
 

@@ -12,6 +12,7 @@
 #include "allscale/compiler/core/cpp_lambda_to_ir_conversion.h"
 #include "allscale/compiler/core/global_constant_propagation.h"
 #include "allscale/compiler/core/data_item_conversion.h"
+#include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/core/prec_to_work_item_conversion.h"
 
 namespace allscale {
@@ -45,11 +46,15 @@ namespace core {
 		callback(ProgressUpdate("Capturing Data-Item-References by value ..."));
 		res = convertCapturedDataItemReferences(res,callback);
 
-		// Step 5: convert prec calls
+		// Step 5: adding serialization code
+		callback(ProgressUpdate("Adding serialization code ..."));
+		res = addAutoSerializationCode(res,callback);
+
+		// Step 6: convert prec calls
 		auto precConversionResult = convertPrecToWorkItem(config, res, callback);
 		res = precConversionResult.result;
 
-		// Step 6: convert the entry point into a work item
+		// Step 7: convert the entry point into a work item
 		// TODO: move this step from the backend to the core
 
 		// make sure the result is correct
