@@ -42,8 +42,7 @@ namespace core {
 			for(const StaticMemberFunctionPtr& cur : binding->getRecord()->getStaticMemberFunctions()) {
 
 				// check the name
-//				if (cur->getNameAsString() != FUN_NAME_LOAD) continue;
-				if (cur->getNameAsString() != "load") continue;
+				if (cur->getNameAsString() != FUN_NAME_LOAD) continue;
 
 				// check the function type
 				auto funType = cur->getImplementation()->getType().as<FunctionTypePtr>();

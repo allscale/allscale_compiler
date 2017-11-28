@@ -236,7 +236,14 @@ namespace analysis {
 
 	std::ostream& operator<<(std::ostream& out, const DataRequirements& reqs) {
 		if (reqs.isUnknown()) return out << "unknown";
-		return out << reqs.requirements;
+
+		// print requirements sorted
+		std::vector<std::string> strs;
+		for(const auto& cur : reqs.requirements) {
+			strs.push_back(toString(cur));
+		}
+		std::sort(strs.begin(),strs.end());
+		return out << "{" << join(",",strs) << "}";
 	}
 
 	// -- Data Requirement Analysis --

@@ -417,7 +417,7 @@ namespace analysis {
 
 		// compute stencil with fixed boundary
 		EXPECT_EQ(
-			"{Requirement { A[span(10+1,20-1u+1)] RO },Requirement { A[span(10-1,20-1u-1)] RO },Requirement { A[span(10,20-1u)] RO },Requirement { B[span(10,20-1u)] RW }}",
+			"{Requirement { A[span(10+1,20-1u+1)] RO },Requirement { A[span(10,20-1u)] RO },Requirement { A[span(10-1,20-1u-1)] RO },Requirement { B[span(10,20-1u)] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
