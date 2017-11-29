@@ -2,6 +2,7 @@
 # It is needed for the integration test driver to recognize this folder as the parent for multiple other tests.
 
 grid_stencil_2d_particles
+grid_reduce_2d
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #
