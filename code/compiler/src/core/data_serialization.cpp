@@ -10,6 +10,7 @@
 #include "insieme/core/lang/cpp_std.h"
 #include "insieme/core/lang/reference.h"
 #include "insieme/core/transform/node_replacer.h"
+#include "insieme/core/analysis/type_utils.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
 
@@ -145,24 +146,33 @@ namespace core {
 			std::vector<ExpressionPtr> values;
 			for(const auto& field : record->getFields()) {
 
+				// get the element type
+				auto elementType = field->getType();
+
+				// TODO: export this in a general utility or replace by general utility
+
+				// test whether this operation requires a materialization
+				bool needsMaterialization = elementType.isa<TagTypePtr>();
+
 				// create a read call
 				auto read = builder.callExpr(
+					(needsMaterialization) ? builder.refType(elementType) : elementType,
 					ext.getRead(),
 					reader,
-					builder.getTypeLiteral(field->getType())
+					builder.getTypeLiteral(elementType)
 				);
 
 				// create a variable declaration
 				auto decl = builder.declarationStmt(
-						builder.variable(read->getType(),stmts.size()),
-						read
+						builder.variable(builder.refType(elementType),stmts.size()),
+						(needsMaterialization) ? core::lang::buildRefKindCast(read, core::lang::ReferenceType::Kind::CppRValueReference) : read
 				);
 
 				// add to body statements
 				stmts.push_back(decl);
 
 				// record new variable
-				values.push_back(decl->getVariable());
+				values.push_back(core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppRValueReference));
 			}
 
 			// add final return statement
@@ -353,6 +363,13 @@ namespace core {
 		// check field types
 		for(const auto& cur : record->getFields()) {
 			if (!isSerializable(cur->getType())) return notSerializable;
+
+			// field that do not have copy constructor can also not be serialized
+			if (auto tagType = cur->getType().isa<TagTypePtr>()) {
+				if (!core::analysis::hasMoveConstructor(tagType)) {
+					return notSerializable;
+				}
+			}
 		}
 
 		// also check that there is no load / store function
