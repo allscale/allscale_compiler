@@ -7,7 +7,9 @@
 #include "insieme/utils/timer.h"
 
 #include "insieme/core/checks/ir_checks.h"
+#include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/dump/json_dump.h"
+#include "insieme/core/dump/binary_haskell.h"
 
 #include "insieme/driver/cmd/commandline_options.h"
 #include "insieme/driver/cmd/common_options.h"
@@ -42,8 +44,8 @@ int main(int argc, char** argv) {
 	// insiemecc and/or allscalecc. We simply ignore this flag here and print a warning.
 	std::string backendString;
 
-	// Allows the AllScale driver to dump an input code as JSON.
-	insieme::frontend::path dumpJSON;
+	// Allows the AllScale driver to dump an input code as JSON/binary IR.
+	insieme::frontend::path dumpJSON, dumpBinaryIR;
 
 	allscale::compiler::core::ConversionConfig conversionConfig;
 
@@ -60,6 +62,7 @@ int main(int argc, char** argv) {
 	// register allscalecc specific flags and parameters
 	parser.addParameter(",O",        opt_level,     0u,                                     "optimization level");
 	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),              "dump intermediate representation (JSON)");
+	parser.addParameter("dump-binary-ir", dumpBinaryIR, insieme::frontend::path(),          "dump intermediate representation (binary)");
 	parser.addParameter("backend",   backendString, std::string(""),                        "backend selection (for compatibility reasons - ignored)");
 	parser.addFlag("check-data-item-accesses",      conversionConfig.checkDataItemAccesses, "enables data item access instrumentation (debugging)");
 	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
@@ -115,6 +118,22 @@ int main(int argc, char** argv) {
 		std::ofstream out(commonOptions.dumpIR.string());
 		out << core::printer::PrettyPrinter(program, core::printer::PrettyPrinter::PRINT_DEREFS);
 		std::cout << timer.step() << "s\n";
+	}
+
+	if(!dumpBinaryIR.empty()) {
+		vector<core::NodeAddress> targets;
+		core::NodePtr ref_deref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
+		core::NodePtr ref_assign = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefAssign();
+
+		core::visitDepthFirst(core::NodeAddress(program), [&](const core::CallExprAddress& call) {
+				auto fun = call->getFunctionExpr();
+				if(*fun == *ref_deref || *fun == *ref_assign) {
+					targets.push_back(call[0]);
+				}
+			});
+
+		std::ofstream out(dumpBinaryIR.string());
+		core::dump::binary::haskell::dumpAddresses(out, targets);
 	}
 
 	// dump JSON IR representation
