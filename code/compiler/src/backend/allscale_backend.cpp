@@ -104,6 +104,10 @@ namespace backend {
 		// to be not over-critical in order of libraries
 		compiler.addFlag("-Wl,--no-as-needed");
 
+		// disable HPX assertions
+		compiler.addFlag("-DHPX_DISABLE_ASSERTS");
+		compiler.addFlag("-DBOOST_DISABLE_ASSERTS");
+
 		// add libraries
 		compiler.addExternalLibrary(ALLSCALE_RUNTIME_LIBRARY_DIR, "allscale");
 		compiler.addExternalLibrary(HPX_LIBRARY_DIR, "hpx_init");
