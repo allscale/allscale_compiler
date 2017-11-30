@@ -2,8 +2,25 @@ include(ExternalProject)
 
 # locate depending libraries
 #find_package(Boost)
+
+# Add HPX CMake Path for Jemalloc find script.
+set(CMAKE_MODULE_PATH_old ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/../runtime/allscale_runtime/hpx/cmake")
+
 if(NOT MSVC)
 	find_package(Hwloc)
+endif()
+
+# HPX allocator
+find_package(Jemalloc)
+if(Jemalloc_FOUND)
+	set(HPX_ALLOCATOR_OPTIONS
+		-DJEMALLOC_FOUND=True
+		-DJEMALLOC_LIBRARIES=${JEMALLOC_LIBRARIES}
+		-DHPX_WITH_MALLOC=jemalloc
+	)
+else()
+	set(HPX_ALLOCATOR_OPTIONS -DHPX_WITH_MALLOC=system)
 endif()
 
 # add the external HPX project
@@ -16,10 +33,10 @@ ExternalProject_Add(
 		-DBOOST_ROOT=${Boost_INCLUDE_DIRS}/..
 		-DHWLOC_ROOT=${Hwloc_INCLUDE_DIRS}/..
 		-DHPX_WITH_NETWORKING=${HPX_WITH_NETWORKING}
-		-DHPX_WITH_MALLOC=system
-		-DHPX_WITH_MAX_CPU_COUNT=128
+		-DHPX_WITH_MAX_CPU_COUNT=512
 		-DHPX_WITH_EXAMPLES=OFF
 		-DHPX_WITH_TESTS=OFF
+		${HPX_ALLOCATOR_OPTIONS}
 	INSTALL_COMMAND ""
 	EXCLUDE_FROM_ALL 1
 	BUILD_ALWAYS 1
@@ -42,8 +59,6 @@ ExternalProject_Add(
 	CMAKE_ARGS
 		${CMAKE_EXTERNALPROJECT_FORWARDS}
 		-DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX
-		-DHPX_WITH_MALLOC=system
-		-DHPX_WITH_NETWORKING=${HPX_WITH_NETWORKING}
 		-DALLSCALE_WITH_TESTS=off
 		-DALLSCALE_API_DIR=${PROJECT_SOURCE_DIR}/../api
 		-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH_STR}"
@@ -58,3 +73,6 @@ set(allscale_runtime_binary_dir ${binary_dir})
 
 # export configuration
 configure_file(${PROJECT_SOURCE_DIR}/../runtime/config.inc.in ${PROJECT_BINARY_DIR}/runtime/config.inc)
+
+# Restore previous module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH_old})
