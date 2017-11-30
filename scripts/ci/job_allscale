@@ -14,4 +14,11 @@ nice -n "$NICE_LEVEL" ./clean_analysis
 nice -n "$NICE_LEVEL" ./build
 nice -n "$NICE_LEVEL" ./run_integration_tests_preprocessing
 nice -n "$NICE_LEVEL" ./run_unit_tests
+
+# run integration tests in distributed memory mode
+unset ALLSCALE_SHARED_MEMORY_ONLY
+nice -n "$NICE_LEVEL" ./run_integration_tests
+
+# run integration tests in shared memory mode
+export ALLSCALE_SHARED_MEMORY_ONLY=1
 nice -n "$NICE_LEVEL" ./run_integration_tests
