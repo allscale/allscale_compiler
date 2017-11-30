@@ -1490,8 +1490,11 @@ namespace core {
 					reporting::Issue(firstAddress, reporting::ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode)
 			);
 
-			// add data requirement dependencies
-			res = integrateDataRequirements(config,res,report,firstAddress,index);
+			// unless it is for shared memory only ..
+			if (!config.sharedMemoryOnly) {
+				// add data requirement dependencies
+				res = integrateDataRequirements(config,res,report,firstAddress,index);
+			}
 
 			// done
 			return res;

@@ -2,6 +2,9 @@
 
 ///////////// ANALYSIS
 
+// enable debugging of allscale data requirement analysis
+#define ALLSCALE_SHARED_MEMORY_ONLY "ALLSCALE_SHARED_MEMORY_ONLY"
+
 // show node addresses in diagnostics output
 #define ALLSCALE_DIAG_NODE_ADDRESSES "ALLSCALE_DIAG_NODE_ADDRESSES"
 

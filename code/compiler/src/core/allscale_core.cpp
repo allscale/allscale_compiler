@@ -32,23 +32,28 @@ namespace core {
 		callback(ProgressUpdate("Pre-processing C++ lambdas ..."));
 		auto res = convertCppLambdaToIR(code);
 
-		// Step 2: performing global constant propagation
-		if(!std::getenv(ALLSCALE_SKIP_GLOBAL_CONSTANT_PROPAGATION)) {
-			callback(ProgressUpdate("Propagating global constants ..."));
-			res = propagateGlobalConstants(res);
+		// the next steps are only required in the distributed memory case
+		if (!config.sharedMemoryOnly) {
+
+			// Step 2: performing global constant propagation
+			if(!std::getenv(ALLSCALE_SKIP_GLOBAL_CONSTANT_PROPAGATION)) {
+				callback(ProgressUpdate("Propagating global constants ..."));
+				res = propagateGlobalConstants(res);
+			}
+
+			// Step 3: introduce data item references
+			callback(ProgressUpdate("Converting Data Items ..."));
+			res = convertDataItemReferences(res, callback);
+
+			// Step 4: capture data item references by value
+			callback(ProgressUpdate("Capturing Data-Item-References by value ..."));
+			res = convertCapturedDataItemReferences(res,callback);
+
+			// Step 5: adding serialization code
+			callback(ProgressUpdate("Adding serialization code ..."));
+			res = addAutoSerializationCode(res,callback);
+
 		}
-
-		// Step 3: introduce data item references
-		callback(ProgressUpdate("Converting Data Items ..."));
-		res = convertDataItemReferences(res, callback);
-
-		// Step 4: capture data item references by value
-		callback(ProgressUpdate("Capturing Data-Item-References by value ..."));
-		res = convertCapturedDataItemReferences(res,callback);
-
-		// Step 5: adding serialization code
-		callback(ProgressUpdate("Adding serialization code ..."));
-		res = addAutoSerializationCode(res,callback);
 
 		// Step 6: convert prec calls
 		auto precConversionResult = convertPrecToWorkItem(config, res, callback);

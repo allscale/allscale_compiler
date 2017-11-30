@@ -66,7 +66,8 @@ int main(int argc, char** argv) {
 	parser.addParameter("backend",   backendString, std::string(""),                        "backend selection (for compatibility reasons - ignored)");
 	parser.addFlag("check-data-item-accesses",      conversionConfig.checkDataItemAccesses, "enables data item access instrumentation (debugging)");
 	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
-	parser.addFlag("allow-sm-only",                 conversionConfig.allowSharedMemoryOnly, "only create shared memory conversion variant");
+	parser.addFlag("shared-memory-only",            conversionConfig.sharedMemoryOnly,      "only create shared memory code (may also be enabled through " ALLSCALE_SHARED_MEMORY_ONLY " environment variable)");
+	parser.addFlag("allow-sm-only",                 conversionConfig.allowSharedMemoryOnly, "do not fail when no distributed memory version can be obtained (development only)");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -78,6 +79,9 @@ int main(int argc, char** argv) {
 	if(!backendString.empty()) {
 		std::cout << "WARNING: The --backend option has been specified. this option is supported only for compatibility reasons and will be ignored." << std::endl;
 	}
+
+	// the shared-memory-only version can also be enabled through an environment variable
+	conversionConfig.sharedMemoryOnly = conversionConfig.sharedMemoryOnly || std::getenv(ALLSCALE_SHARED_MEMORY_ONLY);
 
 
 	// Step 2: filter input files
@@ -173,7 +177,7 @@ int main(int argc, char** argv) {
 
 
 	// Step 4: apply source-to-source conversions
-	std::cout << "Converting to AllScale Runtime code ... \n" << std::flush;
+	std::cout << "Converting to " << (conversionConfig.sharedMemoryOnly ? "shared" : "distributed") << " memory AllScale Runtime code ... \n" << std::flush;
 	auto summary = allscale::compiler::core::convert(conversionConfig,program,[&](const allscale::compiler::core::ProgressUpdate& update){
 		std::cout << "\t" << update.msg;
 		if (update.totalSteps > 0) {
