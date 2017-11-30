@@ -3,7 +3,6 @@
 
 grid_stencil_2d_particles
 grid_reduce_2d
-grid_init_constructor
 
 ####################################################################################
 # The following tests are not really blacklisted but take rather long to execute.  #

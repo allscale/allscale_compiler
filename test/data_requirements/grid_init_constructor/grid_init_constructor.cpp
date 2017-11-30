@@ -8,9 +8,15 @@ using Bla = Grid<int>;
 
 #define N 10
 
+struct Bar {
+	int i;
+};
+
 struct Foo {
 	Bla bla;
-	Foo() : bla(Bla(Bla::coordinate_type{ N })) { 
+	Bar b;
+	int i;
+	Foo() : bla(Bla(Bla::coordinate_type{ N })), b(), i(0) {
 		Bla bla2(Bla::coordinate_type{ N });
 	};
 };
