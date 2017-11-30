@@ -9,7 +9,7 @@ To build the AllScale compiler, clone this repository and take a peek at
 Ubuntu / Debian (and have `sudo` installed).
 
     $ git clone --recursive https://github.com/allscale/allscale_compiler
-    $ cd insieme
+    $ cd allscale_compiler
     $ ./QUICKSTART    # prompts for sudo
 
 If you are using a different distribution use your package manager to install all dependencies available.
