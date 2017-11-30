@@ -7,6 +7,7 @@ groff-base
 libcpufreq-dev
 libgmp10
 libhwloc-dev
+libjemalloc-dev
 libluajit-5.1-dev
 libpapi-dev
 m4

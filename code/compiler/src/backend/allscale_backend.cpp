@@ -114,7 +114,7 @@ namespace backend {
 		compiler.addFlag("-DBOOST_DISABLE_ASSERTS");
 
 		// add libraries
-		compiler.addExternalLibrary(ALLSCALE_RUNTIME_LIBRARY_DIR, "allscale");
+		compiler.addExternalLibrary(ALLSCALE_RUNTIME_LIBRARY_DIR, "hpx_allscale");
 		compiler.addExternalLibrary(HPX_LIBRARY_DIR, "hpx_init");
 		compiler.addExternalLibrary(HPX_LIBRARY_DIR, "hpx");
 		compiler.addExternalLibrary(BOOST_LIBRARY_DIR, "boost_chrono");

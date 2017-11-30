@@ -14,7 +14,8 @@ cd build
 # directory (uses sudo).
 ../scripts/environment/setup
 
-# Next we can invoke CMake and build the project.
+# Next we can invoke CMake and build the project. The default build type is
+# Release.
 cmake ../code
 make -j8
 
