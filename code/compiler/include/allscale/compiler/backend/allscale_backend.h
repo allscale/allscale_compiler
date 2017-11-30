@@ -31,6 +31,9 @@ namespace backend {
 		// a flag indicating whether data item access checks during runtime should be enabled
 		bool checkDataItemAccesses = false;
 
+		// extra definitions to be forwarded to the backend compiler
+		std::vector<std::string> definitions;
+
 	};
 
 	/**

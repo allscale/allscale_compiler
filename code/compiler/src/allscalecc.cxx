@@ -83,6 +83,15 @@ int main(int argc, char** argv) {
 	// the shared-memory-only version can also be enabled through an environment variable
 	conversionConfig.sharedMemoryOnly = conversionConfig.sharedMemoryOnly || std::getenv(ALLSCALE_SHARED_MEMORY_ONLY);
 
+	// extract compiler definitions
+	std::vector<std::string> definitions;
+	for(const auto& cur : options.job.getDefinitions()) {
+		if (cur.second.empty()) {
+			definitions.push_back("-D" + cur.first);
+		} else {
+			definitions.push_back("-D" + cur.first + "=" + cur.second);
+		}
+	}
 
 	// Step 2: filter input files
 	core::NodeManager mgr;
@@ -225,10 +234,11 @@ int main(int argc, char** argv) {
 	}
 
 	// Step 6: built the resulting binary
-	std::cout << "Compiling target code (-O" << opt_level << ") ... " << std::flush;
+	std::cout << "Compiling target code (-O" << opt_level << (definitions.empty() ? "" : " ") << join(" ",definitions) << ") ... " << std::flush;
 	allscale::compiler::backend::CompilerConfig compilerConfig;
 	compilerConfig.optimization_level = opt_level;
 	compilerConfig.checkDataItemAccesses = conversionConfig.checkDataItemAccesses;
+	compilerConfig.definitions = definitions;
 	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), compilerConfig);
 	std::cout << timer.step() << "s\n";
 

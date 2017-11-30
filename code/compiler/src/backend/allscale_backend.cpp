@@ -85,6 +85,11 @@ namespace backend {
 		// optimization level
 		compiler.addFlag(format("-O%d", config.optimization_level));
 
+		// user defined definitions
+		for(const auto& definiton : config.definitions) {
+			compiler.addFlag(definiton);
+		}
+
 		// add code instrumentation definition
 		if (config.checkDataItemAccesses) {
 			compiler.addFlag("-DALLSCALE_RUNTIME_WITH_DATA_REQUIREMENT_CHECKS=On");
