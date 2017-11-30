@@ -120,19 +120,20 @@ namespace core {
 			return hasStoreFunction(tagType->getDefinition()->getBindingOf(tagType->getTag()));
 		}
 
-		StaticMemberFunctionPtr tryBuildLoadFunction(const TagTypeBindingPtr& binding) {
+		std::pair<StaticMemberFunctionPtr, LambdaExprPtr> tryBuildLoadFunction(const TagTypeBindingPtr& binding) {
 			auto& mgr = binding->getNodeManager();
 			auto& ext = mgr.getLangExtension<SerializationModule>();
+			auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
 			IRBuilder builder(mgr);
 
 			// check that the given record is a struct
 			auto record = binding->getRecord().isa<StructPtr>();
-			if (!record) return nullptr;
+			if (!record) return {};
 
 			// block out derived classes for now
 			if (!record->getParents().empty()) {
 				// TODO: add support for parents
-				return StaticMemberFunctionPtr();
+				return {};
 			}
 
 			// create a reader instance
@@ -172,7 +173,7 @@ namespace core {
 				stmts.push_back(decl);
 
 				// record new variable
-				values.push_back(core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppRValueReference));
+				values.push_back(builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference)));
 			}
 
 			// add final return statement
@@ -194,8 +195,57 @@ namespace core {
 			// assemble store function
 			auto impl = builder.lambdaExpr(retType,{reader},body,"load");
 
+			// build constructor
+			core::LambdaExprPtr ctor;
+			// only if we do have fields
+			if(!record->getFields()->empty()) {
+				// and if we have any other non-defaulted constructor already
+				if(::any(record->getConstructors()->getElements(), [](const auto& ctor){ return !core::analysis::isaDefaultConstructor(ctor); })) {
+					bool failed = false;
+					unsigned variableId = 0;
+					auto defaultCtorType = builder.getDefaultConstructorType(builder.refType(retType));
+					core::TypeList ctorParamTypes;
+					core::VariableList ctorVars;
+					core::StatementList body;
+
+					// add this variable
+					ctorParamTypes.push_back(builder.refType(retType));
+					auto thisVar = builder.variable(builder.refType(builder.refType(retType)), variableId++);
+					ctorVars.push_back(thisVar);
+
+					// for each field
+					for(const auto& field : record->getFields()) {
+						const auto& fieldType = field->getType();
+						// create the parameter variable
+						auto paramVar = builder.variable(builder.refType(fieldType, false, false, core::lang::ReferenceType::Kind::CppRValueReference), variableId++);
+						ctorParamTypes.push_back(paramVar->getType());
+						ctorVars.push_back(paramVar);
+
+						// and the initialization in the body
+						auto fieldAccess = builder.callExpr(refExt.getRefMemberAccess(), builder.deref(thisVar),
+																								builder.getIdentifierLiteral(field->getName()), builder.getTypeLiteral(fieldType));
+						if(const auto& fieldTagType = fieldType.isa<core::TagTypePtr>()) {
+							auto fieldTypeCtorOpt = core::analysis::getMoveConstructor(fieldTagType);
+							if(!fieldTypeCtorOpt) {
+								failed = true;
+								break;
+							}
+							auto fieldTypeCtor = fieldTagType->peel(fieldTypeCtorOpt.get());
+							body.push_back(builder.callExpr(fieldTypeCtor, fieldAccess, paramVar));
+						} else {
+							body.push_back(builder.initExpr(fieldAccess, builder.deref(paramVar)));
+						}
+					}
+
+					if(!failed) {
+						auto ctorType = builder.functionType(ctorParamTypes, defaultCtorType->getReturnType(), core::FunctionKind::FK_CONSTRUCTOR);
+						ctor = builder.lambdaExpr(ctorType, ctorVars, builder.compoundStmt(body));
+					}
+				}
+			}
+
 			// done
-			return builder.staticMemberFunction(FUN_NAME_LOAD,impl);
+			return { builder.staticMemberFunction(FUN_NAME_LOAD,impl), ctor };
 		}
 
 
@@ -380,13 +430,15 @@ namespace core {
 
 		// get load and store functions (if possible)
 		auto res = binding;
-		auto load = tryBuildLoadFunction(res);
+		auto loadRes = tryBuildLoadFunction(res);
+		auto load = loadRes.first;
+		auto ctor = loadRes.second;
 		auto store = tryBuildStoreFunction(res);
 
-		// if one of those could not be created => fail conversion
+		// if one of those could not be created => fail conversion (the ctor is optional)
 		if (!load || !store) return notSerializable;
 
-		// add load function
+		// add those new function
 		auto& mgr = binding->getNodeManager();
 		std::map<NodeAddress,NodePtr> replacements;
 
@@ -394,6 +446,12 @@ namespace core {
 			auto staticMemberFuns = record->getStaticMemberFunctions()->getChildList();
 			staticMemberFuns.push_back(load);
 			replacements[TagTypeBindingAddress(res)->getRecord()->getStaticMemberFunctions()] = StaticMemberFunctions::get(mgr,staticMemberFuns);
+		}
+
+		if(ctor) {
+			auto ctors = record->getConstructors()->getChildList();
+			ctors.push_back(ctor);
+			replacements[TagTypeBindingAddress(res)->getRecord()->getConstructors()] = Expressions::get(mgr,ctors);
 		}
 
 		{
