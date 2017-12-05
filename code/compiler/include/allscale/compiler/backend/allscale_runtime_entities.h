@@ -13,6 +13,8 @@
 #include "insieme/core/ir.h"
 #include "insieme/core/encoder/encoder.h"
 
+#include "allscale/compiler/backend/allscale_extension.h"
+
 namespace allscale {
 namespace compiler {
 namespace backend {
@@ -157,7 +159,9 @@ namespace backend {
 				const std::vector<WorkItemVariant>& variants = std::vector<WorkItemVariant>()
 			) : name(name), splitableTest(splitableTest), variants({process,split}) {
 			assert_true(splitableTest);
-			assert_eq(process.getResultType(),split.getResultType());
+			// The result types have to be the same. unused_type and unit are considered equivalent too
+			assert_true(process.getResultType() == split.getResultType()
+			            || (isUnusedType(process.getResultType()) && splitableTest.getNodeManager().getLangBasic().isUnit(split.getResultType())));
 			assert_eq(process.getClosureType(),split.getClosureType());
 
 			// insert variants (and check types)
@@ -174,7 +178,9 @@ namespace backend {
 			assert_true(splitableTest);
 			assert_le(2,variants.size());
 			for(const auto& cur : variants) {
-				assert_eq(getResultType(), cur.getResultType());
+				// The result types have to be the same. unused_type and unit are considered equivalent too
+				assert_true(getResultType() == cur.getResultType()
+				            || (isUnusedType(cur.getResultType()) && splitableTest.getNodeManager().getLangBasic().isUnit(getResultType())));
 				assert_eq(getClosureType(), cur.getClosureType());
 			}
 		}
@@ -190,11 +196,11 @@ namespace backend {
 		}
 
 		insieme::core::TypePtr getResultType() const {
-			return getProcessVariant().getResultType();
+			return getSplitVariant().getResultType();
 		}
 
 		insieme::core::TupleTypePtr getClosureType() const {
-			return getProcessVariant().getClosureType();
+			return getSplitVariant().getClosureType();
 		}
 
 		insieme::core::LambdaExprPtr getSplitableTest() const {

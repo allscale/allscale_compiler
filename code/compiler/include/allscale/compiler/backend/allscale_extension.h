@@ -92,6 +92,10 @@ namespace backend {
 		// a primitive for converting captured references from the pointer within the closure struct to a reference
 		LANG_EXT_LITERAL(RefRefPlainToRefRefCpp,  "art_ref_ref_plain_to_ref_ref_cpp",  "(ref<ref<'a,'c1,'v1,plain>,'c2,'v2,'k>)->ref<ref<'a,'c1,'v1,cpp_ref>,'c2,'v2,'k>");
 
+		// treeture<unused_type> is returned in lieu of treeture<unit>
+		LANG_EXT_TYPE(UnusedType, "art_unused_type");
+		LANG_EXT_LITERAL(MakeUnusedType, "art_make_unused_type", "() -> art_unused_type");
+
 
 
 	};
@@ -132,6 +136,11 @@ namespace backend {
 	 * Creates an expression constructing a data requirement for the given data item reference.
 	 */
 	insieme::core::ExpressionPtr createDataItemRequirement(const insieme::core::ExpressionPtr& dataItemRef, const insieme::core::ExpressionPtr& range, analysis::AccessMode mode);
+
+	/**
+	 * Tests whether the given node is an unused type or an expression of that type.
+	 */
+	bool isUnusedType(const insieme::core::NodePtr&);
 
 } // end namespace backend
 } // end namespace compiler

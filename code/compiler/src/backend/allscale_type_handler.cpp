@@ -66,6 +66,17 @@ namespace backend {
 				return &context.getConverter().getTypeManager().getTypeInfo(context, released);
 			}
 
+			// intercept unused_type
+			if(isUnusedType(type.getValueType())) {
+				// this type should be mapped to
+				//		allscale::unused_type
+
+				// convert the type
+				auto namedType = mgr->create<c_ast::NamedType>(mgr->create("allscale::runtime::unused_type"));
+				// create resulting code fragment
+				return type_info_utils::createInfo(namedType);
+			}
+
 			// resolve
 			auto elementTypeInfo = converter.getTypeManager().getTypeInfo(context, type.getValueType());
 
