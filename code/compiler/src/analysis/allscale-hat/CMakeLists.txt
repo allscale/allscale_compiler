@@ -33,6 +33,8 @@ add_custom_target(allscale_hat
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
+	BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so
+
 	DEPENDS insieme_hat
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
