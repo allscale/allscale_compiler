@@ -23,7 +23,7 @@ compareOutputScript=@PROJECT_SOURCE_DIR@/../insieme/test/compareOutput
 time_executable=@TIME_EXECUTABLE@
 
 # config properties
-includes="@PROJECT_SOURCE_DIR@/../api/code/api/include/","@PROJECT_SOURCE_DIR@/../api/code/utils/include/","@Boost_INCLUDE_DIRS@","@hpx_source_dir@","@hpx_binary_dir@","@allscale_runtime_source_dir@"
+includes="@PROJECT_SOURCE_DIR@/../api/code/api/include/","@PROJECT_SOURCE_DIR@/../api/code/utils/include/","@Boost_INCLUDE_DIRS@","@hpx_source_dir@","@hpx_binary_dir@","@allscale_runtime_source_dir@","@Hwloc_INCLUDE_DIRS@"
 intercepted_header_file_dirs="@PROJECT_SOURCE_DIR@/../api/code/api/include/allscale/api/core/"
 libPaths="@Boost_LIBRARY_DIRS@","@allscale_runtime_binary_dir@/src","@hpx_binary_dir@/lib"
 libNames="hpx_allscale","hpx_init","hpx","boost_chrono","boost_date_time","boost_filesystem","boost_program_options","boost_regex","boost_system","boost_thread","boost_atomic"
