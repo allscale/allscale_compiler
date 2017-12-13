@@ -2,6 +2,9 @@
 const static std::string BOOST_INCLUDE_DIR = "@Boost_INCLUDE_DIRS@";
 const static std::string BOOST_LIBRARY_DIR = "@Boost_LIBRARY_DIRS@";
 
+const static std::string HWLOC_INCLUDE_DIR = "@Hwloc_INCLUDE_DIR@";
+const static std::string HWLOC_LIBRARY_DIR = "@Hwloc_LIBRARY_DIR@";
+
 const static std::string HPX_ROOT_DIR = "@hpx_binary_dir@";
 const static std::string HPX_INCLUDE_DIR = "@hpx_source_dir@";
 const static std::string HPX_LIBRARY_DIR = "@hpx_binary_dir@/lib";
