@@ -58,7 +58,7 @@ int main() {
 	#pragma test expect_ir(R"(
 		def IMP_getConstTaskReferenceReference = function () -> ref<task_ref,t,f,cpp_ref> {
 			var ref<ptr<task_ref>,f,f,plain> v0 = ref_decl(type_lit(ref<ptr<task_ref>,f,f,plain>));
-			return ptr_to_ref(*v0);
+			return ref_kind_cast(ptr_to_ref(*v0), type_lit(cpp_ref));
 		};
 		{
 			var ref<task_ref,f,f,plain> v0 = IMP_getConstTaskReferenceReference();

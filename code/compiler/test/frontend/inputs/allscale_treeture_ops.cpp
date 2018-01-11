@@ -14,7 +14,7 @@ int main() {
 		var ref<treeture<unit, f>,f,f,plain> b = treeture_done(unit);
 		var ref<int<4>,f,f,plain> i = ref_decl(type_lit(ref<int<4>,f,f,plain>));
 		var ref<treeture<int<4>,f>,f,f,plain> c = treeture_done(*i);
-		var ref<int<4>,f,f,cpp_ref> iRef = i;
+		var ref<int<4>,f,f,cpp_ref> iRef = ref_kind_cast(i, type_lit(cpp_ref));
 		var ref<treeture<int<4>,f>,f,f,plain> d = treeture_done(*iRef);
 		var ref<treeture<unit,t>,f,f,plain> t = treeture_run(treeture_done(unit));
 	})")
@@ -145,11 +145,11 @@ int main() {
 			var ref<treeture<int<4>,f>,f,f,plain> v665 = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> v666 = treeture_done(2);
 			__any_string__user_api_add(
-				instantiate(
+				instantiate_fun(
 					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
 					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
 				)(ref_kind_cast(v665, type_lit(cpp_ref))),
-				instantiate(
+				instantiate_fun(
 					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
 					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
 				)(ref_kind_cast(v666, type_lit(cpp_ref)))
@@ -186,7 +186,7 @@ int main() {
 			treeture_sequential(*v2, *v0, *v1);
 			treeture_parallel(*v2, *v0, *v1);
 			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {}, type_lit((int<4>, int<4>) -> int<4>)), true);
-			var ref<__any_string__combine_variable,f,f,plain> v3 = <ref<__any_string__combine_variable,f,f,cpp_rref>>(ref_cast(ref_temp(type_lit(__any_string__combine_variable)), type_lit(f), type_lit(f), type_lit(cpp_rref))) {};
+			var ref<__any_string__combine_variable,f,f,plain> v3 = ref_cast(<ref<__any_string__combine_variable,f,f,plain>>(ref_temp(type_lit(__any_string__combine_variable))) {}, type_lit(f), type_lit(f), type_lit(cpp_rref));
 			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*v3, type_lit((int<4>, int<4>) -> int<4>)), true);
 		}
 	)")
