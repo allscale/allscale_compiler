@@ -62,11 +62,11 @@ int main() {
 		};
 		def IMP_getTaskRefReference = function () -> ref<task_ref,f,f,cpp_ref> {
 			var ref<ptr<task_ref>,f,f,plain> v0 = ref_decl(type_lit(ref<ptr<task_ref>,f,f,plain>));
-			return ptr_to_ref(*v0);
+			return ref_kind_cast(ptr_to_ref(*v0), type_lit(cpp_ref));
 		};
 		{
 			var ref<IMP_TaskRefConvertible,f,f,plain> v0 = IMP_TaskRefConvertible::(ref_decl(type_lit(ref<IMP_TaskRefConvertible,f,f,plain>)));
-			dependency_after(v0.IMP__conversion_operator_task_reference(), IMP_getTaskRefReference());
+			dependency_after(v0.IMP__conversion_operator_task_reference(), *IMP_getTaskRefReference());
 		}
 	)")
 	{

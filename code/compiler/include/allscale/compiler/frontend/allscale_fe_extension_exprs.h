@@ -86,7 +86,7 @@ namespace frontend {
 
 		  public:
 			AggregationCallMapper(const string& targetIRString, bool requiresDependencies = false)
-				: SimpleCallMapper(targetIRString, true), requiresDependencies(requiresDependencies) {}
+				: SimpleCallMapper(targetIRString, true, true), requiresDependencies(requiresDependencies) {}
 		};
 
 
