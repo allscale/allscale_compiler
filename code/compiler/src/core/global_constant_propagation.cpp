@@ -73,10 +73,10 @@ namespace core {
 				if (auto lit = isGlobalVariable(init->getMemoryExpr())) {
 
 					// there must be one argument
-					if (init->getInitExprs().size() == 1) {
+					if (init->getInitDecls().size() == 1) {
 
 						// this argument is not another global
-						auto initValue = init->getInitExprs()->getElement(0);
+						auto initValue = init->getInitDecls()->getElement(0)->getInitialization();
 						if (!isGlobalVariable(initValue)) {
 
 							// we have a new constant initialization
@@ -89,7 +89,7 @@ namespace core {
 				}
 
 				// if a global literal is among the init expressions => not a constant
-				for(const auto& cur : init->getInitExprs()) {
+				for(const auto& cur : init->getInitExprList()) {
 					if (auto lit = isGlobalVariable(cur)) {
 						markAsNotConstant(lit);
 					}

@@ -20,14 +20,14 @@ namespace lang {
 
 		auto fibIr = builder.parseExpr(R"I(
 			prec((build_recfun(
-				  (i : int<4>) -> bool { return i < 2; },
-				[ (i : int<4>) -> int<4> { return i; } ],
-				[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+				  to_closure((i : int<4>) -> bool { return i < 2; }),
+				[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+				[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 					auto step = recfun_to_fun(steps.0);
 					auto a = treeture_run(step(i-1));
 					auto b = treeture_run(step(i-2));
 					return treeture_done(treeture_get(a) + treeture_get(b));
-				} ]
+				}) ]
 			)))
 		)I", as.getDefinedSymbols());
 
@@ -44,19 +44,19 @@ namespace lang {
 
 		auto evenIr = builder.parseExpr(R"I(
 			prec((build_recfun(
-				  (i : int<4>) -> bool { return i == 0; },
-				[ (i : int<4>) -> bool { return true; }],
-				[ (i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
+				  to_closure((i : int<4>) -> bool { return i == 0; }),
+				[ to_closure((i : int<4>) -> bool { return true; }) ],
+				[ to_closure((i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
 					auto odd = recfun_to_fun(steps.1);
 					return odd(i-1);
-				} ] ),
+				}) ] ),
 				build_recfun(
-				  (i : int<4>) -> bool { return i == 0; },
-				[ (i : int<4>) -> bool { return false; }],
-				[ (i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
+				  to_closure((i : int<4>) -> bool { return i == 0; }),
+				[ to_closure((i : int<4>) -> bool { return false; }) ],
+				[ to_closure((i : int<4>, steps : (recfun<int<4>,bool>, recfun<int<4>,bool>)) -> treeture<bool,f> {
 					auto even = recfun_to_fun(steps.0);
 					return even(i-1);
-				} ] )
+				}) ] )
 			))
 		)I", as.getDefinedSymbols());
 
@@ -74,14 +74,14 @@ namespace lang {
 
 		auto fib = builder.parseExpr(R"I(
 			prec((build_recfun(
-				  (i : int<4>) -> bool { return i < 2; },
-				[ (i : int<4>) -> int<4> { return i; } ],
-				[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+				  to_closure((i : int<4>) -> bool { return i < 2; }),
+				[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+				[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 					auto step = recfun_to_fun(steps.0);
 					auto a = treeture_run(step(i-1));
 					auto b = treeture_run(step(i-2));
 					return treeture_done(treeture_get(a) + treeture_get(b));
-				} ]
+				}) ]
 			)))
 		)I", as.getDefinedSymbols());
 
@@ -97,9 +97,9 @@ namespace lang {
 		EXPECT_EQ("treeture<int<4>,f>", 			toString(*op.getTreetureType().toIRType()));
 
 		EXPECT_EQ(1, op.getFunctions().size());
-		EXPECT_EQ("((int<4>)->bool)", 				toString(*op.getFunction().getBaseCaseTestType()));
-		EXPECT_EQ("((int<4>)->int<4>)", 			toString(*op.getFunction().getBaseCaseType()));
-		EXPECT_EQ("((int<4>,(recfun<int<4>,int<4>>))->treeture<int<4>,f>)", toString(*op.getFunction().getStepCaseType()));
+		EXPECT_EQ("((int<4>)=>bool)", 				toString(*op.getFunction().getBaseCaseTestType()));
+		EXPECT_EQ("((int<4>)=>int<4>)", 			toString(*op.getFunction().getBaseCaseType()));
+		EXPECT_EQ("((int<4>,(recfun<int<4>,int<4>>))=>treeture<int<4>,f>)", toString(*op.getFunction().getStepCaseType()));
 
 		EXPECT_EQ(fib, op.toIR(nm));
 

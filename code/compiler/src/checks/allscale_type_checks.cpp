@@ -26,7 +26,7 @@ namespace checks {
 		if(!allscaleExt.isCallOfCppLambdaToClosure(address)) return res;
 
 		// strip ref
-		auto initType = analysis::getArgument(address, 0)->getType();
+		auto initType = analysis::getArgument(address.as<CallExprPtr>(), 0)->getType();
 		if(analysis::isRefType(initType)) initType = analysis::getReferencedType(initType);
 
 		// if the target is a tag-type reference => grant it the benefit of the dough
@@ -87,7 +87,7 @@ namespace checks {
 		if(!allscaleExt.isCallOfCppLambdaToLambda(address)) return res;
 
 		// strip ref
-		auto initType = analysis::getArgument(address, 0)->getType();
+		auto initType = analysis::getArgument(address.as<CallExprPtr>(), 0)->getType();
 		if(analysis::isRefType(initType)) initType = analysis::getReferencedType(initType);
 
 		// if the target is a tag-type reference => grant it the benefit of the dough

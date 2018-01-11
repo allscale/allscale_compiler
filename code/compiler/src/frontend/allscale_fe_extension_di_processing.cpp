@@ -38,7 +38,7 @@ namespace frontend {
 			auto calleeType = callee->getType().as<core::FunctionTypePtr>();
 
 			// if this is an instantiate node, we need to extract the actual callee
-			if(core::analysis::isCallOf(callee, basic.getInstantiate())) {
+			if(basic.isCallOfInstantiate(callee)) {
 				callee = core::analysis::getArgument(callee, 1);
 			}
 
@@ -136,7 +136,7 @@ namespace frontend {
 							// and create a new lambda returning the result of this call
 							auto body = builder.returnStmt(returnValue, returnType);
 							auto newCallee = builder.lambdaExpr(calleeType, params, body, calleeLit->getStringValue());
-							auto newCalleeInstantiation = builder.callExpr(builder.getLangBasic().getInstantiate(), newCallee, callee);
+							auto newCalleeInstantiation = builder.instantiate(newCallee,callee);
 							return builder.callExpr(irExpr->getType(), newCalleeInstantiation, call->getArgumentList());
 						}
 					}
