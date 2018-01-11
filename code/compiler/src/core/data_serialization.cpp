@@ -10,6 +10,7 @@
 #include "insieme/core/lang/cpp_std.h"
 #include "insieme/core/lang/reference.h"
 #include "insieme/core/transform/node_replacer.h"
+#include "insieme/core/analysis/default_members.h"
 #include "insieme/core/analysis/type_utils.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -203,7 +204,7 @@ namespace core {
 				if(::any(record->getConstructors()->getElements(), [](const auto& ctor){ return !core::analysis::isaDefaultConstructor(ctor); })) {
 					bool failed = false;
 					unsigned variableId = 0;
-					auto defaultCtorType = builder.getDefaultConstructorType(builder.refType(retType));
+					auto defaultCtorType = core::analysis::buildDefaultDefaultConstructorType(builder.refType(retType));
 					core::TypeList ctorParamTypes;
 					core::VariableList ctorVars;
 					core::StatementList body;
@@ -225,12 +226,12 @@ namespace core {
 						auto fieldAccess = builder.callExpr(refExt.getRefMemberAccess(), builder.deref(thisVar),
 																								builder.getIdentifierLiteral(field->getName()), builder.getTypeLiteral(fieldType));
 						if(const auto& fieldTagType = fieldType.isa<core::TagTypePtr>()) {
-							auto fieldTypeCtorOpt = core::analysis::getMoveConstructor(fieldTagType);
-							if(!fieldTypeCtorOpt) {
+							auto fieldTypeCtorInternal = core::analysis::getMoveConstructor(fieldTagType);
+							if(!fieldTypeCtorInternal) {
 								failed = true;
 								break;
 							}
-							auto fieldTypeCtor = fieldTagType->peel(fieldTypeCtorOpt.get());
+							auto fieldTypeCtor = fieldTagType->peel(fieldTypeCtorInternal);
 							body.push_back(builder.callExpr(fieldTypeCtor, fieldAccess, paramVar));
 						} else {
 							body.push_back(builder.initExpr(fieldAccess, builder.deref(paramVar)));
