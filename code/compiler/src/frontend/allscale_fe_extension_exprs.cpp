@@ -112,7 +112,8 @@ namespace detail {
 		core::ExpressionPtr derefOrDematerialize(const core::ExpressionPtr& argExprIn) {
 			core::IRBuilder builder(argExprIn->getNodeManager());
 
-			auto argExpr = removeUndesiredRefCasts(argExprIn);
+			auto argExpr = removeImplicitMaterializations(argExprIn);
+			argExpr = removeUndesiredRefCasts(argExpr);
 
 			if(auto call = argExpr.isa<core::CallExprPtr>()) {
 				// we don't dematerialize builtins
