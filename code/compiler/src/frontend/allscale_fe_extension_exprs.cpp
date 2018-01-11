@@ -84,6 +84,15 @@ namespace detail {
 	//////// implementation details --------------------------------------------------------------------------------------------------------------------
 
 	namespace {
+		core::ExpressionPtr removeImplicitMaterializations(const core::ExpressionPtr& input) {
+			auto& refExt = input->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+			// if the argument is a call to ref_temp_init (an implicit materialization to a reference or r-value reference), we return the child of that call
+			if(refExt.isCallOfRefTempInit(input)) {
+				return core::analysis::getArgument(input, 0);
+			}
+			return input;
+		}
+
 		core::ExpressionPtr removeUndesiredRefCasts(const core::ExpressionPtr& input) {
 			auto& refExt = input->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
 			if(refExt.isCallOfRefCast(input) || refExt.isCallOfRefKindCast(input)) {
@@ -341,7 +350,7 @@ namespace detail {
 	}
 
 	core::ExpressionPtr SimpleCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
-		return converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter));
+		return removeImplicitMaterializations(converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter)));
 	}
 	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
 		return args;
