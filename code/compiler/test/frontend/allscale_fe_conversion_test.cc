@@ -74,6 +74,10 @@ namespace frontend {
 		runAllscaleTestOn("/inputs/allscale_treeture_ops.cpp");
 	}
 
+	TEST(AllScaleConversionTest, TypesImplicitMaterialization) {
+		runAllscaleTestOn("/inputs/allscale_types_implicit_materialization.cpp");
+	}
+
 	TEST(AllScaleConversionTest, Types) {
 		runAllscaleTestOn("/inputs/allscale_types.cpp");
 	}

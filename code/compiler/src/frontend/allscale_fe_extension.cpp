@@ -55,6 +55,40 @@ namespace frontend {
 		static const char* ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER = "__AllScale__Dependent_AutoType";
 
 		static bool debug = false;
+
+
+		core::ExpressionPtr addImplicitCallArgMaterializations(const core::ExpressionPtr& irExpr) {
+			const auto& call = irExpr.isa<core::CallExprPtr>();
+			// we only act on calls here
+			if(!call) return irExpr;
+
+			// build replacement call with the same arguments, but added materialization for AllScale types which are passed as values
+			core::IRBuilder builder(irExpr->getNodeManager());
+			core::DeclarationList newDecls;
+			bool changed = false;
+
+			for(const auto& decl : call->getArgumentDeclarationList()) {
+				const auto& declType = decl->getType();
+				const auto& init = decl->getInitialization();
+				// if we have to perform implicit materialization of an AllScale type here
+				if((core::lang::isCppReference(declType) || core::lang::isCppRValueReference(declType))
+						&& lang::isAllscaleType(core::analysis::getReferencedType(declType))
+						&& !core::analysis::isRefType(init->getType())) {
+					newDecls.push_back(builder.declaration(declType, core::lang::buildRefCast(builder.refTemp(init), declType)));
+					changed = true;
+
+					// otherwise we can use the old decl as is
+				} else {
+					newDecls.push_back(decl);
+				}
+			}
+
+			// if we didn't change anything, we are done here
+			if(!changed) return irExpr;
+
+			// otherwise we build a new call
+			return builder.callExpr(call->getType(), call->getFunctionExpr(), newDecls);
+		}
 	}
 
 	boost::optional<std::string> AllscaleExtension::isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const {
@@ -134,6 +168,9 @@ namespace frontend {
 
 		// we apply the data item processing step
 		irExpr = applyDataItemProcessing(expr, irExpr, converter);
+
+		// add implicit materializations for AllScale types in call arguments where required
+		irExpr = addImplicitCallArgMaterializations(irExpr);
 
 		return irExpr;
 	}

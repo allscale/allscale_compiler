@@ -102,7 +102,15 @@ int main() {
 		};
 		def struct __any_string__step {
 			const function IMP__operator_call_ = (v1 : ref<int<4>,f,f,plain>, v2 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
-				return __any_string__user_add(recfun_to_fun(tuple_member_access(*v2, 0ul, type_lit(recfun<int<4>,int<4>>)))(*v1-1), recfun_to_fun(tuple_member_access(*v2, 0ul, type_lit(recfun<int<4>,int<4>>)))(*v1-2));
+				return __any_string__user_add(
+						ref_cast(
+								ref_temp_init(
+										recfun_to_fun(tuple_member_access(*v2, 0ul, type_lit(recfun<int<4>,int<4>>)))(*v1-1)),
+								type_lit(f), type_lit(f), type_lit(cpp_rref)),
+						ref_cast(
+								ref_temp_init(
+										recfun_to_fun(tuple_member_access(*v2, 0ul, type_lit(recfun<int<4>,int<4>>)))(*v1-2)),
+								type_lit(f), type_lit(f), type_lit(cpp_rref)));
 			}
 		};
 		def struct __any_string__add_lambda_operator {
