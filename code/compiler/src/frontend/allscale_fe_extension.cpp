@@ -57,6 +57,14 @@ namespace frontend {
 		static bool debug = false;
 
 
+		// returns whether we have to perform implicit materialization of an AllScale type for the given decl
+		bool declNeedsImplicitMaterialization(const core::DeclarationPtr& decl) {
+			const auto& declType = decl->getType();
+			return (core::lang::isCppReference(declType) || core::lang::isCppRValueReference(declType))
+					&& lang::isAllscaleType(core::analysis::getReferencedType(declType))
+					&& !core::analysis::isRefType(decl->getInitialization()->getType());
+		}
+
 		core::ExpressionPtr addImplicitCallArgMaterializations(const core::ExpressionPtr& irExpr) {
 			const auto& call = irExpr.isa<core::CallExprPtr>();
 			// we only act on calls here
@@ -68,13 +76,10 @@ namespace frontend {
 			bool changed = false;
 
 			for(const auto& decl : call->getArgumentDeclarationList()) {
-				const auto& declType = decl->getType();
-				const auto& init = decl->getInitialization();
 				// if we have to perform implicit materialization of an AllScale type here
-				if((core::lang::isCppReference(declType) || core::lang::isCppRValueReference(declType))
-						&& lang::isAllscaleType(core::analysis::getReferencedType(declType))
-						&& !core::analysis::isRefType(init->getType())) {
-					newDecls.push_back(builder.declaration(declType, core::lang::buildRefCast(builder.refTemp(init), declType)));
+				if(declNeedsImplicitMaterialization(decl)) {
+					const auto& declType = decl->getType();
+					newDecls.push_back(builder.declaration(declType, core::lang::buildRefCast(builder.refTemp(decl->getInitialization()), declType)));
 					changed = true;
 
 					// otherwise we can use the old decl as is
@@ -88,6 +93,24 @@ namespace frontend {
 
 			// otherwise we build a new call
 			return builder.callExpr(call->getType(), call->getFunctionExpr(), newDecls);
+		}
+
+		insieme::frontend::stmtutils::StmtWrapper addImplicitReturnValueMaterializations(const insieme::frontend::stmtutils::StmtWrapper& irStmt) {
+			// we only act on single return statements
+			if(!irStmt.isSingleStmt()) return irStmt;
+			const auto& retStmt = irStmt.getSingleStmt().isa<core::ReturnStmtPtr>();
+			if(!retStmt) return irStmt;
+
+			const auto& decl = retStmt->getReturnDeclaration();
+			// if we have to perform implicit materialization of an AllScale type here
+			if(declNeedsImplicitMaterialization(decl)) {
+				const auto& declType = decl->getType();
+				core::IRBuilder builder(retStmt->getNodeManager());
+				// create a new return statement which does that
+				return { builder.returnStmt(core::lang::buildRefCast(builder.refTemp(decl->getInitialization()), declType), declType) };
+			}
+
+			return irStmt;
 		}
 	}
 
@@ -212,6 +235,14 @@ namespace frontend {
 			return builder.initExpr(irInitializedMemLoc, converter.convertExpr(initExpr));
 		}
 		return nullptr;
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// STATEMENTS
+
+	insieme::frontend::stmtutils::StmtWrapper AllscaleExtension::PostVisit(const clang::Stmt* stmt, const insieme::frontend::stmtutils::StmtWrapper& irStmt,
+	                                                                       insieme::frontend::conversion::Converter& converter) {
+		return addImplicitReturnValueMaterializations(irStmt);
 	}
 
 
