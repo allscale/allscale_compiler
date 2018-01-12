@@ -47,6 +47,11 @@ namespace frontend {
 	  public:
 		AllscaleExtension();
 	};
+
+
+	insieme::core::ExpressionPtr applyDataItemProcessing(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
+	                                                     insieme::frontend::conversion::Converter& converter);
+
 }
 }
 }

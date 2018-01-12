@@ -26,8 +26,8 @@ namespace frontend {
 
 	namespace core = insieme::core;
 
-	insieme::core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
-	                                                          insieme::frontend::conversion::Converter& converter) {
+	insieme::core::ExpressionPtr applyDataItemProcessing(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExpr,
+	                                                     insieme::frontend::conversion::Converter& converter) {
 		auto& mgr = irExpr->getNodeManager();
 		core::IRBuilder builder(mgr);
 		auto& basic = mgr.getLangBasic();

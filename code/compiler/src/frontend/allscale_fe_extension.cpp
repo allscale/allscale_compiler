@@ -128,6 +128,16 @@ namespace frontend {
 		return MappingFrontendExtension::Visit(expr, converter);
 	}
 
+	core::ExpressionPtr AllscaleExtension::PostVisit(const clang::Expr* expr, const insieme::core::ExpressionPtr& irExprIn,
+	                                                 insieme::frontend::conversion::Converter& converter) {
+		auto irExpr = irExprIn;
+
+		// we apply the data item processing step
+		irExpr = applyDataItemProcessing(expr, irExpr, converter);
+
+		return irExpr;
+	}
+
 	insieme::core::ExpressionPtr AllscaleExtension::Visit(const clang::CastExpr* castExpr,
 	                                                      insieme::core::ExpressionPtr& irExpr, insieme::core::TypePtr& irTargetType,
 	                                                      insieme::frontend::conversion::Converter& converter) {
