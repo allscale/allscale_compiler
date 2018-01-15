@@ -58,7 +58,8 @@ namespace frontend {
 
 		  protected:
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter);
-			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter);
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
+			                                                     insieme::frontend::conversion::Converter& converter);
 			virtual core::ExpressionPtr generateCallee(const fed::ClangExpressionInfo& exprInfo);
 			virtual core::ExpressionPtr postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall);
 
@@ -81,7 +82,7 @@ namespace frontend {
 
 		  protected:
 			virtual core::ExpressionPtr convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) override;
-			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
 			                                                     insieme::frontend::conversion::Converter& converter) override;
 
 		  public:
@@ -104,7 +105,7 @@ namespace frontend {
 		class RecOrPrecFunCallMapper : public SimpleCallMapper {
 		  protected:
 			virtual core::ExpressionPtr generateCallee(const fed::ClangExpressionInfo& exprInfo) override;
-			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionList& args,
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
 			                                                     insieme::frontend::conversion::Converter& converter) override;
 			virtual core::ExpressionPtr postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) override;
 

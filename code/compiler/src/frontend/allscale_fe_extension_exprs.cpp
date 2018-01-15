@@ -347,13 +347,14 @@ namespace detail {
 			if(derefOtherArgs) convertedArg = derefOrDematerialize(convertedArg);
 			args.push_back(convertedArg);
 		}
-		return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(args, converter));
+		return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(callee, args, converter));
 	}
 
 	core::ExpressionPtr SimpleCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 		return removeImplicitMaterializations(converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter)));
 	}
-	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
+	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
+	                                                               insieme::frontend::conversion::Converter& converter) {
 		return args;
 	}
 	core::ExpressionPtr SimpleCallMapper::generateCallee(const fed::ClangExpressionInfo& exprInfo) {
@@ -387,7 +388,7 @@ namespace detail {
 		}
 		return ret;
 	}
-	core::ExpressionList AggregationCallMapper::postprocessArgumentList(const core::ExpressionList& args,
+	core::ExpressionList AggregationCallMapper::postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
 	                                                                    insieme::frontend::conversion::Converter& converter) {
 		if(requiresDependencies && (args.size() == 0 || !lang::isDependencies(args[0]))) {
 			core::ExpressionList ret;
@@ -444,7 +445,7 @@ namespace detail {
 			return buildDepWrapper(derefOrDematerialize(recfunArg));
 		}
 	}
-	core::ExpressionList RecOrPrecFunCallMapper::postprocessArgumentList(const core::ExpressionList& args,
+	core::ExpressionList RecOrPrecFunCallMapper::postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
 	                                                                     insieme::frontend::conversion::Converter& converter) {
 		assert_ge(args.size(), 1);
 		core::ExpressionList newArgs(args.cbegin() + 1, args.cend());
