@@ -536,6 +536,7 @@ namespace detail {
 			// i.e. the prec is never called
 			auto checkForCallOperator = [&](const core::ExpressionPtr& expr) {
 				auto genType = insieme::core::analysis::getReferencedType(expr->getType()).as<insieme::core::GenericTypePtr>();
+				assert_true(tMap.find(genType) != tMap.end()) << "Couldn't find struct for genType " << *genType << " in TU";
 				auto structType = tMap.at(genType)->getStruct();
 				if(!utils::hasCallOperator(structType)) {
 					assert_fail() << "Conversion of prec construct around lambda at \""
@@ -551,7 +552,7 @@ namespace detail {
 			// simply convert the lambda
 			{
 				// first we translate the lambda
-				auto cutoffIr = removeUndesiredDeref(converter.convertExpr(cutoffArg));
+				auto cutoffIr = removeUndesiredDeref(removeImplicitMaterializations(converter.convertExpr(cutoffArg)));
 				// we check for the presence of a call operator
 				checkForCallOperator(cutoffIr);
 
@@ -576,7 +577,7 @@ namespace detail {
 
 			// first we translate the lambda(s)
 			core::ExpressionList originalInputBaseCases;
-			auto inputBaseCase = converter.convertExpr(baseCaseArg);
+			auto inputBaseCase = removeImplicitMaterializations(converter.convertExpr(baseCaseArg));
 			// then handle lists and single lambdas accordingly
 			if(core::lang::isList(inputBaseCase)) {
 				for(const auto& expr : core::lang::parseListOfExpressions(inputBaseCase)) {
@@ -640,7 +641,7 @@ namespace detail {
 
 			// first we translate the lambda(s)
 			core::ExpressionList originalInputStepCases;
-			auto inputStepCase = converter.convertExpr(stepCaseArg);
+			auto inputStepCase = removeImplicitMaterializations(converter.convertExpr(stepCaseArg));
 			// then handle lists and single lambdas accordingly
 			if(core::lang::isList(inputStepCase)) {
 				for(const auto& expr : core::lang::parseListOfExpressions(inputStepCase)) {
