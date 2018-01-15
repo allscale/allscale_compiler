@@ -27,7 +27,12 @@ using namespace allscale::api::core;
 		const function IMP__operator_call_ = (v133 : ref<int<4>,t,f,cpp_ref>, v134 : ref<(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
 			recfun_to_fun(
 					tuple_member_access(*v134, 0ul, type_lit(recfun<ref<int<4>,t,f,cpp_ref>,int<4>>))
-			)(*v133-1);
+			)(ref_cast(
+					ref_temp_init(*v133-1),
+					type_lit(t),
+					type_lit(f),
+					type_lit(cpp_ref)
+			));
 			return treeture_done(1);
 		}
 	};)"
@@ -65,7 +70,12 @@ int main() {
 
 	// direct call of prec result
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{ treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
-			)(14));
+			)(ref_cast(
+					ref_temp_init(14),
+					type_lit(t),
+					type_lit(f),
+					type_lit(cpp_ref)
+			)));
 		}
 	)")
 	{
@@ -82,7 +92,7 @@ int main() {
 
 	// direct call of prec result with a variable
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{ var ref<int<4>,f,f,plain> v0 = 15; treeture_run(precfun_to_fun(", SIMPLE_PREC_CALL, R"(
-			)(*v0));
+			)(ref_cast(v0, type_lit(t), type_lit(f), type_lit(cpp_ref))));
 		}
 	)")
 	{

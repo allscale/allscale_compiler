@@ -453,9 +453,29 @@ namespace detail {
 		if(newArgs.size() == 2) {
 			newArgs.front() = derefOrDematerialize(newArgs.front());
 		}
-		// we need to correctly handle the argument passing here, as the C++ method always takes a const cpp_ref
-		if(!newArgs.empty() && core::lang::isPlainReference(newArgs.back())) {
-			newArgs.back() = derefOrCopy(newArgs.back(), converter);
+		// handle the actual argument
+		if(!newArgs.empty()) {
+			// determine the type of the callee parameter - this can either be a plain value or a cpp reference
+			auto paramType = callee->getType().as<core::FunctionTypePtr>()->getParameterTypeList().back();
+			auto& arg = newArgs.back();
+
+			// if it is a plain value
+			if(!core::lang::isReference(paramType)) {
+				if(core::lang::isPlainReference(arg)) {
+					arg = derefOrCopy(arg, converter);;
+				}
+
+				// if we are passing to a cpp_ref
+			} else {
+				core::IRBuilder builder(arg->getNodeManager());
+				// perform implicit materialization here
+				if(!core::lang::isReference(arg)) {
+					arg = builder.refTemp(arg);
+				}
+				if(!core::lang::isCppReference(arg)) {
+					arg = core::lang::buildRefCast(arg, builder.refType(core::analysis::getReferencedType(arg), true, false, core::lang::ReferenceType::Kind::CppReference));
+				}
+			}
 		}
 		return newArgs;
 	}
