@@ -75,6 +75,7 @@ namespace detail {
 		// prec
 		{"allscale::api::core::group", aggregateArgumentsToTuple},
 		{"allscale::api::core::pick", aggregateArgumentsToList},
+		{"allscale::api::core::fun_variants.*fun_variants", mapCopyAndMoveConstructor}, // copy|move ctor call
 		{"allscale::api::core::prec", 1, mapPrecRecDefs},
 		{"allscale::api::core::prec", 2, mapPrecFun},
 		{"allscale::api::core::prec", 3, mapPrecDirect},

@@ -4,6 +4,9 @@
 #include <boost/algorithm/string.hpp>
 
 #include "insieme/annotations/c/include.h"
+#include "insieme/core/lang/list.h"
+#include "insieme/core/lang/reference.h"
+#include "insieme/core/transform/node_replacer.h"
 #include "insieme/frontend/clang.h"
 #include "insieme/frontend/converter.h"
 #include "insieme/frontend/extensions/interceptor_extension.h"
@@ -248,8 +251,23 @@ namespace frontend {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// FINAL POSTPROCESSING
 
-	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& prog) {
-		core::IRBuilder builder(prog->getNodeManager());
+	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& progIn) {
+		core::IRBuilder builder(progIn->getNodeManager());
+		const auto& refExt = progIn->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
+		auto prog = progIn;
+
+		// clean up ref_temp_init around list types, which might be added by the Insieme frontend
+		prog = core::transform::transformBottomUpGen(prog, [&](const core::DeclarationPtr& decl) {
+			const auto& declType = decl->getType();
+			if(core::lang::isPlainReference(declType)) {
+				if(core::lang::isList(core::analysis::getReferencedType(declType))) {
+					if(refExt.isCallOfRefTempInit(decl->getInitialization())) {
+						return builder.declaration(declType, core::analysis::getArgument(decl->getInitialization(), 0));
+					}
+				}
+			}
+			return decl;
+		}, core::transform::globalReplacement);
 
 		// temporarily dump the generated IR in a readable format
 		if(debug) dumpReadable(prog);
