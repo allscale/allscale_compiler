@@ -9,7 +9,7 @@ int main() {
 		};
 		{
 			var ref<IMP_NonBaseRangeDI,t,f,plain> v0 = lit("IMP_NonBaseRangeDI::ctor" : IMP_NonBaseRangeDI::())(ref_cast(ref_decl(type_lit(ref<IMP_NonBaseRangeDI,t,f,plain>)), type_lit(f), type_lit(f), type_lit(plain)));
-			instantiate(IMP_NonBaseRangeDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_NonBaseRangeDI::IMP__operator_subscript_" : const IMP_NonBaseRangeDI::(int<4>) -> ref<real<8>,t,f,cpp_ref>))(v0, 0) materialize ;
+			instantiate_member(IMP_NonBaseRangeDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_NonBaseRangeDI::IMP__operator_subscript_" : const IMP_NonBaseRangeDI::(int<4>) -> ref<real<8>,t,f,cpp_ref>))(v0, 0) materialize ;
 		}
 	)")
 	{
@@ -23,7 +23,7 @@ int main() {
 		};
 		{
 			var ref<IMP_NonBaseRangeDI,f,f,plain> v0 = lit("IMP_NonBaseRangeDI::ctor" : IMP_NonBaseRangeDI::())(ref_decl(type_lit(ref<IMP_NonBaseRangeDI,f,f,plain>)));
-			instantiate(IMP_NonBaseRangeDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_NonBaseRangeDI::IMP__operator_subscript_" : IMP_NonBaseRangeDI::(int<4>) -> ref<real<8>,f,f,cpp_ref>))(v0, 0) materialize  = num_cast(0, type_lit(real<8>));
+			instantiate_member(IMP_NonBaseRangeDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_NonBaseRangeDI::IMP__operator_subscript_" : IMP_NonBaseRangeDI::(int<4>) -> ref<real<8>,f,f,cpp_ref>))(v0, 0) materialize  = num_cast(0, type_lit(real<8>));
 		}
 	)")
 	{
