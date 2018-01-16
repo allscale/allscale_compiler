@@ -67,54 +67,6 @@ namespace frontend {
 					&& lang::isAllscaleType(core::analysis::getReferencedType(declType))
 					&& !core::analysis::isRefType(decl->getInitialization()->getType());
 		}
-
-		core::ExpressionPtr addImplicitCallArgMaterializations(const core::ExpressionPtr& irExpr) {
-			const auto& call = irExpr.isa<core::CallExprPtr>();
-			// we only act on calls here
-			if(!call) return irExpr;
-
-			// build replacement call with the same arguments, but added materialization for AllScale types which are passed as values
-			core::IRBuilder builder(irExpr->getNodeManager());
-			core::DeclarationList newDecls;
-			bool changed = false;
-
-			for(const auto& decl : call->getArgumentDeclarationList()) {
-				// if we have to perform implicit materialization of an AllScale type here
-				if(declNeedsImplicitMaterialization(decl)) {
-					const auto& declType = decl->getType();
-					newDecls.push_back(builder.declaration(declType, core::lang::buildRefCast(builder.refTemp(decl->getInitialization()), declType)));
-					changed = true;
-
-					// otherwise we can use the old decl as is
-				} else {
-					newDecls.push_back(decl);
-				}
-			}
-
-			// if we didn't change anything, we are done here
-			if(!changed) return irExpr;
-
-			// otherwise we build a new call
-			return builder.callExpr(call->getType(), call->getFunctionExpr(), newDecls);
-		}
-
-		insieme::frontend::stmtutils::StmtWrapper addImplicitReturnValueMaterializations(const insieme::frontend::stmtutils::StmtWrapper& irStmt) {
-			// we only act on single return statements
-			if(!irStmt.isSingleStmt()) return irStmt;
-			const auto& retStmt = irStmt.getSingleStmt().isa<core::ReturnStmtPtr>();
-			if(!retStmt) return irStmt;
-
-			const auto& decl = retStmt->getReturnDeclaration();
-			// if we have to perform implicit materialization of an AllScale type here
-			if(declNeedsImplicitMaterialization(decl)) {
-				const auto& declType = decl->getType();
-				core::IRBuilder builder(retStmt->getNodeManager());
-				// create a new return statement which does that
-				return { builder.returnStmt(core::lang::buildRefCast(builder.refTemp(decl->getInitialization()), declType), declType) };
-			}
-
-			return irStmt;
-		}
 	}
 
 	boost::optional<std::string> AllscaleExtension::isPrerequisiteMissing(insieme::frontend::ConversionSetup& setup) const {
@@ -195,9 +147,6 @@ namespace frontend {
 		// we apply the data item processing step
 		irExpr = applyDataItemProcessing(expr, irExpr, converter);
 
-		// add implicit materializations for AllScale types in call arguments where required
-		irExpr = addImplicitCallArgMaterializations(irExpr);
-
 		return irExpr;
 	}
 
@@ -241,14 +190,6 @@ namespace frontend {
 	}
 
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// STATEMENTS
-
-	insieme::frontend::stmtutils::StmtWrapper AllscaleExtension::PostVisit(const clang::Stmt* stmt, const insieme::frontend::stmtutils::StmtWrapper& irStmt,
-	                                                                       insieme::frontend::conversion::Converter& converter) {
-		return addImplicitReturnValueMaterializations(irStmt);
-	}
-
-
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// FINAL POSTPROCESSING
 
 	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& progIn) {
@@ -256,9 +197,10 @@ namespace frontend {
 		const auto& refExt = progIn->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
 		auto prog = progIn;
 
-		// clean up ref_temp_init around list types, which might be added by the Insieme frontend
+		// do some actual post-processing here
 		prog = core::transform::transformBottomUpGen(prog, [&](const core::DeclarationPtr& decl) {
 			const auto& declType = decl->getType();
+			// clean up ref_temp_init around list types, which might be added by the Insieme frontend
 			if(core::lang::isPlainReference(declType)) {
 				if(core::lang::isList(core::analysis::getReferencedType(declType))) {
 					if(refExt.isCallOfRefTempInit(decl->getInitialization())) {
@@ -266,6 +208,13 @@ namespace frontend {
 					}
 				}
 			}
+
+			// add implicit materializations for AllScale types if required
+			if(declNeedsImplicitMaterialization(decl)) {
+				const auto& declType = decl->getType();
+				return builder.declaration(declType, core::lang::buildRefCast(builder.refTemp(decl->getInitialization()), declType));
+			}
+
 			return decl;
 		}, core::transform::globalReplacement);
 

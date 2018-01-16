@@ -37,9 +37,6 @@ namespace frontend {
 		                                           insieme::core::ExpressionPtr& irInitializedMemLoc,
 		                                           insieme::frontend::conversion::Converter& converter) override ;
 
-		virtual insieme::frontend::stmtutils::StmtWrapper PostVisit(const clang::Stmt* stmt, const insieme::frontend::stmtutils::StmtWrapper& irStmt,
-		                                                            insieme::frontend::conversion::Converter& converter) override;
-
 		virtual std::vector<insieme::frontend::extensions::detail::FilterMapper> getExprMappings() override;
 
 		// TU and Program
