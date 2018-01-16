@@ -6,6 +6,7 @@
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/analysis/type_utils.h"
 #include "insieme/core/lang/reference.h"
+#include "insieme/core/transform/materialize.h"
 #include "insieme/core/transform/node_replacer.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -70,8 +71,9 @@ namespace core {
 					core::TypePtr objectType = core::analysis::getObjectType(callee->getType());
 					if(backend::isDataItemReference(objectType)) {
 						// replace constructor call with call to getCreateDataItem
-						ExpressionList args = call->getArgumentList();
-						args[0] = builder.getTypeLiteral(backend::getReferencedDataItemType(objectType));
+						DeclarationList args = call->getArgumentDeclarationList();
+						auto arg = builder.getTypeLiteral(backend::getReferencedDataItemType(objectType));
+						args[0] = builder.declaration(core::transform::materialize(arg->getType()), arg);
 
 						return builder.callExpr(ext.getCreateDataItem(), args);
 					}
@@ -86,10 +88,18 @@ namespace core {
 
 					// unwrap each argument that is a data item reference
 					std::map<NodeAddress,NodePtr> replacements;
-					for(const auto& arg : CallExprAddress(call)->getArgumentList()) {
+					for(const auto& oldArg : CallExprAddress(call)->getArgumentList()) {
+						core::lang::ReferenceType::Kind oldRefKind = core::lang::ReferenceType(oldArg).getKind();
+						// the argument might be a cast to the correct type here. if it is a cast, we can remove it, as we'll cast ourselves later on
+						auto arg = core::lang::removeSurroundingRefCasts(oldArg);
 						if (backend::isDataItemReference(insieme::core::analysis::getReferencedType(arg->getType()))) {
 							// we need to unpack the data item reference
-							replacements[arg] = builder.callExpr(ext.getGetDataItem(),core::lang::buildRefKindCast(arg,core::lang::ReferenceType::Kind::CppReference));
+							core::ExpressionPtr newArg = builder.callExpr(ext.getGetDataItem(), core::lang::buildRefKindCast(arg, core::lang::ReferenceType::Kind::CppReference));
+							// however, we need to cast to the original type, if that wasn't cpp_ref, which we produce now
+							if(oldRefKind != core::lang::ReferenceType::Kind::CppReference) {
+								newArg = core::lang::buildRefKindCast(newArg, oldRefKind);
+							}
+							replacements[oldArg] = newArg;
 						}
 					}
 
@@ -221,11 +231,6 @@ namespace core {
 				}
 
 				return call;
-
-				// for all other calls => rebuild call to update result type
-				auto fun = call->getFunctionExpr();
-				auto args = call->getArgumentList();
-				return builder.callExpr(fun,args);
 			}
 
 
