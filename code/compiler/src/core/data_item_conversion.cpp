@@ -233,6 +233,50 @@ namespace core {
 				return call;
 			}
 
+			// fix declarations which got broken because we changed the type if their initialization
+			if(auto decl = node.isa<DeclarationPtr>()) {
+				const auto& arg = decl->getInitialization();
+				if(core::lang::isReference(arg)) {
+					core::lang::ReferenceType::Kind declRefKind = core::lang::ReferenceType(decl->getType()).getKind();
+					// only consider declarations, which are initialized with a member access of DI reference type
+					if((core::analysis::isCallOf(arg, basic.getCompositeMemberAccess()) || core::analysis::isCallOf(arg, refExt.getRefMemberAccess()))
+							&& containsDataItemReference(insieme::core::analysis::getReferencedType(arg))) {
+						// cast the initialization to the type of the declaration
+						auto newArg = core::lang::buildRefKindCast(arg, declRefKind);
+						return builder.declaration(decl->getType(), newArg);
+					}
+				}
+			}
+
+			// fix InitExpr nodes
+			if (auto initExpr = node.isa<InitExprPtr>()) {
+				const auto& initExprType = initExpr->getType();
+				const auto& memoryExpr = initExpr->getMemoryExpr();
+				const auto& memoryExprType = memoryExpr->getType().as<core::GenericTypePtr>();
+				// ... which we broke by changing calls in their memory location
+				if(initExprType != memoryExprType) {
+					return builder.initExpr(memoryExprType, memoryExpr, initExpr->getInitDecls());
+				}
+				// ... which initialize a struct with a field which's type we changed from cpp_ref to plain
+				if(core::lang::isReference(initExprType)) {
+					if(const auto& tagType = core::analysis::getReferencedType(initExprType).isa<core::TagTypePtr>()) {
+						// if we have any field which captures a data item
+						if(::any(tagType->getRecord()->getFields(), [&](const auto& field) { return isCapturedFieldName(field->getName()) && containsDataItemReference(field->getType()); })) {
+							// we need to fix the initializations. Previously we had cpp_ref, now we need plain
+							core::DeclarationList decls = initExpr->getInitDecls();
+							for(auto& decl : decls) {
+								const auto& declType = decl->getType();
+								if(core::lang::isCppReference(declType) && containsDataItemReference(insieme::core::analysis::getReferencedType(declType))) {
+									auto newInit = core::lang::removeSurroundingRefCasts(decl->getInitialization());
+									newInit = core::lang::buildRefDeref(newInit);
+									decl = builder.declaration(core::transform::materialize(newInit->getType()), newInit);
+								}
+							}
+							return builder.initExpr(memoryExprType, memoryExpr, decls);
+						}
+					}
+				}
+			}
 
 			// default, do nothing
 			return node;
