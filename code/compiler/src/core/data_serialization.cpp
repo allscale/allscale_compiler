@@ -160,7 +160,7 @@ namespace core {
 				auto read = builder.callExpr(
 					(needsMaterialization) ? builder.refType(elementType) : elementType,
 					ext.getRead(),
-					reader,
+					core::lang::toPlainReference(reader),
 					builder.getTypeLiteral(elementType)
 				);
 
@@ -174,7 +174,7 @@ namespace core {
 				stmts.push_back(decl);
 
 				// record new variable
-				values.push_back(builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference)));
+				values.push_back(builder.deref(builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference))));
 			}
 
 			// add final return statement
@@ -304,7 +304,7 @@ namespace core {
 				// create a call to the writer
 				auto write = builder.callExpr(
 						ext.getWrite(),
-						writer,
+						core::lang::toPlainReference(writer),
 						builder.getTypeLiteral(field->getType()),
 						access
 				);
