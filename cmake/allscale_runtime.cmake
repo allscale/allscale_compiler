@@ -2,8 +2,28 @@ include(ExternalProject)
 
 # locate depending libraries
 #find_package(Boost)
+
 if(NOT MSVC)
 	find_package(Hwloc)
+endif()
+
+# To determine the HPX allocator we check if Jemalloc is installed.
+# For this the FindJemalloc.cmake script of HPX is used, we temporarily 
+set(CMAKE_MODULE_PATH_old ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/../runtime/allscale_runtime/hpx/cmake")
+find_package(Jemalloc)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH_old})
+
+if(Jemalloc_FOUND)
+	set(HPX_ALLOCATOR_OPTIONS
+		-DJemalloc_FOUND=True
+		-DJEMALLOC_ROOT=${JEMALLOC_ROOT}
+		-DJEMALLOC_LIBRARY=${JEMALLOC_LIBRARY}
+		-DJEMALLOC_INCLUDE_DIR=${JEMALLOC_INCLUDE_DIR}
+		-DHPX_WITH_MALLOC=jemalloc
+	)
+else()
+	set(HPX_ALLOCATOR_OPTIONS -DHPX_WITH_MALLOC=system)
 endif()
 
 # add the external HPX project
@@ -16,10 +36,11 @@ ExternalProject_Add(
 		-DBOOST_ROOT=${Boost_INCLUDE_DIRS}/..
 		-DHWLOC_ROOT=${Hwloc_INCLUDE_DIRS}/..
 		-DHPX_WITH_NETWORKING=${HPX_WITH_NETWORKING}
-		-DHPX_WITH_MALLOC=system
-		-DHPX_WITH_MAX_CPU_COUNT=128
+		-DHPX_WITH_MAX_CPU_COUNT=512
 		-DHPX_WITH_EXAMPLES=OFF
 		-DHPX_WITH_TESTS=OFF
+		${HPX_ALLOCATOR_OPTIONS}
+		-DCMAKE_BUILD_TYPE=Release
 	INSTALL_COMMAND ""
 	EXCLUDE_FROM_ALL 1
 	BUILD_ALWAYS 1
@@ -42,11 +63,11 @@ ExternalProject_Add(
 	CMAKE_ARGS
 		${CMAKE_EXTERNALPROJECT_FORWARDS}
 		-DHPX_DIR=${hpx_binary_dir}/lib/cmake/HPX
-		-DHPX_WITH_MALLOC=system
-		-DHPX_WITH_NETWORKING=${HPX_WITH_NETWORKING}
-		-DALLSCALE_WITH_TESTS=off
+		-DALLSCALE_WITH_TESTS=OFF
+		-DALLSCALE_WITH_EXAMPLES=OFF
 		-DALLSCALE_API_DIR=${PROJECT_SOURCE_DIR}/../api
 		-DCMAKE_PREFIX_PATH="${CMAKE_PREFIX_PATH_STR}"
+		-DCMAKE_BUILD_TYPE=Release
 	INSTALL_COMMAND ""
 	EXCLUDE_FROM_ALL 1
 	BUILD_ALWAYS 1

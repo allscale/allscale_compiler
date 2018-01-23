@@ -696,11 +696,21 @@ namespace core {
 					)
 				);
 
+			core::TypePtr funReturnType = lambda->getFunctionType()->getReturnType();
+			// we mark treeture<unit> return types specially as treeture<art_unused_type>, since these should be written out differently by the backend, as by the runtime's request.
+			if(builder.getLangBasic().isUnit(funReturnType)) {
+				const auto& backendExt = mgr.getLangExtension<backend::AllScaleBackendModule>();
+				funReturnType = backendExt.getUnusedType();
+
+				// the body is also different
+				body = builder.compoundStmt(
+						builder.callExpr(lambda,lambda->getParameterList()[0]),
+						builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(backendExt.getMakeUnusedType())))
+				);
+			}
+
 			// create the resulting function type
-			auto funType = builder.functionType(
-				lambda->getFunctionType()->getParameterType(0),
-				lang::TreetureType(lambda->getFunctionType()->getReturnType(),false).toIRType()
-			);
+			auto funType = builder.functionType(lambda->getFunctionType()->getParameterType(0), lang::TreetureType(funReturnType, false).toIRType());
 
 			// use this lambda for creating the work item variant
 			return WorkItemVariant(builder.lambdaExpr(funType, lambda->getParameterList(), body));

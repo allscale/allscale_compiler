@@ -21,12 +21,12 @@ include(doxygen)
 include(dependencies/pthread)
 include(dependencies/googletest)
 include(dependencies/boost)
+include(dependencies/hwloc)
 include(dependencies/valgrind)
 include(dependencies/gmp)
 include(dependencies/zlib)
 include(dependencies/cabal)
 include(dependencies/ghc)
-
 
 # -- CMake Modules
 include(add_module)

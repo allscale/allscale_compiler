@@ -104,6 +104,7 @@ namespace backend {
 		compiler.addIncludeDir(ALLSCALE_RUNTIME_INCLUDE_DIR);
 		compiler.addIncludeDir(HPX_INCLUDE_DIR);
 		compiler.addIncludeDir(HPX_ROOT_DIR);		// contains some configuration files
+		compiler.addIncludeDir(HWLOC_INCLUDE_DIR);
 		compiler.addFlag("-isystem " + BOOST_INCLUDE_DIR);
 
 		// to be not over-critical in order of libraries
@@ -114,7 +115,7 @@ namespace backend {
 		compiler.addFlag("-DBOOST_DISABLE_ASSERTS");
 
 		// add libraries
-		compiler.addExternalLibrary(ALLSCALE_RUNTIME_LIBRARY_DIR, "allscale");
+		compiler.addExternalLibrary(ALLSCALE_RUNTIME_LIBRARY_DIR, "hpx_allscale");
 		compiler.addExternalLibrary(HPX_LIBRARY_DIR, "hpx_init");
 		compiler.addExternalLibrary(HPX_LIBRARY_DIR, "hpx");
 		compiler.addExternalLibrary(BOOST_LIBRARY_DIR, "boost_chrono");
@@ -125,12 +126,13 @@ namespace backend {
 		compiler.addExternalLibrary(BOOST_LIBRARY_DIR, "boost_system");
 		compiler.addExternalLibrary(BOOST_LIBRARY_DIR, "boost_thread");
 		compiler.addExternalLibrary(BOOST_LIBRARY_DIR, "boost_atomic");
+		compiler.addExternalLibrary(HWLOC_LIBRARY_DIR, "hwloc");
 
 		compiler.addLibrary("dl");
 		compiler.addLibrary("rt");
 		compiler.addLibrary("pthread");
 
-		compiler.addFlag("-Wl,-rpath=" + HPX_LIBRARY_DIR + ":" + ALLSCALE_RUNTIME_LIBRARY_DIR + ":" + BOOST_LIBRARY_DIR);
+		compiler.addFlag("-Wl,-rpath=" + HPX_LIBRARY_DIR + ":" + ALLSCALE_RUNTIME_LIBRARY_DIR + ":" + BOOST_LIBRARY_DIR + ":" + HWLOC_LIBRARY_DIR);
 
 		// run compiler on target code
 		return ic::compileToBinary(*code,targetBinary.string(),compiler);

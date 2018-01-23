@@ -88,6 +88,10 @@ namespace backend {
 		return builder.callExpr(ext.getCreateDataItemRequirement(), dataItemRef, range, modeExpr);
 	}
 
+	bool isUnusedType(const insieme::core::NodePtr& node) {
+		return node->getNodeManager().getLangExtension<AllScaleBackendModule>().isUnusedType(node);
+	}
+
 } // end namespace backend
 } // end namespace compiler
 } // end namespace allscale

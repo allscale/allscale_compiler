@@ -280,8 +280,14 @@ namespace backend {
 				auto& resTypeInfo = GET_TYPE_INFO(resType);
 				context.addDependency(resTypeInfo.definition);
 
-				// special handling of unit treetures
 				auto valueType = lang::TreetureType(resType).getValueType();
+
+				// special handling for treeture_done(make_unused_type())
+				if(isUnusedType(valueType)) {
+					return C_NODE_MANAGER->create<c_ast::Initializer>();
+				}
+
+				// special handling of unit treetures
 				if (NODE_MANAGER.getLangBasic().isUnit(valueType)) {
 					// a void can not be passed => use the comma operator
 					return c_ast::comma(
