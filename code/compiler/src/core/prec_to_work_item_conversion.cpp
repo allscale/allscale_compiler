@@ -910,15 +910,12 @@ namespace core {
 
 			// -- Step 7: create a bind capturing values and spawning the work item --
 
-			// get the argument of the original function
-			auto param = builder.variable(originalFunction.getParameterType());
-
 			// collect the values to be captured for the closure
 			core::ExpressionList closureValues;
 			for(const auto& cur : capturedValues) {
-				auto capture = cur.first;
+				auto capture = core::lang::removeSurroundingRefCasts(cur.first);
 				if (core::lang::isCppReference(cur.second.front().field->getType())) {
-					capture = core::lang::buildRefKindCast(cur.first,core::lang::ReferenceType::Kind::Plain);
+					capture = core::lang::buildRefKindCast(capture,core::lang::ReferenceType::Kind::Plain);
 				}
 				closureValues.push_back(capture);
 			}
