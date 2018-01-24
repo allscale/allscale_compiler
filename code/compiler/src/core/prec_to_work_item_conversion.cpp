@@ -576,7 +576,7 @@ namespace core {
 
 			// get the in-parameter
 			auto in = builder.variable(function.getParameterType());
-			auto inVal = builder.deref(in);
+			auto inVal = in;
 
 			// get the type of the resulting function (same as the base case type)
 			auto funType = builder.functionType({ in->getType() }, function.getResultType());
