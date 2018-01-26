@@ -14,6 +14,8 @@ namespace utils {
 
 	insieme::core::LambdaExprPtr getCallOperatorImplementation(const insieme::core::ExpressionPtr& lambda);
 
+	insieme::core::DeclarationPtr buildPassByValueDeclaration(const insieme::core::ExpressionPtr& expr);
+
 }
 }
 }

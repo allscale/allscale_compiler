@@ -13,6 +13,7 @@
 #include "insieme/core/analysis/default_members.h"
 #include "insieme/core/analysis/type_utils.h"
 
+#include "allscale/compiler/allscale_utils.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 
 // debugging:
@@ -145,7 +146,7 @@ namespace core {
 
 			// build up body
 			std::vector<StatementPtr> stmts;
-			std::vector<ExpressionPtr> values;
+			std::vector<DeclarationPtr> valueDecls;
 			for(const auto& field : record->getFields()) {
 
 				// get the element type
@@ -173,8 +174,9 @@ namespace core {
 				// add to body statements
 				stmts.push_back(decl);
 
-				// record new variable
-				values.push_back(builder.deref(builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference))));
+				// record new declaration for init
+				auto call = builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference));
+				valueDecls.push_back(utils::buildPassByValueDeclaration(call));
 			}
 
 			// add final return statement
@@ -184,7 +186,7 @@ namespace core {
 					builder.returnStmt(
 						builder.initExpr(
 								core::lang::buildRefDecl(refRetType),
-								values
+								valueDecls
 						),
 						refRetType
 					)

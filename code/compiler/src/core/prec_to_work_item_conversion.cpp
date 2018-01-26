@@ -7,6 +7,7 @@
 #include "insieme/core/lang/pointer.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/transform/manipulation.h"
+#include "insieme/core/transform/materialize.h"
 #include "insieme/core/types/return_type_deduction.h"
 #include "insieme/core/dump/json_dump.h"
 
@@ -46,6 +47,7 @@ namespace core {
 
 			auto& basic = mgr.getLangBasic();
 			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+			auto& refExt = mgr.getLangExtension<core::lang::ReferenceExtension>();
 
 			// a utility to remove treeture types
 			auto removeTreetures = [](const core::NodePtr& node) {
@@ -59,6 +61,14 @@ namespace core {
 					// not of interest either
 					return node;
 				}, core::transform::localReplacement);
+			};
+
+			auto extractArg = [&](const core::ExpressionPtr& expr) {
+				auto arg = removeTreetures(expr);
+				if(refExt.isCallOfRefDeref(arg)) {
+					return core::lang::toCppReference(core::analysis::getArgument(arg, 0));
+				}
+				return arg.as<core::ExpressionPtr>();
 			};
 
 			// get body, replace treeture operations and recFun calls
@@ -96,14 +106,14 @@ namespace core {
 				}
 
 				if (core::analysis::isCallOf(call,ext.getTreetureCombine())) {
-					auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
-					auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+					auto arg0 = extractArg(call->getArgument(1));
+					auto arg1 = extractArg(call->getArgument(2));
 					return builder.callExpr(call->getArgument(3),arg0,arg1);
 				}
 
 				if (core::analysis::isCallOf(call,ext.getTreetureParallel()) || core::analysis::isCallOf(call,ext.getTreetureSequential())) {
-					auto arg0 = removeTreetures(call->getArgument(1)).as<core::ExpressionPtr>();
-					auto arg1 = removeTreetures(call->getArgument(2)).as<core::ExpressionPtr>();
+					auto arg0 = extractArg(call->getArgument(1));
+					auto arg1 = extractArg(call->getArgument(2));
 					return builder.callExpr(treetureConnector,arg0,arg1);
 				}
 
@@ -116,7 +126,7 @@ namespace core {
 					// also create new argument list
 					core::ExpressionList newArgs;
 					for(const auto& cur : call->getArgumentList()) {
-						newArgs.push_back(removeTreetures(cur).as<core::ExpressionPtr>());
+						newArgs.push_back(extractArg(cur));
 					}
 
 					// return the call to the cleaned code
@@ -175,8 +185,7 @@ namespace core {
 					// check some expected properties and extract the (packed) argument
 					auto call = node.as<core::CallExprPtr>();
 					assert_eq(isDepFun ? 2 : 1, call->getNumArguments());
-					const auto& arg = call->getArgument(isDepFun ? 1 : 0);
-					assert_true(arg.isa<core::InitExprPtr>());
+					auto arg = call->getArgument(isDepFun ? 1 : 0);
 
 					// now we collect all the stuff needed to build the resulting call
 					core::ExpressionPtr targetCallee;
@@ -215,14 +224,10 @@ namespace core {
 
 						// otherwise we have to unpack it
 					} else {
-						const auto& refDeref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
+						arg = core::lang::removeSurroundingRefCasts(arg);
+						assert_true(arg.isa<core::InitExprPtr>());
 						for(const auto& cur : arg.as<core::InitExprPtr>()->getInitExprList()) {
-							// remove unnecessary ref-deref calls
 							auto arg = cur;
-							if (!core::lang::isReference(arg) && core::analysis::isCallOf(arg,refDeref)) {
-								arg = cur.as<core::CallExprPtr>()->getArgument(0);
-							}
-
 							if(core::lang::isCppReference(arg)) {
 								core::lang::ReferenceType refType(arg);
 								if (!refType.isConst()) {
@@ -415,18 +420,25 @@ namespace core {
 			// check whether it is a lambda already
 			auto lambda = lambdaExpr.isa<core::LambdaExprPtr>();
 
-			// if not, it may be a c++ lambda, from which the call operator member function needs to be extracted
+			// if not ...
 			if (!lambda) {
 
-				// check some pre-conditions
-				assert_pred2(core::analysis::isCallOf,lambdaExpr,asExt.getCppLambdaToClosure());
+				// ... it may be a c++ lambda, from which the call operator member function needs to be extracted
+				if(asExt.isCallOfCppLambdaToClosure(lambdaExpr)) {
 
-				// unpack the constructor of the lambda
-				auto cppLambda = lambdaExpr.as<core::CallExprPtr>()->getArgument(0);
+					// unpack the constructor of the lambda
+					auto cppLambda = lambdaExpr.as<core::CallExprPtr>()->getArgument(0);
 
-				// extract call operator implementation from the given lambda
-				lambda = utils::getCallOperatorImplementation(cppLambda);
+					// extract call operator implementation from the given lambda
+					lambda = utils::getCallOperatorImplementation(cppLambda);
 
+				// ... it may also be a lambda, which has been packed into a closure by using the to_closure operator.
+				} else if(mgr.getLangBasic().isCallOfToClosure(lambdaExpr)) {
+					// unpack the argument
+					lambda = core::analysis::getArgument(lambdaExpr, 0).as<core::LambdaExprPtr>();
+				}
+
+				assert_true(lambda) << "Can't handle lambdaExpr " << dumpReadable(lambdaExpr);
 			}
 
 			// -- start conversion --
@@ -485,22 +497,16 @@ namespace core {
 						bool isDepFun = asExt.isCallOfRecfunToDepFun(trg);
 
 						// pack the recursive argument
-						core::ExpressionList closureValues;
-						closureValues.push_back(call->getArgument(isDepFun ? 1 : 0));
+						core::DeclarationList closureDecls;
+						auto arg = call->getArgument(isDepFun ? 1 : 0);
+						arg = core::lang::removeSurroundingRefCasts(arg);
+						closureDecls.push_back(utils::buildPassByValueDeclaration(arg));
 
 						// add the captured values
 						for(std::size_t i = 0; i<index.size(); ++i) {
 							// get the value from the closure
 							core::ExpressionPtr forward = builder.refComponent(param,i+1);
-
-							// if the captured values is a reference value
-							if (core::lang::isReference(index[i].field.field->getType())) {
-								// we need to de-ref the captured value
-								forward = builder.deref(forward);
-							}
-
-							// add result to parameter list
-							closureValues.push_back(forward);
+							closureDecls.push_back(utils::buildPassByValueDeclaration(forward));
 						}
 
 						// build recursive call
@@ -508,7 +514,9 @@ namespace core {
 						if(isDepFun) {
 							args.push_back(call->getArgument(0));
 						}
-						args.push_back(builder.initExprTemp(closureParamType,closureValues));
+						assert_true(core::lang::isConstCppReference(closureParamType));
+						const auto& closureParamElementType = core::analysis::getReferencedType(closureParamType);
+						args.push_back(core::lang::buildRefCast(builder.initExprTemp(closureParamElementType, closureDecls), closureParamType));
 
 						auto param = builder.accessComponent(builder.deref(newRecFunParam), 0);
 						auto callTarget = isDepFun ? lang::buildRecfunToDepFun(param) : lang::buildRecfunToFun(param);
@@ -879,9 +887,9 @@ namespace core {
 			spawnArgs.push_back(builder.deref(depsParam));
 			spawnArgs.push_back(desc.toIR(mgr));
 
-			spawnArgs.push_back(builder.refComponent(params[1],0));
+			spawnArgs.push_back(core::lang::buildRefKindCast(builder.refComponent(params[1],0), core::lang::ReferenceType::Kind::CppReference));
 			for(std::size_t i = 0; i<capturedValues.size(); i++) {
-				spawnArgs.push_back(builder.refComponent(params[1],i+1));
+				spawnArgs.push_back(core::lang::buildRefKindCast(builder.refComponent(params[1],i+1), core::lang::ReferenceType::Kind::CppReference));
 			}
 
 			// build function type
@@ -911,13 +919,15 @@ namespace core {
 			// -- Step 7: create a bind capturing values and spawning the work item --
 
 			// collect the values to be captured for the closure
-			core::ExpressionList closureValues;
+			core::DeclarationList closureDecls;
 			for(const auto& cur : capturedValues) {
 				auto capture = core::lang::removeSurroundingRefCasts(cur.first);
 				if (core::lang::isCppReference(cur.second.front().field->getType())) {
 					capture = core::lang::buildRefKindCast(capture,core::lang::ReferenceType::Kind::Plain);
+					closureDecls.push_back(builder.declaration(core::transform::materialize(capture->getType()), capture));
+				} else {
+					closureDecls.push_back(utils::buildPassByValueDeclaration(capture));
 				}
-				closureValues.push_back(capture);
 			}
 
 			// build a tuple type only covering the captured values
@@ -928,7 +938,7 @@ namespace core {
 			auto closureTuple = builder.tupleType(closureTypes);
 
 			// build the initialization of the captured values
-			core::ExpressionPtr closure = builder.initExprTemp(closureTuple,closureValues);
+			core::ExpressionPtr closure = builder.initExprTemp(closureTuple,closureDecls);
 
 			// make it a const CppReference
 			closure = core::lang::buildRefCast(closure,core::lang::ReferenceType::create(closureTuple,true,false,core::lang::ReferenceType::Kind::CppReference));

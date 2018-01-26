@@ -115,14 +115,14 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					precfun_to_fun(prec((build_recfun(
-						  (i : int<4>) -> bool { return i < 2; },
-						[ (i : int<4>) -> int<4> { return i; } ],
-						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+						  to_closure((i : int<4>) -> bool { return i < 2; }),
+						[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+						[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
-							auto a = treeture_run(step(i-1));
-							auto b = treeture_run(step(i-2));
+							auto a = treeture_run(step(ref_cast(ref_temp_init(i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))));
+							auto b = treeture_run(step(ref_cast(ref_temp_init(i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))));
 							return treeture_done(treeture_get(a) + treeture_get(b));
-						} ]
+						}) ]
 					))))
 				)"
 		);
@@ -142,14 +142,14 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					precfun_to_fun(prec((build_recfun(
-						  (i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; },
-						[ (i : cpp_ref<int<4>,t,f>) -> int<4> { return i; } ],
-						[ (i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
+						  to_closure((i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; }),
+						[ to_closure((i : cpp_ref<int<4>,t,f>) -> int<4> { return i; }) ],
+						[ to_closure((i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
-							auto a = treeture_run(step(i-1));
-							auto b = treeture_run(step(i-2));
+							auto a = treeture_run(step(ref_cast(ref_temp_init(*i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))));
+							auto b = treeture_run(step(ref_cast(ref_temp_init(*i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))));
 							return treeture_done(treeture_get(a) + treeture_get(b));
-						} ]
+						}) ]
 					))))
 				)"
 		);
@@ -169,13 +169,16 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					precfun_to_fun(prec((build_recfun(
-						  (i : int<4>) -> bool { return i < 2; },
-						[ (i : int<4>) -> int<4> { return i; } ],
-						[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+						  to_closure((i : int<4>) -> bool { return i < 2; }),
+						[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+						[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
-						} ]
+							return treeture_combine(dependency_after(),
+									step(ref_cast(ref_temp_init(i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									step(ref_cast(ref_temp_init(i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									add,true);
+						}) ]
 					))))
 				)"
 		);
@@ -195,13 +198,16 @@ namespace backend {
 		auto fib = parse(mgr,
 				R"(
 					precfun_to_fun(prec((build_recfun(
-						  (i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; },
-						[ (i : cpp_ref<int<4>,t,f>) -> int<4> { return i; } ],
-						[ (i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
+						  to_closure((i : cpp_ref<int<4>,t,f>) -> bool { return i < 2; }),
+						[ to_closure((i : cpp_ref<int<4>,t,f>) -> int<4> { return i; }) ],
+						[ to_closure((i : cpp_ref<int<4>,t,f>, steps : (recfun<cpp_ref<int<4>,t,f>,int<4>>)) -> treeture<int<4>,f> {
 							let step = recfun_to_fun(steps.0);
 							let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-							return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
-						} ]
+							return treeture_combine(dependency_after(),
+									step(ref_cast(ref_temp_init(*i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									step(ref_cast(ref_temp_init(*i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									add,true);
+						}) ]
 					))))
 				)"
 		);
@@ -288,14 +294,14 @@ namespace backend {
 						var ref<int<4>> p;
 						scan("%d",p);
 						auto r = treeture_get(precfun_to_fun(prec((build_recfun(
-							  (i : int<4>) -> bool { return i < 2; },
-							[ (i : int<4>) -> int<4> { return i; } ],
-							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+							  to_closure((i : int<4>) -> bool { return i < 2; }),
+							[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+							[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 								let step = recfun_to_fun(steps.0);
-								auto a = treeture_run(step(i-1));
-								auto b = treeture_run(step(i-2));
+								auto a = treeture_run(step(ref_cast(ref_temp_init(i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))));
+								auto b = treeture_run(step(ref_cast(ref_temp_init(i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))));
 								return treeture_done(treeture_get(a) + treeture_get(b));
-							} ]
+							}) ]
 						))))(*p));
 						print("fib(%d)=%d\n",*p,r);
 						return 0;
@@ -326,13 +332,16 @@ namespace backend {
 						var ref<int<4>> p;
 						scan("%d",p);
 						auto r = treeture_get(precfun_to_fun(prec((build_recfun(
-							  (i : int<4>) -> bool { return i < 2; },
-							[ (i : int<4>) -> int<4> { return i; } ],
-							[ (i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
+							  to_closure((i : int<4>) -> bool { return i < 2; }),
+							[ to_closure((i : int<4>) -> int<4> { return i; }) ],
+							[ to_closure((i : int<4>, steps : (recfun<int<4>,int<4>>)) -> treeture<int<4>,f> {
 								let step = recfun_to_fun(steps.0);
 								let add = ( a : int<4> , b : int<4> ) -> int<4> { return a + b; };
-								return treeture_combine(dependency_after(),step(i-1),step(i-2),add,true);
-							} ]
+								return treeture_combine(dependency_after(),
+									step(ref_cast(ref_temp_init(i-1), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									step(ref_cast(ref_temp_init(i-2), type_lit(t), type_lit(f), type_lit(cpp_ref))),
+									add,true);
+							}) ]
 						))))(*p));
 						print("fib(%d)=%d\n",*p,r);
 						return 0;

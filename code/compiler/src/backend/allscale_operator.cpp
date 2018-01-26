@@ -627,7 +627,7 @@ namespace backend {
 
 				// create the resulting call
 				return C_NODE_MANAGER->create<c_ast::MemberCall>(
-						fun, CONVERT_ARG(0), std::vector<c_ast::NodePtr>()
+						fun, c_ast::deref(CONVERT_ARG(0)), std::vector<c_ast::NodePtr>()
 				);
 			};
 
@@ -653,7 +653,7 @@ namespace backend {
 
 				// create the resulting call
 				return C_NODE_MANAGER->create<c_ast::MemberCall>(
-						fun, CONVERT_ARG(0), std::vector<c_ast::NodePtr>{ CONVERT_ARG(2) }
+						fun, c_ast::deref(CONVERT_ARG(0)), std::vector<c_ast::NodePtr>{ CONVERT_ARG(2) }
 				);
 			};
 
