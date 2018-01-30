@@ -175,7 +175,7 @@ dataRequirements addr = case I.getNode addr of
     analysis = (mkExecutionTreeAnalysis DataRequirementAnalysis "DR" dataRequirements) {
 
         -- register analysis specific operator handler
-        opHandler = [accessHandler,interceptedAccessHandler],
+        opHandler = [accessHandler,interceptedAccessHandler,noAccessHandler],
 
         -- all unhandled operators cause no data requirements
         unhandledOperatorHandler = const Solver.bot
@@ -204,6 +204,15 @@ dataRequirements addr = case I.getNode addr of
             }
 
             mode = if Q.isBuiltin o "ref_deref" then ReadOnly else ReadWrite
+
+
+    -- an operator handler handling known no-effect operators
+    noAccessHandler = OperatorHandler cov dep val
+      where
+        cov a = any (Q.isBuiltin a) ["ref_cast","ref_kind_cast"]
+        dep _ _ = []
+        val _ _ = Solver.bot
+
 
     -- an operator handler handling intercepted operations
     --   references being passed to external functions are read-accesses if passed as const,

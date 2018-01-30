@@ -45,7 +45,7 @@ int main() {
 			int a = X[10];
 		});
 
-		cba_debug_requirements();
+//		cba_debug_requirements();
 	}
 
 

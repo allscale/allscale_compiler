@@ -17,10 +17,6 @@ void check1D() {
 
 	cba_expect_eq_int(7,b[0]);
 
-
-//	cba_dump_statistic();
-//	cba_debug();
-
 }
 
 void check2D() {
