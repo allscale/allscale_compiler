@@ -420,7 +420,7 @@ namespace analysis {
 			"{Requirement { A[span(10+1,20-1u+1)] RO },Requirement { A[span(10,20-1u)] RO },Requirement { A[span(10-1,20-1u-1)] RO },Requirement { B[span(10,20-1u)] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
-					def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+					def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
 						let point = lit("point" : (int<4>,int<4>)->point);
 						for(int<4> i = a .. b) {
 							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
@@ -434,7 +434,7 @@ namespace analysis {
 					};
 
 					{
-						stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),10,20);
+						stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),10,20);
 					}
 				)"
 			))
@@ -444,7 +444,7 @@ namespace analysis {
 		// compute stencil with literal boundary
 		auto requirement = toString(getDataRequirements(mgr,
 			R"(
-				def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+				def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
 					let point = lit("point" : (int<4>,int<4>)->point);
 					for(int<4> i = a .. b) {
 						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
@@ -458,7 +458,7 @@ namespace analysis {
 				};
 
 				{
-					stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+					stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
 				}
 			)"
 		));
@@ -471,7 +471,7 @@ namespace analysis {
 		// compute stencil with literal boundary and local variables
 		requirement = toString(getDataRequirements(mgr,
 			R"(
-				def stencil = ( A : ref<'a>, B : ref<'a>, a : int<4>, b : int<4> ) -> unit {
+				def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
 					let point = lit("point" : (int<4>,int<4>)->point);
 					for(int<4> i = a .. b) {
 						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
@@ -487,7 +487,7 @@ namespace analysis {
 				};
 
 				{
-					stencil(lit("A":ref<int<4>>),lit("B":ref<int<4>>),lit("x":ref<int<4>>),lit("y":ref<int<4>>));
+					stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
 				}
 			)"
 		));

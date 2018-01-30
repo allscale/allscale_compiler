@@ -10,7 +10,7 @@ int main() {
 	// start by testing a simple access
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO }"
+				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RO }"
 			"}");
 
 		// fabricate an artificial access
@@ -20,7 +20,7 @@ int main() {
 	// placing it into a while loop should not have any effect
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO }"
+				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RO }"
 			"}");
 
 		// fabricate an artificial access
@@ -32,7 +32,7 @@ int main() {
 	// also the data requirement of the condition should be considered
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO }"
+				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RO }"
 			"}");
 
 		// fabricate an artificial access
@@ -44,8 +44,8 @@ int main() {
 	// also the body should be considered
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO },"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RW }"
+				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RO },"
+				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RW }"
 			"}");
 
 		// fabricate an artificial access

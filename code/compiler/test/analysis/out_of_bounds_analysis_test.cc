@@ -387,9 +387,16 @@ namespace analysis {
 //		std::cout << " Is out-of-bound: " << res. isOutOfBounds.size() << "\n";
 //		std::cout << "May out-of-bound: " << res.mayOutOfBounds.size() << "\n";
 
-		EXPECT_LE(2155,res.notOutOfBounds.size());
+		// used to be:
+//		EXPECT_LE(2155,res.notOutOfBounds.size());
+//		EXPECT_GE(   0,res. isOutOfBounds.size());
+//		EXPECT_GE(  39,res.mayOutOfBounds.size());
+
+		// after insieme declaration-semantic upgrades:
+		EXPECT_LE(1920,res.notOutOfBounds.size());
 		EXPECT_GE(   0,res. isOutOfBounds.size());
-		EXPECT_GE(  39,res.mayOutOfBounds.size());
+		EXPECT_GE(  89,res.mayOutOfBounds.size());
+
 
 	}
 

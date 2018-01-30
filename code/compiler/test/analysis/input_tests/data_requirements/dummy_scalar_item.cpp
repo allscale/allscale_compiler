@@ -16,7 +16,7 @@ int main() {
 
 	// test some read access
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RO }}");
 
 		// fabricate an artificial access
 		auto& ref = X.get();
@@ -28,7 +28,7 @@ int main() {
 
 	// test some write access
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[0] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref))] RW }}");
 
 		// fabricate an artificial access
 		auto& ref = X.get();
