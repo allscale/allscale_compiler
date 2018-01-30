@@ -20,70 +20,61 @@ int main() {
 
 	// -- constant boundaries --
 
-//	// start with the basics
-//	{
-//		cba_expect_data_requirements("{}");
-//
-//		// some simple range to process - no requirements
-//		range<int>(0,5).forEach([](int x){});
-//	}
-//
-//	// test the same with vectors
-//	{
-//		cba_expect_data_requirements("{}");
-//
-//		// some simple range to process - no requirements
-//		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([](const Vec2& x){});
-//	}
+	// start with the basics
+	{
+		cba_expect_data_requirements("{}");
+
+		// some simple range to process - no requirements
+		range<int>(0,5).forEach([](int x){});
+	}
+
+	// test the same with vectors
+	{
+		cba_expect_data_requirements("{}");
+
+		// some simple range to process - no requirements
+		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([](const Vec2& x){});
+	}
 
 	// test an actual read access (with a constant index)
 	{
-		cba_expect_data_requirements("{something}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RO }}");
 
 		// some simple range to process - no requirements
 		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
 			int a = X[10];
 		});
-
-//		cba_debug_requirements();
 	}
 
+	// test an actual write access (with a constant index)
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RW }}");
 
-//	// test an actual write access (with a constant index)
-//	{
-//		cba_expect_data_requirements("{something}");
-//
-//		// some simple range to process - no requirements
-//		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
-//			X[10] = 10;
-//		});
-//
-////		cba_debug_requirements();
-//	}
-//
-//	// test an actual read access (with a dependent index)
-//	{
-//		cba_expect_data_requirements("{something}");
-//
-//		// some simple range to process - no requirements
-//		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
-//			int a = X[x.x];
-//		});
-//
-////		cba_debug_requirements();
-//	}
-//
-//	// test an actual write access (with a dependent index)
-//	{
-//		cba_expect_data_requirements("{something}");
-//
-//		// some simple range to process - no requirements
-//		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
-//			X[x.x] = 10;
-//		});
-//
-////		cba_debug_requirements();
-//	}
+		// some simple range to process - no requirements
+		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
+			X[10] = 10;
+		});
+	}
+
+	// test an actual read access (with a dependent index)
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), ref_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), 0, 0), type_lit(f), type_lit(f), type_lit(cpp_rref))).x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), ref_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), 10-1u, 10-1u), type_lit(f), type_lit(f), type_lit(cpp_rref))).x), type_lit(cpp_ref)))] RO }}");
+
+		// some simple range to process - no requirements
+		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
+			int a = X[x.x];
+		});
+	}
+
+	// test an actual write access (with a dependent index)
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), ref_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), 0, 0), type_lit(f), type_lit(f), type_lit(cpp_rref))).x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), ref_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_int_2)), 10-1u, 10-1u), type_lit(f), type_lit(f), type_lit(cpp_rref))).x), type_lit(cpp_ref)))] RW }}");
+
+		// some simple range to process - no requirements
+		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
+			X[x.x] = 10;
+		});
+	}
 
 
 	return 0;
