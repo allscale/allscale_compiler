@@ -117,11 +117,11 @@ namespace frontend {
 							}
 
 							// now convert the call
-							auto convertedClangCall = converter.convertExpr(semaCall).isa<core::CallExprPtr>();
+							auto convertedClangCall = core::lang::removeSurroundingRefCasts(converter.convertExpr(semaCall).isa<core::CallExprPtr>()).as<core::CallExprPtr>();
 							// the converted call will be a type_instantiation. We are interested in the arguments only
 							auto semaCallArgs = convertedClangCall->getArgumentList();
 
-							assert_eq(semaCallArgs.size(), 3);
+							assert_eq(semaCallArgs.size(), 3) << dumpReadable(convertedClangCall);
 							semaCallArgs[2] = builder.getTypeLiteral(semaCallArgs[2]->getType());
 
 							converter.getVarMan()->popScope();
