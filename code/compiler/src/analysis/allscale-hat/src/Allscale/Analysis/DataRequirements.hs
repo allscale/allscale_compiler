@@ -190,8 +190,9 @@ dataRequirements addr = case I.getNode addr of
         val = dataRequirements
 
         referenceVar = elementReferenceValue $ I.goDown 1 $ I.goDown 2 addr
-        referenceVal a = toSet $ toValue $ Solver.get a referenceVar
+        referenceVal a = toSet $ if isValue val then toValue val else ElementReferenceSet BSet.empty
           where
+            val = Solver.get a referenceVar
             toSet (ElementReferenceSet s) = s
 
         dataRequirements o a = DataRequirements $ BSet.map go $ referenceVal a
