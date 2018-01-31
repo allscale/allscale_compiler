@@ -44,7 +44,7 @@ int main() {
 			);
 		};
 		{
-			IMP_funReturningAllScaleTypeReference() materialize ;
+			IMP_funReturningAllScaleTypeReference();
 		}
 	)")
 	{

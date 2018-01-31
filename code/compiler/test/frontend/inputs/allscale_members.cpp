@@ -61,7 +61,7 @@ int main() {
 			return ref_kind_cast(ptr_to_ref(*v0), type_lit(cpp_ref));
 		};
 		{
-			var ref<task_ref,f,f,plain> v0 = IMP_getConstTaskReferenceReference();
+			var ref<task_ref,f,f,plain> v0 = *IMP_getConstTaskReferenceReference();
 		}
 	)")
 	{
