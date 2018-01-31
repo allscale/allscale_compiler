@@ -100,7 +100,7 @@ diagnosis diag addr = executionTreeValue analysis addr
     analysis = (mkExecutionTreeAnalysis (analysisToken diag) ("DIAG_" ++ analysisName diag) (varGen diag)) {
 
         -- register analysis specific operator handler
-        opHandler = operatorHandler diag,
+        opHandler = skipHandler : operatorHandler diag,
 
         -- all unhandled operators have no issues
         unhandledOperatorHandler = \_ -> Solver.bot,
@@ -108,6 +108,14 @@ diagnosis diag addr = executionTreeValue analysis addr
         -- all diagnoses have problems with unknown targets
         unknownTargetHandler = \addr -> mkOneIssue $ Issue addr CallToUnknownFunction ""
     }
+
+    -- a special operator handler avoiding diagnosis steps in certain builtins
+    skipHandler = OperatorHandler cov dep val
+      where
+        cov a = any (Q.isBuiltin a) ["id", "ref_kind_cast", "ref_cast"]
+        dep _ _ = []
+        val _ _ = Solver.bot
+
 
 
 -- * Diagnoses
@@ -131,6 +139,7 @@ unknownReferenceDiagnosis addr = diagnosis diag addr
       where
         cov a = Q.isBuiltin a "ref_assign"
         val _ = handleOp WriteAccessToUnknownLocation
+
 
     dep _ _ = Solver.toVar <$> [referenceVar]
 

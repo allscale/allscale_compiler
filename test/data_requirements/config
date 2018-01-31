@@ -1,4 +1,4 @@
 # This also clears '--shared-memory-only --allow-sm-only'
-compFlags[insiemecc_seq_cpp_convert]="--ignore-analysis-failure"
+compFlags[insiemecc_seq_cpp_convert]=""
 
 compFlags[insiemecc_seq_cpp_compile]="${compFlags[insiemecc_seq_cpp_compile]}"
