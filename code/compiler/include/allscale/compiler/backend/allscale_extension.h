@@ -59,7 +59,7 @@ namespace backend {
 
 		LANG_EXT_TYPE(DataItemRefGen,"art_data_item_ref<'a>");
 
-		LANG_EXT_LITERAL(CreateDataItem,  "art_data_item_create",  "(type<'a>, 'args...) -> ref<art_data_item_ref<'a>,'c,'v,cpp_ref>");
+		LANG_EXT_LITERAL(CreateDataItem,  "art_data_item_create",  "(type<'a>, 'args...) -> ref<art_data_item_ref<'a>,f,f,plain>");
 		LANG_EXT_LITERAL(GetDataItem,     "art_data_item_get",     "(ref<art_data_item_ref<'a>,'c,'v,cpp_ref>) -> ref<art_data_item_ref<'a>,'c,'v,cpp_ref>");
 
 

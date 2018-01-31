@@ -167,7 +167,7 @@ namespace backend {
 				}
 
 				// done
-				return res;
+				return c_ast::ref(res);
 			};
 
 			table[ext.getGetDataItem()] = OP_CONVERTER {
