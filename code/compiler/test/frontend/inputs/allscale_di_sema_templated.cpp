@@ -9,7 +9,7 @@ int main() {
 		};
 		{
 			var ref<IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>,t,f,plain> v0 = instantiate_ctor(lit("target_type" : IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::()), lit("IMP_TemplatedDI::ctor" : IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::()))(ref_cast(ref_decl(type_lit(ref<IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>,t,f,plain>)), type_lit(f), type_lit(f), type_lit(plain)));
-			instantiate_member(lambda_name IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::IMP__operator_subscript_, lit("IMP_TemplatedDI::IMP__operator_subscript_" : const IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::('T_0_1) -> ref<'T_0_0,t,f,cpp_ref>))(v0, 0) materialize ;
+			instantiate_member(lambda_name IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::IMP__operator_subscript_, lit("IMP_TemplatedDI::IMP__operator_subscript_" : const IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::('T_0_1) -> ref<'T_0_0,t,f,cpp_ref>))(v0, 0);
 		}
 	)")
 	{
@@ -23,7 +23,7 @@ int main() {
 		};
 		{
 			var ref<IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>,f,f,plain> v0 = instantiate_ctor(lit("target_type" : IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::()), lit("IMP_TemplatedDI::ctor" : IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::()))(ref_decl(type_lit(ref<IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>,f,f,plain>)));
-			instantiate_member(lambda_name IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::IMP__operator_subscript_, lit("IMP_TemplatedDI::IMP__operator_subscript_" : IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::('T_0_1) -> ref<'T_0_0,f,f,cpp_ref>))(v0, 0) materialize  = 0.0E+0;
+			ref_kind_cast(instantiate_member(lambda_name IMP_TemplatedDI<ref<real<8>,f,f,qualified>,ref<int<4>,f,f,qualified>>::IMP__operator_subscript_, lit("IMP_TemplatedDI::IMP__operator_subscript_" : IMP_TemplatedDI<ref<'T_0_0,'T_0_0_a,'T_0_0_b,'T_0_0_c>,ref<'T_0_1,'T_0_1_a,'T_0_1_b,'T_0_1_c>>::('T_0_1) -> ref<'T_0_0,f,f,cpp_ref>))(v0, 0), type_lit(plain))  = 0.0E+0;
 		}
 	)")
 	{

@@ -23,7 +23,7 @@ int main() {
 		};
 		{
 			var ref<IMP_SimplestDI,f,f,plain> v0 = lit("IMP_SimplestDI::ctor" : IMP_SimplestDI::())(ref_decl(type_lit(ref<IMP_SimplestDI,f,f,plain>)));
-			instantiate_member(IMP_SimplestDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_SimplestDI::IMP__operator_subscript_" : IMP_SimplestDI::(int<4>) -> ref<real<8>,f,f,cpp_ref>))(v0, 0) materialize  = num_cast(0, type_lit(real<8>));
+			ref_kind_cast(instantiate_member(IMP_SimplestDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_SimplestDI::IMP__operator_subscript_" : IMP_SimplestDI::(int<4>) -> ref<real<8>,f,f,cpp_ref>))(v0, 0), type_lit(plain))  = num_cast(0, type_lit(real<8>));
 		}
 	)")
 	{
@@ -37,7 +37,7 @@ int main() {
 		};
 		{
 			var ref<IMP_SimplestDI,t,f,plain> v0 = lit("IMP_SimplestDI::ctor" : IMP_SimplestDI::())(ref_cast(ref_decl(type_lit(ref<IMP_SimplestDI,t,f,plain>)), type_lit(f), type_lit(f), type_lit(plain)));
-			instantiate_member(IMP_SimplestDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_SimplestDI::IMP__operator_subscript_" : const IMP_SimplestDI::(int<4>) -> ref<real<8>,t,f,cpp_ref>))(v0, 0) materialize;
+			instantiate_member(IMP_SimplestDI::IMP__operator_subscript_, lit("PARSER_UNRESOLVED_IMP_SimplestDI::IMP__operator_subscript_" : const IMP_SimplestDI::(int<4>) -> ref<real<8>,t,f,cpp_ref>))(v0, 0);
 		}
 	)")
 	{
