@@ -46,30 +46,20 @@ namespace core {
 			// check for accesses
 			if (const auto& call = node.isa<CallExprPtr>()) {
 
+				// handle constructor calls
 				if(core::analysis::isConstructorCall(call)) {
 
-					// TODO: use utilities in core::analysis when available
-					auto isCopyOrMoveConstructorType = [](const FunctionTypePtr& type) {
-						if(type->getParameterTypeList().size() != 2) { return false; }
-
-						auto thisType = core::analysis::getObjectType(type);
-
-						if(!core::lang::isReference(type->getParameterType(1))) { return false; }
-
-						auto refType = core::lang::ReferenceType(type->getParameterType(1));
-
-						if(refType.getElementType() != thisType) { return false; }
-
-						return refType.getKind() == core::lang::ReferenceType::Kind::CppReference || refType.getKind() == core::lang::ReferenceType::Kind::CppRValueReference;
-					};
-
 					ExpressionPtr callee = call->getFunctionExpr();
-
-					// must not modify copy or move constructor calls to avoid nested "create data item" calls to data item manager
-					if(isCopyOrMoveConstructorType(callee->getType().as<FunctionTypePtr>())) { return node; }
-
 					core::TypePtr objectType = core::analysis::getObjectType(callee->getType());
+					// ... which create data item references
 					if(backend::isDataItemReference(objectType)) {
+
+						// skip copy or move constructor calls
+						if( core::analysis::isCopyConstructor(callee) || core::analysis::isMoveConstructor(callee)) {
+							// we simply return the copied/moved object
+							return core::lang::removeSurroundingRefCasts(core::analysis::getArgument(call, 1));
+						}
+
 						// replace constructor call with call to getCreateDataItem
 						DeclarationList args = call->getArgumentDeclarationList();
 						auto arg = builder.getTypeLiteral(backend::getReferencedDataItemType(objectType));
