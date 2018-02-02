@@ -107,8 +107,8 @@ int main() {
 		parallel(std::move(a), std::move(b));
 		combine(std::move(a), std::move(b), [](int m, int n) { return m + n; });
 
-		impl::reference::sequential(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
-		impl::reference::parallel(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
+		impl::reference::seq(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
+		impl::reference::par(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
 		impl::reference::combine(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b),
 		                         [](int m, int n) { return m + n; });
 	}
@@ -194,9 +194,9 @@ int main() {
 		auto a = done(1);
 		auto b = done(2);
 		auto dep = after();
-		sequential(dep, std::move(a), std::move(b));
-		parallel(dep, std::move(a), std::move(b));
-		combine(dep, std::move(a), std::move(b), [](int m, int n) { return m + n; });
+		sequential(std::move(dep), std::move(a), std::move(b));
+		parallel(std::move(dep), std::move(a), std::move(b));
+		combine(std::move(dep), std::move(a), std::move(b), [](int m, int n) { return m + n; });
 
 		// check that we also support passing the combine operation lambda from somewhere else instead of specifying it directly in the call
 		auto combineOp = [](int m, int n) { return m - n; };

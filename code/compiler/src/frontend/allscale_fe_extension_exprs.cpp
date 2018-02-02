@@ -57,9 +57,9 @@ namespace detail {
 		{"allscale::api::core::impl::.*::task_reference::task_reference", 0, mapToTaskRefDone},        // default ctor call - special mapping
 		{"allscale::api::core::impl::.*::task_reference::task_reference", mapCopyAndMoveConstructor},  // copy|move ctor call
 		// treeture aggregation
-		{"allscale::api::core::.*combine", AggregationCallMapper("treeture_combine", true)},
-		{"allscale::api::core::.*sequential", AggregationCallMapper("treeture_sequential", true)},
-		{"allscale::api::core::.*parallel", AggregationCallMapper("treeture_parallel", true)},
+		{"allscale::api::core.*::combine", AggregationCallMapper("treeture_combine", true)},
+		{"allscale::api::core.*::seq(uential)?", AggregationCallMapper("treeture_sequential", true)},
+		{"allscale::api::core.*::par(allel)?", AggregationCallMapper("treeture_parallel", true)},
 		// dependencies
 		{"allscale::api::core::after", AfterCallMapper("dependency_after")},
 		{"allscale::api::core::.*::dependencies<.*>::add", AggregationCallMapper("dependency_add")},
