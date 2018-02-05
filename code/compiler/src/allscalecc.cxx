@@ -199,7 +199,11 @@ int main(int argc, char** argv) {
 	std::cout << summary.report << std::endl;
 
 	// create HTML report
-	summary.report.toHTML("report.html");
+	{
+		auto report_filename = "report.html";
+		summary.report.toHTML(report_filename);
+		std::cout << "Full HTML report located at: " << boost::filesystem::current_path() / report_filename << "\n\n";
+	}
 
 	// abort if not successful so far
 	if (!summary.successful()) {
