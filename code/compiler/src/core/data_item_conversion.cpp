@@ -118,6 +118,7 @@ namespace core {
 
 		bool containsDataItemReference(const TypePtr& type) {
 			bool res = false;
+			// we only also visit types here, and actually we only visit types by pruning at expressions. this way we visit all fields in the whole tree below 'type'
 			visitDepthFirstOncePrunable(type,[&](const NodePtr& node){
 				// check whether it can be pruned here
 				if (res || node.isa<ExpressionPtr>()) return core::Action::Prune;
@@ -132,7 +133,7 @@ namespace core {
 
 				// continue
 				return core::Action::Descent;
-			});
+			}, true);
 			return res;
 		}
 
