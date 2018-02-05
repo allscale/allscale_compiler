@@ -388,9 +388,17 @@ namespace reporting {
 	}
 
 	std::ostream& operator<<(std::ostream& out, const Issue& issue) {
-		return out << toString(issue.error_details.severity) << ": "
-		           << "[" << toString(issue.error_details.category) << "] "
-		           << issue.getMessage();
+		out << toString(issue.error_details.severity) << ": "
+		    << "[" << toString(issue.error_details.category) << "] ";
+
+		auto msg = issue.getMessage();
+		if(msg.size() > 80) {
+			out << msg.substr(0, 77) << "...";
+		} else {
+			out << msg;
+		}
+
+		return out ;
 	}
 
 	Issue Issue::timeout(const NodeAddress& node) {

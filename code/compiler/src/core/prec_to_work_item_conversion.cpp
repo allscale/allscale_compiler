@@ -1183,11 +1183,7 @@ namespace core {
 							type_string = toString(*core::lang::PointerType{type}.getElementType());
 						}
 
-						msg += type_string.substr(0, 35);
-
-						if(type_string.size() > 35) {
-							msg += "...";
-						}
+						msg += type_string;
 					}
 
 					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::RefOrPtrFoundInCaptureList, msg));
