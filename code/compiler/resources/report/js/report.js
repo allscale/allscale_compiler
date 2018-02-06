@@ -2,7 +2,42 @@
 
 const INSPYER_URL = "https://insieme.github.io/inspyer/"
 
+function cutoffWithElipsis(text, length) {
+	var $span = $('<span>');
 
+	if (text.length <= length) {
+		return $span.text(text);
+	}
+
+	return $span.append(
+		document.createTextNode(text.substr(0, length)),
+		$('<a>')
+			.addClass('ellipsis')
+			.text('…')
+			.click(function(e) {
+				$(this).parent().text(text);
+			})
+	);
+}
+
+function demangle(text) {
+	return text
+		.replace(/IMP_/g, '')
+		.replace(/_colon_/g, ':')
+		.replace(/_comma_/g, ',')
+		.replace(/_ampersand_/g, '&')
+		.replace(/_operator_assign_/g, ' = ')
+		.replace(/_operator_subscript_/g, '[]')
+		.replace(/_operator_eq_/g, '==')
+		.replace(/_operator_neq_/g, '!=')
+		.replace(/_operator_lt_/g, '<')
+		.replace(/_operator_le_/g, '<=')
+		.replace(/_operator_gt_/g, '>')
+		.replace(/_operator_ge_/g, '>=')
+		.replace(/_lt_/g, '〈')
+		.replace(/_gt_/g, '〉')
+		.replace(/_space_/g, '⎵');
+}
 
 function determineLevelForEntry(entry) {
 	var level = determineLevelFromIssues(entry.issues);
@@ -205,7 +240,11 @@ function createIssue(addr, issue, index) {
 								.attr('href', `#entry-${addr}-issue-${index}`)
 								.attr('data-toggle', 'collapse')
 								.addClass('panel-title')
-								.html(`<strong>${issue.severity}:</strong> ${issue.message}`)
+								.append(
+									$('<strong>').text(`${issue.severity}:`),
+									' ',
+									cutoffWithElipsis(demangle(issue.message), 100)
+								)
 						),
 					$('<div>')
 						.addClass('entry-issue-tags')
@@ -272,6 +311,8 @@ function createConversion(entry, addr) {
 			$('<div>')
 				.addClass('panel-heading')
 				.append(
+					$('<strong>').text(`#${entry.index}`),
+					' ',
 					$('<i>').addClass('glyphicon glyphicon-file'),
 					' ',
 					$('<a>')

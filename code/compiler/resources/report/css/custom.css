@@ -58,6 +58,7 @@ h1.title {
 .entry div.entry-issue-message {
     display: inline-block;
     width: 80%;
+    word-break: break-all;
 }
 
 .entry div.entry-issue-tags {
@@ -118,6 +119,10 @@ h1.title {
 
 .entry .backtrace .panel-heading {
     padding: 3px 8px;
+}
+
+.ellipsis {
+    border-bottom: dotted thin gray;
 }
 
 a.inspyer-link {
