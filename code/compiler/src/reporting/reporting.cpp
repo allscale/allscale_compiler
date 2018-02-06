@@ -116,12 +116,17 @@ namespace reporting {
 		boost::property_tree::ptree toPropertyTree(const ConversionReport& report) {
 
 			// conversions + issues
+			int index = 1;
 			boost::property_tree::ptree conversions;
 			for(const auto& p : report.issues) {
 				boost::property_tree::ptree entry;
 
 				// original target
 				auto target = p.first;
+				entry.put<string>("target", toString(target));
+
+				entry.put<int>("index", index++);
+
 				entry.push_back(make_pair("loc", locationToPropertyTree(target)));
 
 				// locating user code
@@ -154,7 +159,7 @@ namespace reporting {
 				}
 				entry.push_back(make_pair("variant_issues", variant_issues));
 
-				conversions.push_back(make_pair(toString(target), entry));
+				conversions.push_back(make_pair("", entry));
 			}
 
 			// collect help messages

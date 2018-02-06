@@ -311,6 +311,8 @@ function createConversion(entry, addr) {
 			$('<div>')
 				.addClass('panel-heading')
 				.append(
+					$('<strong>').text(`#${entry.index}`),
+					' ',
 					$('<i>').addClass('glyphicon glyphicon-file'),
 					' ',
 					$('<a>')
