@@ -1263,21 +1263,13 @@ namespace core {
 						return Action::Prune;
 					},true);
 					for(const auto& use : uses_of_global) {
-						visitDepthFirstOncePrunable(precCall, [&](const NodeAddress& node) {
-
-							if (node.getAddressedNode().isa<TypePtr>()) {
-								return Action::Prune;
-							}
-
-							auto lit = node.getAddressedNode().isa<LiteralPtr>();
-							if (!lit) return Action::Descent;
-
-							if(*lit == *use) {
+						visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
+							if(node.getAddressedNode() == use) {
 								std::string msg = "Use of global " + use->getValue()->getValue();
 								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory, msg));
-								return Action::Prune;
+								return Action::Interrupt;
 							}
-							return Action::Descent;
+							return Action::Continue;
 						});
 					}
 				}
@@ -1391,9 +1383,13 @@ namespace core {
 					report.addMessage(precCall, variantId, issue);
 				}
 
+				context.dumpStatistics();
+
 				// run diagnosis
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
 				report.addMessages(precCall, variantId, issues);
+
+				context.dumpStatistics();
 
 				// integrate data item access instrumentation
 				if (config.checkDataItemAccesses) {
