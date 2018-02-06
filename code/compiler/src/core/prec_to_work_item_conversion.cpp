@@ -1206,7 +1206,14 @@ namespace core {
 				// check for invalid functions
 				{
 					std::vector<CallExprPtr> invalid_calls;
-					visitDepthFirstOnce(target, [&](const CallExprPtr& call) {
+					visitDepthFirstOncePrunable(target, [&](const NodePtr& node) {
+
+						// do not investigate types
+						if (node.isa<TypePtr>()) return Action::Prune;
+
+						auto call = node.isa<CallExprPtr>();
+						if (!call) return Action::Descent;
+
 						auto fun = call->getFunctionExpr();
 						if(fun.isa<LiteralPtr>()) {
 							if (::contains(INVALID_FUNCTIONS, fun.as<LiteralPtr>().getStringValue())) {
@@ -1214,7 +1221,9 @@ namespace core {
 								invalid_calls.push_back(call);
 							}
 						}
-					});
+
+						return Action::Descent;
+					},true);
 					for(const auto& invalid_call : invalid_calls) {
 						visitDepthFirstOnceInterruptible(precCall, [&](const CallExprAddress& node) {
 							if(node.getAddressedNode() == invalid_call) {
@@ -1230,30 +1239,49 @@ namespace core {
 				// check for use of global variables
 				{
 					std::vector<LiteralPtr> uses_of_global;
-					visitDepthFirstOnce(target, [&](const LiteralPtr& lit) {
+					visitDepthFirstOncePrunable(target, [&](const NodePtr& node) {
+
+						// do not investigate types
+						if (node.isa<TypePtr>()) {
+							return Action::Prune;
+						}
+
+						auto lit = node.isa<LiteralPtr>();
+						if (!lit) return Action::Descent;
+
 						// ignore strings
 						std::string value = lit.getValue().getValue();
 						if(!value.empty() && value[0] == '"') {
-							return;
+							return Action::Prune;
 						}
 
 						if(::contains(VALID_GLOBALS, value)) {
-							return;
+							return Action::Prune;
 						}
 
 						if(!lit.getType().isa<FunctionTypePtr>() && core::lang::isReference(lit)) {
 							valid = false;
 							uses_of_global.push_back(lit);
 						}
-					});
+
+						return Action::Prune;
+					},true);
 					for(const auto& use : uses_of_global) {
-						visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
-							if(node.getAddressedNode() == use) {
+						visitDepthFirstOncePrunable(precCall, [&](const NodeAddress& node) {
+
+							if (node.getAddressedNode().isa<TypePtr>()) {
+								return Action::Prune;
+							}
+
+							auto lit = node.getAddressedNode().isa<LiteralPtr>();
+							if (!lit) return Action::Descent;
+
+							if(*lit == *use) {
 								std::string msg = "Use of global " + use->getValue()->getValue();
 								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory, msg));
-								return Action::Interrupt;
+								return Action::Prune;
 							}
-							return Action::Continue;
+							return Action::Descent;
 						});
 					}
 				}
