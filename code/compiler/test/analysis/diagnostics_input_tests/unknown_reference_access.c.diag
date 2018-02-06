@@ -1,4 +1,4 @@
-Warning: [Basic] Compiler has been unable to reliably determine targeted memory location of write access
+Warning: [Basic] Compiler has been unable to reliably determine targeted memory location of wr...
                 from: "main"
 <input_filepath>@5:5-5:10
     *p = 21;
