@@ -41,7 +41,7 @@ data SymbolicValueWithIteratorsAnalysis = SymbolicValueWithIteratorsAnalysis
     deriving (Typeable)
 
 symbolicValueWithIterators :: NodeAddress -> Solver.TypedVar SymbolicValueLattice
-symbolicValueWithIterators = genericSymbolicValue analysis
+symbolicValueWithIterators = genericSymbolicValue False analysis
   where
     -- we just re-use the default version of the generic symbolic value analysis
     analysis = (mkDataFlowAnalysis SymbolicValueWithIteratorsAnalysis "SwI" symbolicValueWithIterators) {
