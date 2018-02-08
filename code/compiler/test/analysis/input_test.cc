@@ -152,6 +152,18 @@ namespace analysis {
 				EXPECT_FALSE(requirements->isUniverse())
 					<< *annotations::getLocation(call) << std::endl;
 
+				for(const auto& cur : *requirements) {
+
+					// check the data item reference for semantic errors
+					auto issues = insieme::core::checks::check(cur.getDataItem());
+					EXPECT_TRUE(issues.empty())
+						<< "Errors in data item reference:\n" << issues;
+
+					// check the data item rangefor semantic errors
+					issues = insieme::core::checks::check(cur.getRange().toIR(mgr));
+					EXPECT_TRUE(issues.empty())
+						<< "Errors in data item ragen:\n" << issues;
+				}
 
 			// alias analysis
 			} else if (name == "cba_expect_ref_are_alias") {
