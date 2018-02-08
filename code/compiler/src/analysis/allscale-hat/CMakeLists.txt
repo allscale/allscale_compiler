@@ -42,6 +42,13 @@ add_custom_target(allscale_hat
 	COMMENT "Building AllScale HAT"
 )
 
+# cleanup
+set_directory_properties(
+	PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+	"${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so;${INSIEME_HAT_BINARY_DIR}/dist-newstyle"
+)
+
+# force cabal-home cleanup
 add_custom_target(clean_allscale_hat
 	COMMAND ${CMAKE_COMMAND} -E remove "${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so"
 	COMMAND ${CMAKE_COMMAND} -E remove_directory "${INSIEME_HAT_BINARY_DIR}/dist-newstyle/"
