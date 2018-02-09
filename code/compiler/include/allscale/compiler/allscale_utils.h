@@ -14,6 +14,8 @@ namespace utils {
 
 	insieme::core::LambdaExprPtr getCallOperatorImplementation(const insieme::core::ExpressionPtr& lambda);
 
+	bool isCopyable(const insieme::core::TypePtr& type);
+
 	insieme::core::DeclarationPtr buildPassByValueDeclaration(const insieme::core::ExpressionPtr& expr);
 
 }

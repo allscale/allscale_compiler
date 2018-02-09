@@ -86,19 +86,13 @@ namespace utils {
 		return impl;
 	}
 
-	namespace {
-		bool canCopyWithCtor(const core::TypePtr& type) {
-			if(core::lang::isReference(type)) {
-				const auto& innerType = core::analysis::getReferencedType(type);
-				// we can copy/move everything that has a matching ctor
-				if(const auto& tagType = innerType.isa<core::TagTypePtr>()) {
-					return core::analysis::hasCopyConstructor(tagType);
-				}
-				// or is a (non reference) generic type, tuple or TagTypeReference
-				return !core::lang::isReference(innerType) && (innerType.isa<core::GenericTypePtr>() || innerType.isa<core::TupleTypePtr>() || innerType.isa<core::TagTypeReferencePtr>());
-			}
-			return false;
+	bool isCopyable(const core::TypePtr& type) {
+		// we can copy/move everything that has a matching ctor
+		if(const auto& tagType = type.isa<core::TagTypePtr>()) {
+			return core::analysis::hasCopyConstructor(tagType);
 		}
+		// or is a (non reference) generic type, tuple or TagTypeReference
+		return !core::lang::isReference(type) && (type.isa<core::GenericTypePtr>() || type.isa<core::TupleTypePtr>() || type.isa<core::TagTypeReferencePtr>());
 	}
 
 	core::DeclarationPtr buildPassByValueDeclaration(const core::ExpressionPtr& exprIn) {
@@ -116,7 +110,7 @@ namespace utils {
 			// if we do have a reference here
 		} else if(core::lang::isReference(expr)) {
 			// and we can copy it with a ctor
-			if(canCopyWithCtor(expr->getType())) {
+			if(isCopyable(core::analysis::getReferencedType(expr))) {
 				// create a decl of non-const plain type and init it with a cast to const cpp_ref
 				core::lang::ReferenceType declRefType(expr);
 				declRefType.setConst(false);
