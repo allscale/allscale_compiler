@@ -135,7 +135,7 @@ elementReferenceValue addr = case Q.getNodeType addr of
 
     refElementHandler = OperatorHandler cov dep val
       where
-        cov a = Q.isBuiltin a "data_item_element_access"
+        cov a = any (Q.isBuiltin a) ["data_item_element_access","data_item_read_requirement","data_item_write_requirement"]
         dep _ _ = Solver.toVar <$> [refVar,rangeVar]
         val _ a = compose $ ElementReferenceSet $ BSet.map go $ BSet.cartProduct (refVal a) (rangeVal a)
           where

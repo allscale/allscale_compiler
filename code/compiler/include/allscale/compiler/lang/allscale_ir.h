@@ -82,6 +82,13 @@ namespace lang {
 		LANG_EXT_LITERAL(DataItemElementAccess, "data_item_element_access",
 			"(ref<'data_item, 'c, 'v, 'k>, 'region, type<ref<'element_type, 'c2, 'v2, 'k2>>) -> ref<'element_type, 'c2, 'v2, 'k2>")
 
+		LANG_EXT_LITERAL(DataItemReadRequirement, "data_item_read_requirement",
+			"(ref<'data_item, 'c, 'v, 'k>, 'region) -> unit")
+
+		LANG_EXT_LITERAL(DataItemWriteRequirement, "data_item_write_requirement",
+			"(ref<'data_item, 'c, 'v, 'k>, 'region) -> unit")
+
+		LANG_EXT_LITERAL(DataItemNoDependencies, "data_item_no_dependencies", "()->unit")
 	};
 
 	class RecOrPrecFunType {

@@ -79,6 +79,10 @@ namespace detail {
 		{"allscale::api::core::prec", 1, mapPrecRecDefs},
 		{"allscale::api::core::prec", 2, mapPrecFun},
 		{"allscale::api::core::prec", 3, mapPrecDirect},
+		// user defined data requirements
+		{"allscale::api::core::sema::needs_read_access", SimpleCallMapper("data_item_read_requirement")},
+		{"allscale::api::core::sema::needs_write_access", SimpleCallMapper("data_item_write_requirement")},
+		{"allscale::api::core::sema::no_more_dependencies", SimpleCallMapper("data_item_no_dependencies")},
 	};
 
 

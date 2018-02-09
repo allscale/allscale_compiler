@@ -203,8 +203,16 @@ namespace backend {
 				// get a literal of the targeted function
 				c_ast::ExpressionPtr trg = C_NODE_MANAGER->create<c_ast::Literal>("allscale::api::core::span");
 
+				// get arguments
+				auto arg0 = CONVERT_ARG(0);
+				auto arg1 = CONVERT_ARG(1);
+
+				// remove extra pointer if value is passed as a plain pointer
+				if (insieme::core::lang::isPlainReference(ARG(0))) arg0 = c_ast::deref(arg0);
+				if (insieme::core::lang::isPlainReference(ARG(1))) arg1 = c_ast::deref(arg1);
+
 				// just forward parameters
-				return c_ast::call(trg,CONVERT_ARG(0),CONVERT_ARG(1));
+				return c_ast::call(trg,arg0,arg1);
 
 			};
 
@@ -527,6 +535,18 @@ namespace backend {
 						C_NODE_MANAGER->create("allscale::runtime::after"),
 						args
 				);
+			};
+
+			table[ext.getDataItemReadRequirement()] = OP_CONVERTER {
+				return nullptr;
+			};
+
+			table[ext.getDataItemWriteRequirement()] = OP_CONVERTER {
+				return nullptr;
+			};
+
+			table[ext.getDataItemNoDependencies()] = OP_CONVERTER {
+				return nullptr;
 			};
 		}
 

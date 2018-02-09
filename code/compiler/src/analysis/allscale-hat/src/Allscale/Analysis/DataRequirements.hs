@@ -166,6 +166,26 @@ dataRequirements addr = case I.getNode addr of
             toSet (ElementReferenceSet s) = s
 
 
+    -- check for user defined requirements
+    _ | hasUserRequirements -> var
+      where
+        var = Solver.mkVariable varId [con] Solver.bot
+        con = Solver.createConstraint dep val var
+
+        dep _ = Solver.toVar <$> requirementVars
+        val a = Solver.join $ (Solver.get a) <$> requirementVars
+
+        requirementVars = dataRequirements <$> userRequirements
+
+    -- check user defined no requirements
+    _ | isUserdefinedNoRequirement $ I.node addr -> Solver.mkVariable varId [] Solver.bot
+
+    -- check user defined read requirement
+    _ | isUserdefinedReadRequirement $ I.node addr -> userDefinedRequirement ReadOnly
+
+    -- check user defined read requirement
+    _ | isUserdefinedWriteRequirement $ I.node addr -> userDefinedRequirement ReadWrite
+
     -- default handling through execution tree value analysis 
     _ -> executionTreeValue analysis addr
 
@@ -264,8 +284,63 @@ dataRequirements addr = case I.getNode addr of
 
                 mode = if Q.isConstReference p then ReadOnly else ReadWrite
 
+    -- user defined requirements --
+    userRequirements = getUserdefinedRequirements addr
+    hasUserRequirements = not $ null userRequirements
+
+    userDefinedRequirement mode = var
+      where
+        var = Solver.mkVariable varId [con] Solver.bot
+        con = Solver.createConstraint dep val var
+
+        dep _ = [Solver.toVar referenceVar]
+        val = dataRequirements
+
+        referenceVar = elementReferenceValue $ addr
+        referenceVal a = toSet $ if isValue val then toValue val else ElementReferenceSet BSet.empty
+          where
+            val = Solver.get a referenceVar
+            toSet (ElementReferenceSet s) = s
+
+        dataRequirements a = DataRequirements $ BSet.map go $ referenceVal a
+          where
+            go (ElementReference ref range) = DataRequirement {
+                dataItemRef = ref,
+                range       = range,
+                accessMode  = mode
+            }
 
     -- utilities --
     idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis
     varId = idGen addr
+
+
+-- tests whether a given IR structure is a user-defined no-more-dependency
+isUserdefinedNoRequirement :: I.Tree -> Bool
+isUserdefinedNoRequirement (I.Node I.CallExpr [_,f]) = I.isBuiltin f "data_item_no_dependencies"
+isUserdefinedNoRequirement _ = False
+
+-- tests whether a given IR structure is a user-defined read requirement
+isUserdefinedReadRequirement :: I.Tree -> Bool
+isUserdefinedReadRequirement (I.Node I.CallExpr [_,f,_,_]) = I.isBuiltin f "data_item_read_requirement"
+isUserdefinedReadRequirement _ = False
+
+-- tests whether a given IR structure is a user-defined read requirement
+isUserdefinedWriteRequirement :: I.Tree -> Bool
+isUserdefinedWriteRequirement (I.Node I.CallExpr [_,f,_,_]) = I.isBuiltin f "data_item_write_requirement"
+isUserdefinedWriteRequirement _ = False
+
+
+-- tests whether a given IR structure is a user-defined data requirement
+isUserdefinedRequirement :: I.Tree -> Bool
+isUserdefinedRequirement a =
+    isUserdefinedNoRequirement a ||
+    isUserdefinedReadRequirement a ||
+    isUserdefinedWriteRequirement a
+
+
+-- collects user-defined requirements
+getUserdefinedRequirements :: NodeAddress -> [NodeAddress]
+getUserdefinedRequirements c | Q.getNodeType c == I.CompoundStmt = filter (isUserdefinedRequirement . I.node) $ I.children c
+getUserdefinedRequirements _ = []
 
