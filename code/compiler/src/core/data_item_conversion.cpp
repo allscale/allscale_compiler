@@ -301,7 +301,7 @@ namespace core {
 				if(core::lang::isReference(memoryExprType)) {
 					if(const auto& tagType = core::analysis::getReferencedType(memoryExprType).isa<core::TagTypePtr>()) {
 						// if we have any field which captures a data item
-						if(::any(tagType->getRecord()->getFields(), [&](const auto& field) { return isCapturedFieldName(field->getName()) && containsDataItemReference(field->getType()); })) {
+						if(::any(tagType->getRecord()->getFields(), [&](const auto& field) { return containsDataItemReference(field->getType()); })) {
 							// we need to fix the initializations. Previously we had cpp_ref, now we need plain
 							core::DeclarationList decls = initExpr->getInitDecls();
 							for(auto& decl : decls) {
