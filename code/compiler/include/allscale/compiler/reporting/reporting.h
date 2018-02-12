@@ -80,6 +80,7 @@ namespace reporting {
 		UnobtainableDataRequirement,
 		ObtainedDataRequirement,
 		ConvertParRegionToSharedMemoryParRuntimeCode,
+		ConvertParRegionToDistributedMemoryParRuntimeCode,
 		UnableToInstrumentVariantForDataItemAccessCheck,
 		InstrumentedVariantForDataItemAccessCheck,
 		CallToInvalidFunctionForDistributedMemory,
