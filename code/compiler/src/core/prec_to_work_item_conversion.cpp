@@ -1522,10 +1522,17 @@ namespace core {
 			// also add info to conversion report
 			assert_true(call->hasAttachedValue<FirstAddressTag>());
 			auto firstAddress = call->getAttachedValue<FirstAddressTag>().addr;
-			report.addMessage(
+			if(config.sharedMemoryOnly) {
+				report.addMessage(
 					firstAddress,
 					reporting::Issue(firstAddress, reporting::ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode)
-			);
+				);
+			} else {
+				report.addMessage(
+					firstAddress,
+					reporting::Issue(firstAddress, reporting::ErrorCode::ConvertParRegionToDistributedMemoryParRuntimeCode)
+				);
+			}
 
 			// unless it is for shared memory only ..
 			if (!config.sharedMemoryOnly) {

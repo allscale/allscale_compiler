@@ -336,24 +336,25 @@ namespace reporting {
 
 	ErrorDetails lookupDetails(ErrorCode err) {
 		switch(err) {
-		case ErrorCode::Timeout:                                         return {Severity::Warning, {},                        Category::Basic,             "Timeout"};
-		case ErrorCode::CallToUnknownFunction:                           return {Severity::Warning, {},                        Category::Basic,             "Call to unknown function"};
-		case ErrorCode::ReadAccessToUnknownLocation:                     return {Severity::Warning, {Tag::Read},               Category::Basic,             "Compiler has been unable to reliably determine targeted memory location of read access"};
-		case ErrorCode::WriteAccessToUnknownLocation:                    return {Severity::Warning, {Tag::Write},              Category::Basic,             "Compiler has been unable to reliably determine targeted memory location of write access"};
-		case ErrorCode::ReadAccessToGlobal:                              return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic,             "Invalid read access to global memory location"};
-		case ErrorCode::WriteAccessToGlobal:                             return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic,             "Invalid write access to global memory location"};
-		case ErrorCode::ReadAccessToPotentialDataItemElementReference:   return {Severity::Error,   {Tag::Read},               Category::Basic,             "Unable to determine data item element reference targeted by read operation"};
-		case ErrorCode::WriteAccessToPotentialDataItemElementReference:  return {Severity::Error,   {Tag::Write},              Category::Basic,             "Unable to determine data item element reference targeted by write operation"};
-		case ErrorCode::UnobtainableDataRequirement:                     return {Severity::Error,   {},                        Category::Basic,             "Unable to obtain data requirements for given code variant"};
-		case ErrorCode::ObtainedDataRequirement:                         return {Severity::Info,    {},                        Category::Basic,             "Successfully obtained data requirements for given code variant"};
-		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:    return {Severity::Info,    {},                        Category::Basic,             "Converted parallel region into shared-memory parallel runtime code."};
-		case ErrorCode::UnableToInstrumentVariantForDataItemAccessCheck: return {Severity::Error,   {},                        Category::Basic,             "Unable to instrument data item accesses as requested due to unknown targets of read/write operations."};
-		case ErrorCode::InstrumentedVariantForDataItemAccessCheck:       return {Severity::Info,    {},                        Category::Basic,             "Successfully instrumented data item accesses."};
-		case ErrorCode::CallToInvalidFunctionForDistributedMemory:       return {Severity::Warning, {},                        Category::DistributedMemory, "Call to blacklisted function prevents generation of distributed memory code."};
-		case ErrorCode::InvalidUseOfGlobalForDistributedMemory:          return {Severity::Warning, {Tag::Global},             Category::DistributedMemory, "Use of global variable prevents generation of distributed memory code."};
-		case ErrorCode::ValidForDistributedMemory:                       return {Severity::Info,    {},                        Category::DistributedMemory, "Given code variant can be converted to distributed memory target code."};
-		case ErrorCode::InvalidForDistributedMemory:                     return {Severity::Error,   {},                        Category::DistributedMemory, "Given code variant can not be converted to distributed memory target code."};
-		case ErrorCode::RefOrPtrFoundInCaptureList:                      return {Severity::Warning, {},                        Category::DistributedMemory, "Use of captured reference / pointer prevents generation of distributed memory code."};
+		case ErrorCode::Timeout:                                           return {Severity::Warning, {},                        Category::Basic,             "Timeout"};
+		case ErrorCode::CallToUnknownFunction:                             return {Severity::Warning, {},                        Category::Basic,             "Call to unknown function"};
+		case ErrorCode::ReadAccessToUnknownLocation:                       return {Severity::Warning, {Tag::Read},               Category::Basic,             "Compiler has been unable to reliably determine targeted memory location of read access"};
+		case ErrorCode::WriteAccessToUnknownLocation:                      return {Severity::Warning, {Tag::Write},              Category::Basic,             "Compiler has been unable to reliably determine targeted memory location of write access"};
+		case ErrorCode::ReadAccessToGlobal:                                return {Severity::Error,   {Tag::Read,  Tag::Global}, Category::Basic,             "Invalid read access to global memory location"};
+		case ErrorCode::WriteAccessToGlobal:                               return {Severity::Error,   {Tag::Write, Tag::Global}, Category::Basic,             "Invalid write access to global memory location"};
+		case ErrorCode::ReadAccessToPotentialDataItemElementReference:     return {Severity::Error,   {Tag::Read},               Category::Basic,             "Unable to determine data item element reference targeted by read operation"};
+		case ErrorCode::WriteAccessToPotentialDataItemElementReference:    return {Severity::Error,   {Tag::Write},              Category::Basic,             "Unable to determine data item element reference targeted by write operation"};
+		case ErrorCode::UnobtainableDataRequirement:                       return {Severity::Error,   {},                        Category::Basic,             "Unable to obtain data requirements for given code variant"};
+		case ErrorCode::ObtainedDataRequirement:                           return {Severity::Info,    {},                        Category::Basic,             "Successfully obtained data requirements for given code variant"};
+		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode:      return {Severity::Info,    {},                        Category::Basic,             "Converted parallel region into shared-memory parallel runtime code."};
+		case ErrorCode::ConvertParRegionToDistributedMemoryParRuntimeCode: return {Severity::Info,    {},                        Category::Basic,             "Converted parallel region into distributed-memory parallel runtime code."};
+		case ErrorCode::UnableToInstrumentVariantForDataItemAccessCheck:   return {Severity::Error,   {},                        Category::Basic,             "Unable to instrument data item accesses as requested due to unknown targets of read/write operations."};
+		case ErrorCode::InstrumentedVariantForDataItemAccessCheck:         return {Severity::Info,    {},                        Category::Basic,             "Successfully instrumented data item accesses."};
+		case ErrorCode::CallToInvalidFunctionForDistributedMemory:         return {Severity::Warning, {},                        Category::DistributedMemory, "Call to blacklisted function prevents generation of distributed memory code."};
+		case ErrorCode::InvalidUseOfGlobalForDistributedMemory:            return {Severity::Warning, {Tag::Global},             Category::DistributedMemory, "Use of global variable prevents generation of distributed memory code."};
+		case ErrorCode::ValidForDistributedMemory:                         return {Severity::Info,    {},                        Category::DistributedMemory, "Given code variant can be converted to distributed memory target code."};
+		case ErrorCode::InvalidForDistributedMemory:                       return {Severity::Error,   {},                        Category::DistributedMemory, "Given code variant can not be converted to distributed memory target code."};
+		case ErrorCode::RefOrPtrFoundInCaptureList:                        return {Severity::Warning, {},                        Category::DistributedMemory, "Use of captured reference / pointer prevents generation of distributed memory code."};
 		};
 		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
 		return {};
