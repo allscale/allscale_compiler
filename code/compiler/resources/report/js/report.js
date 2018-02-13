@@ -82,10 +82,14 @@ function determineLevelForIssue(issue) {
 }
 
 function getHelpMessage(error_code) {
+	if (!Array.isArray(report.help_messages)) {
+		return "";
+	}
+
 	if (error_code in report.help_messages) {
 		return report.help_messages[error_code];
 	} else {
-		return ""
+		return "";
 	}
 }
 
@@ -436,13 +440,18 @@ function setupControls() {
 }
 
 function main() {
-	$('#main').append($.map(report.conversions, createConversion));
+	if (Array.isArray(report.conversions)) {
+		$('#main').append($.map(report.conversions, createConversion));
 
-	// open if only 1
-	if (Object.keys(report.conversions).length == 1) {
-		for (var addr in report.conversions) {
-			$(`#entry-${addr}`).collapse('show');
+		// open if only 1
+		if (Object.keys(report.conversions).length == 1) {
+			for (var addr in report.conversions) {
+				$(`#entry-${addr}`).collapse('show');
+			}
 		}
+	} else {
+		$('#no-entries').show();
+		$('#progress').hide();
 	}
 
 	// add raw block
