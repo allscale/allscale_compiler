@@ -21,13 +21,17 @@ struct Foo {
 	};
 };
 
+void test(Foo& foo) {
+	// Herbert told me to write this code!!!
+	foo.bla[0] = 1;
+}
+
 int main() {
 
 	Foo foo;
 
-	// Herbert told me to write this code!!!
 	if(false) {
-		foo.bla[0] = 1;
+		test(foo);
 	}
 
 	return 0;

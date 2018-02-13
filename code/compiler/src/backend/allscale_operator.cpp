@@ -182,6 +182,15 @@ namespace backend {
 				return c_ast::call(trg, CONVERT_ARG(0));
 			};
 
+			table[ext.getGetDataItemPack()] = OP_CONVERTER {
+				// this is a no-op in C++
+				return CONVERT_ARG(0);
+			};
+			table[ext.getGetDataItemUnpack()] = OP_CONVERTER {
+				// this is a no-op in C++
+				return CONVERT_ARG(0);
+			};
+
 			table[ext.getCreateDataItemRequirement()] = OP_CONVERTER {
 
 				// add dependencies
