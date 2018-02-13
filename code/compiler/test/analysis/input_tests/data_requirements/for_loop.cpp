@@ -40,7 +40,6 @@ int main() {
 	// test some loop over elements (read / write)
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RO },"
 				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(0), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(10-1u), type_lit(cpp_ref)))] RW }"
 			"}");
 
@@ -80,7 +79,6 @@ int main() {
 	// test some loop over elements (read / write)
 	{
 		cba_expect_data_requirements("{"
-				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v2-1u), type_lit(cpp_ref)))] RO },"
 				"Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*v1), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*v2-1u), type_lit(cpp_ref)))] RW }"
 			"}");
 

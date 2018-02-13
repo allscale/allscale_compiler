@@ -252,7 +252,7 @@ namespace analysis {
 
 		// acquire a reference and read from and write to it
 		EXPECT_EQ(
-			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+			"{Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					{
@@ -293,7 +293,7 @@ namespace analysis {
 
 		// acquire a reference and read from it
 		EXPECT_EQ(
-			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+			"{Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def inc = ( r : ref<int<4>> ) -> unit {
@@ -313,7 +313,7 @@ namespace analysis {
 
 		// obtain the reference in a nested scope
 		EXPECT_EQ(
-			"{Requirement { A[12] RO },Requirement { A[12] RW }}",
+			"{Requirement { A[12] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def inc = ( r : ref<'a>, i : 'b ) -> unit {
@@ -333,7 +333,7 @@ namespace analysis {
 
 		// obtain the reference in a nested scope with modification
 		EXPECT_EQ(
-			"{Requirement { A[12+2] RO },Requirement { A[12+2] RW }}",
+			"{Requirement { A[12+2] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def inc = ( r : ref<'a>, i : int<4> ) -> unit {
