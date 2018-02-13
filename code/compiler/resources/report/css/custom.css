@@ -37,6 +37,13 @@ h1.title {
     text-align: right;
 }
 
+#no-entries {
+    font-size: 16pt;
+    text-align: center;
+    display: none;
+    margin-bottom: 1em;
+}
+
 .entry > .panel-heading {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
     word-wrap: break-word;

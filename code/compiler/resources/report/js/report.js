@@ -436,13 +436,18 @@ function setupControls() {
 }
 
 function main() {
-	$('#main').append($.map(report.conversions, createConversion));
+	if (Array.isArray(report.conversions)) {
+		$('#main').append($.map(report.conversions, createConversion));
 
-	// open if only 1
-	if (Object.keys(report.conversions).length == 1) {
-		for (var addr in report.conversions) {
-			$(`#entry-${addr}`).collapse('show');
+		// open if only 1
+		if (Object.keys(report.conversions).length == 1) {
+			for (var addr in report.conversions) {
+				$(`#entry-${addr}`).collapse('show');
+			}
 		}
+	} else {
+		$('#no-entries').show();
+		$('#progress').hide();
 	}
 
 	// add raw block
