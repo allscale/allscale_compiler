@@ -64,7 +64,14 @@ data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
 
 instance Solver.Lattice DataRequirements where
     bot   = DataRequirements $ BSet.empty
-    merge (DataRequirements a) (DataRequirements b) = DataRequirements $ BSet.union a b
+    merge (DataRequirements a) (DataRequirements b) = DataRequirements $ res
+      where
+        res = BSet.filter p sum
+        sum = BSet.union a b
+
+        -- we are filtering out read-only requirement if there is an equal read/write requirement
+        p d | accessMode d == ReadOnly = not $ BSet.member (d { accessMode = ReadWrite }) sum
+        p _ = True
     
     print (DataRequirements BSet.Universe) = "Universe"
     print (DataRequirements b)             = "{" ++ (intercalate "," $ printRequirement <$> BSet.toList b) ++ "}"
