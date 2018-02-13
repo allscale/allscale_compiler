@@ -82,10 +82,14 @@ function determineLevelForIssue(issue) {
 }
 
 function getHelpMessage(error_code) {
+	if (!Array.isArray(report.help_messages)) {
+		return "";
+	}
+
 	if (error_code in report.help_messages) {
 		return report.help_messages[error_code];
 	} else {
-		return ""
+		return "";
 	}
 }
 
