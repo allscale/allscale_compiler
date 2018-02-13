@@ -143,8 +143,15 @@ namespace core {
 
 			// add replacements for constants
 			replacements[builder.deref(cur.first)] = cur.second.value;
-			replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppReference)] = cur.second.value;
-			replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppRValueReference)] = cur.second.value;
+			if(core::lang::isReference(cur.second.value)) {
+				replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppReference)] = cur.second.value;
+				replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppRValueReference)] = cur.second.value;
+			} else {
+				replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppReference)] =
+						lang::buildRefKindCast(builder.refTemp(cur.second.value), lang::ReferenceType::Kind::CppReference);
+				replacements[lang::buildRefKindCast(cur.first, lang::ReferenceType::Kind::CppRValueReference)] =
+						lang::buildRefKindCast(builder.refTemp(cur.second.value), lang::ReferenceType::Kind::CppRValueReference);
+			}
 		}
 
 		// apply replacements
