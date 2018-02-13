@@ -25,6 +25,7 @@ import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Solver as Solver
 
 import Allscale.Analysis.DataItemElementReference
+import Allscale.Analysis.DataRequirements
 
 -- * Issues
 
@@ -94,7 +95,23 @@ data Diagnosis a = Diagnosis { analysisToken        :: a
 
 -- a generic diagnosis implementation
 diagnosis :: (Typeable a) => Diagnosis a -> NodeAddress -> Solver.TypedVar Issues
-diagnosis diag addr = executionTreeValue analysis addr
+diagnosis diag addr = case () of
+
+    -- if there are user-defined requirements, focus on those
+    _ | hasUserDefinedRequirements -> var
+      where
+        var = Solver.mkVariable varId [con] Solver.bot
+        con = Solver.createConstraint dep val var
+
+        dep _ = Solver.toVar <$> diagVars
+        val a = Solver.join $ (Solver.get a) <$> diagVars
+
+        diagVars = (varGen diag) <$> userDefinedRequirements
+        varId = Solver.mkIdentifierFromExpression (analysisIdentifier analysis) addr
+
+    -- everything else, handle by default
+    _ -> executionTreeValue analysis addr
+
   where
 
     -- configure the underlying execution tree analysis
@@ -117,6 +134,9 @@ diagnosis diag addr = executionTreeValue analysis addr
         dep _ _ = []
         val _ _ = Solver.bot
 
+    -- user defined requirements
+    userDefinedRequirements = getUserdefinedRequirements addr
+    hasUserDefinedRequirements = not (null userDefinedRequirements)
 
 
 -- * Diagnoses
