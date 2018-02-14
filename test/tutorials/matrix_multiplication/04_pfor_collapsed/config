@@ -1,2 +1,1 @@
 files=../../../../api/code/tutorials/src/matrix_multiplication/04_pfor_collapsed.cxx 
-excludeSteps=${excludeSteps},"insiemecc_seq_cpp_convert"
