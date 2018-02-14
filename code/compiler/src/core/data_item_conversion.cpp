@@ -58,8 +58,32 @@ namespace core {
 
 						// skip copy or move constructor calls
 						if( core::analysis::isCopyConstructor(callee) || core::analysis::isMoveConstructor(callee)) {
-							// we simply return the copied/moved object
-							return core::lang::removeSurroundingRefCasts(core::analysis::getArgument(call, 1));
+
+							// depending on the target
+							auto trg = call->getArgument(0);
+							if (core::analysis::isRefDeclResult(trg) || core::analysis::isRefTempResult(trg)) {
+								// we simply return the copied/moved object
+								return core::lang::removeSurroundingRefCasts(core::analysis::getArgument(call, 1));
+							} else {
+
+								// we convert the constructor all in an init expression
+								auto argIn = core::analysis::getArgument(call, 1);
+
+								// get the new argument
+								auto arg = core::lang::removeSurroundingRefCasts(argIn);
+
+								// if the argument is a reference => convert it to the right cv modifiers
+								if (core::lang::isReference(arg)) {
+									arg = core::lang::buildRefCast(arg,argIn->getType());
+								}
+
+								// build a declaration of the resulting value ...
+								auto decl = builder.declaration(trg->getType(), arg);
+
+								// .. and finally an enclosing init expression addressing the target
+								return builder.initExpr(trg, core::DeclarationList{ decl });
+							}
+
 						}
 
 						// replace constructor call with call to getCreateDataItem

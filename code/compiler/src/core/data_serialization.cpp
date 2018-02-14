@@ -242,7 +242,18 @@ namespace core {
 
 					if(!failed) {
 						auto ctorType = builder.functionType(ctorParamTypes, defaultCtorType->getReturnType(), core::FunctionKind::FK_CONSTRUCTOR);
-						ctor = builder.lambdaExpr(ctorType, ctorVars, builder.compoundStmt(body));
+
+						// test whether a ctor with the same signature already existists
+						bool preexisting = false;
+						for(const auto& ctor : record->getConstructors()) {
+							if (*ctor->getType() != *ctorType) continue;
+							preexisting = true;
+							break;
+						}
+
+						if (!preexisting) {
+							ctor = builder.lambdaExpr(ctorType, ctorVars, builder.compoundStmt(body));
+						}
 					}
 				}
 			}
@@ -481,7 +492,7 @@ namespace core {
 		if (!tagType || !tagType->isStruct()) return notSerializable;
 
 		// check that the input is OK
-		assert_correct_ir(type);
+		//assert_correct_ir(type);
 
 		// serialize all contained records (where possible)
 		std::map<NodeAddress,NodePtr> replacements;
@@ -501,7 +512,7 @@ namespace core {
 		auto res = core::transform::replaceAll(type->getNodeManager(),replacements).as<TagTypePtr>();
 
 		// check that everything is fine
-		assert_correct_ir(res);
+		//assert_correct_ir(res);
 
 		// done
 		return res;
