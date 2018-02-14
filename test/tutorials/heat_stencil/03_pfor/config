@@ -1,1 +1,2 @@
 files=../../../../api/code/tutorials/src/heat_stencil/03_pfor.cxx 
+excludeSteps=${excludeSteps},"insiemecc_seq_cpp_convert"
