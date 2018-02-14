@@ -24,7 +24,7 @@ int main() {
 	auto start = myClock::now();
 
 	// perform transformation
-	pfor(Point{N,N},[&](const Point& p) {
+	pfor(A.size(),[&](const Point& p) {
 		B[{p.y,p.x}] = A[p];
 		A[p]++;
 	});

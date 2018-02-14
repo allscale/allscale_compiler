@@ -15,6 +15,33 @@ namespace core {
 
 	namespace core = insieme::core;
 
+	namespace {
+
+		bool usesOnlyLambdaParameters(const core::NodePtr& codeFragment, const core::LambdaExprPtr& lambdaExpr) {
+			// collect variables which are used within the given codeFragment
+			core::VariableList varList;
+			core::visitDepthFirstOncePrunable(codeFragment, [&](const core::ExpressionPtr& varExpr) {
+				// don't descend into other lambda expressions
+				if(varExpr.isa<core::LambdaExprPtr>()) return core::Action::Prune;
+
+				if(const auto& var = varExpr.isa<core::VariablePtr>()) {
+					varList.push_back(var);
+				}
+				return core::Action::Descent;
+			}, false);
+
+			// and check whether all if the collected variables are parameters of the given lambda expression
+			core::VariableList lambdaParams = lambdaExpr->getParameterList()->getElements();
+			for(const auto& var : varList) {
+				if(std::find(lambdaParams.cbegin(), lambdaParams.cend(), var) == lambdaParams.end()) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+	}
+
 	core::NodePtr performDataItemGetLoopHoisting(const core::NodePtr& code, const ProgressCallback&) {
 		auto& mgr = code->getNodeManager();
 		core::IRBuilder builder(mgr);
@@ -30,8 +57,12 @@ namespace core {
 				if(expr.isa<core::LambdaExprAddress>()) return core::Action::Prune;
 
 				// and collect addresses of calls to getDataItem
-				if(beExt.isCallOfGetDataItem(expr.getAddressedNode())) {
-					getCallAddresses.push_back(expr);
+				const auto& getCall = expr.getAddressedNode();
+				if(beExt.isCallOfGetDataItem(getCall)) {
+					// if we are only using parameters of the current lambda, we are allowed to hoist this call
+					if(usesOnlyLambdaParameters(getCall, lambdaExpr)) {
+						getCallAddresses.push_back(expr);
+					}
 				}
 				return core::Action::Descent;
 			}, false);
