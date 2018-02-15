@@ -2,8 +2,10 @@
 #include "allscale/compiler/core/allscale_optimizations.h"
 
 #include "insieme/core/ir_builder.h"
+#include "insieme/core/analysis/default_members.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/checks/full_check.h"
+#include "insieme/core/transform/manipulation_utils.h"
 #include "insieme/core/transform/node_replacer.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
@@ -50,6 +52,9 @@ namespace core {
 		auto res = core::transform::transformBottomUpGen(code, [&](const core::LambdaExprPtr& lambdaExpr){
 			const auto& body = lambdaExpr->getBody();
 
+			// skip defaulted members
+			if(core::analysis::isaDefaultMember(lambdaExpr)) return lambdaExpr;
+
 			// collect all occurrences of art_data_item_get in this lambda
 			core::ExpressionList getCallNodes;
 			core::visitDepthFirstOncePrunable(body, [&](const core::ExpressionPtr& expr) {
@@ -85,7 +90,9 @@ namespace core {
 				bodyStmts.insert(bodyStmts.begin(), declStmts.cbegin(), declStmts.cend());
 
 				// and create the new lambda
-				return builder.lambdaExpr(lambdaExpr->getType(), lambdaExpr->getParameterList(), builder.compoundStmt(bodyStmts), lambdaExpr->getReference()->getName()->getValue());
+				auto res = builder.lambdaExpr(lambdaExpr->getType(), lambdaExpr->getParameterList(), builder.compoundStmt(bodyStmts), lambdaExpr->getReference()->getName()->getValue());
+				core::transform::utils::migrateAnnotations(lambdaExpr, res);
+				return res;
 			}
 
 			return lambdaExpr;
