@@ -25,14 +25,9 @@ namespace analysis {
 
 	Issues runDiagnostics(AnalysisContext& ctx, const insieme::core::NodeAddress& node, DiagnosisFlags flags /* = DiagnosisFlagsAll */) {
 		auto node_hs = ctx.resolveNodeAddress(node);
-		auto result = hat_hs_diagnostics(ctx.getHaskellContext(), node_hs, flags);
-		auto value = ctx.unwrapResult(result);
-
-		if(!value) {
-			return {Issue::timeout(node)};
-		}
-
-		return *value;
+		auto result = ctx.runAnalysis<Issues*>(hat_hs_diagnostics, node_hs, flags);
+		if(!result) return {Issue::timeout(node)};
+		return *result;
 	}
 
 } // end namespace analysis
