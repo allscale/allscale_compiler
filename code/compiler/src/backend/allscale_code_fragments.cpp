@@ -300,8 +300,15 @@ namespace backend {
 				definition->parameters.push_back(resTypeInfo.rValueType);
 				definition->parameters.push_back(nameFactory.type);
 
-				// mark work item as serializable or not
-				bool serializable = false;	// TODO: determine this based on the actual closure type
+				// mark work item as serializable or not (the flag actually indicates whether this is a distributable work item or not)
+				bool serializable = true;
+				for(const auto& cur : desc.getVariants()) {
+					if (cur.getDataRequirements().valid()) continue;
+					serializable = false;
+					break;
+				}
+
+				// enter serialization flag
 				if (serializable) {
 					definition->parameters.push_back(mgr->create<backend::c_ast::NamedType>(mgr->create("allscale::do_serialization")));
 				} else {
