@@ -45,6 +45,15 @@ namespace core {
 		EXPECT_PRED1(isSerializable, basic.getReal8());
 		EXPECT_PRED1(isSerializable, basic.getReal16());
 
+		// array types
+		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"using int_array = int[10]; int_array"));
+
+		// enum type
+		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"enum Bla { X, Y }; Bla"));
+
+		// enum class type
+		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"enum class Bla { X, Y }; Bla"));
+
 		// check standard library types
 		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"std::string"));
 		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"std::pair<int,bool>"));
@@ -82,6 +91,10 @@ namespace core {
 		// no pointer shall be serializable
 		EXPECT_PRED1(isNotSerializable, builder.parseType("ptr<int<4>>"));
 		EXPECT_PRED1(isNotSerializable, builder.parseType("ptr<int<4>,t,f>"));
+
+		// arrays of pointers shall not be serializable
+		EXPECT_PRED1(isNotSerializable, builder.parseType("array<ptr<int<4>>,12>"));
+		EXPECT_PRED1(isNotSerializable, builder.parseType("array<int<4>,inf>"));
 
 		// test std-library types with non-serializable elements
 		EXPECT_PRED1(isNotSerializable, frontend::parseType(mgr,"std::array<int*,3>"));

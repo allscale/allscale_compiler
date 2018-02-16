@@ -2,9 +2,11 @@
 
 #include <sstream>
 
+#include "insieme/core/lang/array.h"
 #include "insieme/core/lang/enum.h"
 #include "insieme/core/lang/pointer.h"
 #include "insieme/backend/c_ast/c_ast_utils.h"
+#include "insieme/backend/c_ast/c_ast_printer.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/core/data_serialization.h"
@@ -272,9 +274,83 @@ namespace backend {
 			// it is not a special runtime type => let somebody else try
 			return nullptr;
 		}
+
+		TypeInfo* postProcessType(ConversionContext& context, const TypePtr& type, TypeInfo& info) {
+			static const std::string KEY = "_allscale_array_serializer_template";
+			auto noChange = &info;
+
+			// only interested in fixed-sized arrays ..
+			if (!insieme::core::lang::isFixedSizedArray(type)) return noChange;
+
+			// ... that are serializable
+			if (!core::isSerializable(type)) return noChange;
+
+			auto& converter = context.getConverter();
+			auto& fragmentManager = *converter.getFragmentManager();
+
+			// get the code fragment defining the serializer template for fixed-sized arrays
+			auto serializer = fragmentManager.getFragment(KEY);
+			if (!serializer) {
+				// create the serializer
+				auto code = converter.getCNodeManager()->create<backend::c_ast::OpaqueCode>(
+						"template<typename T>\n"
+						"struct is_allscale_fixed_sized_array : public std::false_type {};\n"
+						"\n"
+						"template<typename T>\n"
+						"struct to_std_array_type;\n"
+						"\n"
+						"namespace allscale {\n"
+						"    namespace utils {\n"
+						"        template<typename T>\n"
+						"        struct serializer<T,typename std::enable_if<is_allscale_fixed_sized_array<T>::value,void>::type> {\n"
+						"            using array_t = typename to_std_array_type<T>::type;\n"
+						"            static T load(ArchiveReader& a) {\n"
+						"                return *reinterpret_cast<T*>(&serializer<array_t>::load(a)[0]);\n"
+						"            }\n"
+						"            static void store(ArchiveWriter& a, const T& value) {\n"
+						"                serializer<array_t>::store(a,reinterpret_cast<const array_t&>(value));\n"
+						"            }\n"
+						"        };\n"
+						"    }\n"
+						"}\n"
+				);
+				serializer = backend::c_ast::CCodeFragment::createNew(converter.getFragmentManager(),code);
+
+				// add include
+				serializer->addInclude("allscale/utils/serializer.h");
+
+				fragmentManager.bindFragment(KEY,serializer);
+			}
+
+			// add load/store functions
+			auto fragment = info.definition.as<backend::c_ast::CCodeFragmentPtr>();
+			fragment->addDependency(serializer);
+
+			// get array type name
+			auto array_type = backend::c_ast::toC(info.lValueType);
+
+			// get element type
+			auto element_type = insieme::core::lang::getArrayElementType(type);
+			auto element_info = converter.getTypeManager().getTypeInfo(context,element_type);
+			auto element_name = backend::c_ast::toC(element_info.lValueType);
+
+			// get size info
+			auto size = toString(*insieme::core::lang::getArraySize(type));
+
+			// instantiate type traits
+			fragment->appendCode(converter.getCNodeManager()->create<backend::c_ast::OpaqueCode>(
+				"template<> struct is_allscale_fixed_sized_array<" + array_type + "> : public std::true_type {};\n"
+				"template<> struct to_std_array_type<" + array_type + "> { using type = std::array<" + element_name + "," + size + ">; };\n"
+			));
+
+			// done
+			return &info;
+		}
 	}
 
 	TypeHandler AllScaleTypeHandler = &handleType;
+
+	TypePostprocessor AllScaleTypePostprocessor = &postProcessType;
 
 } // end namespace backend
 } // end namespace compiler

@@ -56,6 +56,9 @@ namespace backend {
 			// register support for additional types
 			converter.getTypeManager().addTypeHandler(AllScaleTypeHandler);
 
+			// and type post-processor
+			converter.getTypeManager().addTypePostprocessor(AllScaleTypePostprocessor);
+
 			// register support for additional operators
 			addRuntimeSpecificOps(manager,converter.getFunctionManager().getOperatorConverterTable());
 

@@ -6,8 +6,10 @@
 #include "insieme/core/ir.h"
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/checks/full_check.h"
+#include "insieme/core/lang/array.h"
 #include "insieme/core/lang/basic.h"
 #include "insieme/core/lang/cpp_std.h"
+#include "insieme/core/lang/enum.h"
 #include "insieme/core/lang/reference.h"
 #include "insieme/core/transform/node_replacer.h"
 #include "insieme/core/analysis/default_members.h"
@@ -371,6 +373,10 @@ namespace core {
 			if (basic.isReal8(type)) return true;
 			if (basic.isReal16(type)) return true;
 
+			// test for fixed sized array types
+			if (lang::isFixedSizedArray(type)) {
+				return isSerializable(lang::getArrayElementType(type));
+			}
 
 			// test C++ std language containers
 			if (lang::isStdString(type)) return true;
@@ -398,6 +404,9 @@ namespace core {
 			// check for load and store function
 			return hasLoadFunction(tagType) && hasStoreFunction(tagType);
 		}
+
+		// test enumeration types (which is a special tuple type)
+		if (lang::isEnum(type)) return true;
 
 		// everything else is not serializable
 		return false;
