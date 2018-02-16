@@ -19,8 +19,7 @@ namespace analysis {
 
 	DataItemAccessesOpt getDataItemAccesses(AnalysisContext& ctx, const StatementPtr& stmt) {
 		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
-		auto result = hat_hs_data_item_accesses(ctx.getHaskellContext(), node_hs);
-		return ctx.unwrapResult(result);
+		return ctx.runAnalysis<DataItemAccesses*>(hat_hs_data_item_accesses, node_hs);
 	}
 
 } // end namespace analysis

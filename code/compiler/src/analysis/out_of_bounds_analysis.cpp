@@ -1,5 +1,7 @@
 #include "allscale/compiler/analysis/out_of_bounds_analysis.h"
 
+#include "insieme/analysis/cba/common/failure.h"
+
 #include "insieme/core/lang/reference.h"
 #include "insieme/core/inspyer/inspyer.h"
 
@@ -15,6 +17,7 @@ extern "C" {
 }
 
 using namespace insieme;
+using namespace insieme::analysis::cba;
 using namespace insieme::analysis::cba::haskell;
 
 namespace allscale {
@@ -26,10 +29,9 @@ namespace analysis {
 		assert_true(refext.isCallOfRefDeref(call));
 
 		auto call_hs = ctxt.resolveNodeAddress(call);
-		auto result = hat_out_of_bounds(ctxt.getHaskellContext(), call_hs);
-		auto value = ctxt.unwrapResult(result);
-		assert_true(value);
-		return *value;
+		auto result = ctxt.runAnalysis<OutOfBoundsResult>(hat_out_of_bounds, call_hs);
+		if(!result) throw AnalysisFailure("Timeout in Out-Of-Bounds Analysis");
+		return *result;
 	}
 
 } // end namespace analysis

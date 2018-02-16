@@ -1,7 +1,8 @@
 #include "allscale/compiler/analysis/data_requirement.h"
 
-#include "insieme/analysis/cba/haskell/context.h"
 #include "insieme/analysis/cba/common/set.h"
+#include "insieme/analysis/cba/common/failure.h"
+#include "insieme/analysis/cba/haskell/context.h"
 
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/printer/pretty_printer.h"
@@ -255,8 +256,9 @@ namespace analysis {
 
 	boost::optional<DataRequirements> getDataRequirements(AnalysisContext& ctx, const StatementPtr& stmt) {
 		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
-		auto result = hat_hs_data_requirements(ctx.getHaskellContext(), node_hs);
-		return ctx.unwrapResult(result);
+		auto result = ctx.runAnalysis<DataRequirements*>(hat_hs_data_requirements, node_hs);
+		if(!result) throw insieme::analysis::cba::AnalysisFailure("Timeout in Data Requirements Analysis");
+		return *result;
 	}
 
 } // end namespace analysis
