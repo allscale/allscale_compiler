@@ -338,6 +338,37 @@ namespace core {
 			return builder.memberFunction(false,FUN_NAME_STORE,impl);
 		}
 
+		TypePtr getThisType(const TagTypeBindingPtr& binding) {
+			return core::lang::ReferenceType::create(
+					binding->getTag(),
+				false,false,core::lang::ReferenceType::Kind::Plain
+			);
+		}
+
+		LambdaExprPtr buildDefaultDefaultConstructor(const TagTypeBindingPtr& binding) {
+			// create this type
+			auto thisType = getThisType(binding);
+			// create the new default constructor
+			auto record = binding->getRecord().isa<StructPtr>();
+			return core::analysis::buildDefaultDefaultConstructor(thisType,record->getParents(),record->getFields());
+		}
+
+		MemberFunctionPtr buildDefaultCopyAssign(const TagTypeBindingPtr& binding) {
+			// create this type
+			auto thisType = getThisType(binding);
+			// create the new default copy assignment
+			auto record = binding->getRecord().isa<StructPtr>();
+			return core::analysis::buildDefaultCopyAssignOperator(thisType,record->getParents(),record->getFields());
+		}
+
+		MemberFunctionPtr buildDefaultMoveAssign(const TagTypeBindingPtr& binding) {
+			// create this type
+			auto thisType = getThisType(binding);
+			// create the new default move assignment
+			auto record = binding->getRecord().isa<StructPtr>();
+			return core::analysis::buildDefaultMoveAssignOperator(thisType,record->getParents(),record->getFields());
+		}
+
 	}
 
 
@@ -461,6 +492,30 @@ namespace core {
 		// if one of those could not be created => fail conversion (the ctor is optional)
 		if (!load || !store) return notSerializable;
 
+		// get a dummy-tag-type for the next steps
+		IRBuilder builder(binding.getNodeManager());
+		TagTypeBindingMap bindings;
+		bindings[binding->getTag()] = binding->getRecord();
+		auto dummyTagType = builder.tagType(binding->getTag(),builder.tagTypeDefinition(bindings));
+
+		// get a new default constructor if necessary
+		LambdaExprPtr newDefaultCtor;
+		if (!core::analysis::hasDefaultConstructor(dummyTagType)) {
+			newDefaultCtor = buildDefaultDefaultConstructor(binding);
+		}
+
+		// get a new copy assignment operator if needed
+		MemberFunctionPtr newCopyAssignment;
+		if (!core::analysis::hasCopyAssignment(dummyTagType)) {
+			newCopyAssignment = buildDefaultCopyAssign(binding);
+		}
+
+		// get a new move assignment operator if needed
+		MemberFunctionPtr newMoveAssignment;
+		if (!core::analysis::hasMoveAssignment(dummyTagType)) {
+			newMoveAssignment = buildDefaultMoveAssign(binding);
+		}
+
 		// add those new function
 		auto& mgr = binding->getNodeManager();
 		std::map<NodeAddress,NodePtr> replacements;
@@ -471,15 +526,18 @@ namespace core {
 			replacements[TagTypeBindingAddress(res)->getRecord()->getStaticMemberFunctions()] = StaticMemberFunctions::get(mgr,staticMemberFuns);
 		}
 
-		if(ctor) {
+		if(ctor || newDefaultCtor) {
 			auto ctors = record->getConstructors()->getChildList();
-			ctors.push_back(ctor);
+			if (ctor) ctors.push_back(ctor);
+			if (newDefaultCtor) ctors.push_back(newDefaultCtor);
 			replacements[TagTypeBindingAddress(res)->getRecord()->getConstructors()] = Expressions::get(mgr,ctors);
 		}
 
 		{
 			auto memberFuns = record->getMemberFunctions()->getChildList();
 			memberFuns.push_back(store);
+			if (newCopyAssignment) memberFuns.push_back(newCopyAssignment);
+			if (newMoveAssignment) memberFuns.push_back(newMoveAssignment);
 			replacements[TagTypeBindingAddress(res)->getRecord()->getMemberFunctions()] = MemberFunctions::get(mgr,memberFuns);
 		}
 
@@ -496,7 +554,7 @@ namespace core {
 		// skip if it is already serializable
 		if (isSerializable(type)) return type;
 
-		// if not serializable, we can only make sturcts serializable
+		// if not serializable, we can only make structs serializable
 		auto tagType = type.isa<TagTypePtr>();
 		if (!tagType || !tagType->isStruct()) return notSerializable;
 
