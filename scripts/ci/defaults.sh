@@ -23,6 +23,9 @@ export IRT_NUM_WORKERS="3"
 # Number of AllScale Runtime Workers.
 export NUM_WORKERS="3"
 
+# Enable / disable HPX networking.
+export HPX_WITH_NETWORKING="${HPX_WITH_NETWORKING:-OFF}"
+
 # Are we running on our CI server?
 if [ -n "$JENKINS_HOME" ]; then
     export RUNNING_ON_CI_SERVER=${RUNNING_ON_CI_SERVER:-true}

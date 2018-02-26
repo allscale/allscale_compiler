@@ -12,7 +12,7 @@ cd "$BUILD_DIR"
 cmake "$WORKSPACE/code" \
 	-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 	-DCMAKE_CXX_FLAGS="-Werror" \
-	-DHPX_WITH_NETWORKING=OFF \
+	-DHPX_WITH_NETWORKING="$HPX_WITH_NETWORKING" \
 	-DHASKELL_C_COMPILER="$BUILD_DIR/third_party/gcc/bin/gcc"
 
 # Allow passing specific make targets to be compiled as well as everything
