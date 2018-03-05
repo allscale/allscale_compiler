@@ -211,7 +211,9 @@ namespace analysis {
 				EXPECT_TRUE(!lhs.empty() && lhs == rhs)
 					<< *annotations::getLocation(call) << std::endl
 					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
-					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl
+					<< "LHS address " << call.getArgument(0) << std::endl
+					<< "RHS address " << call.getArgument(1) << std::endl;
 
 			} else if (name == "cba_expect_ne_int") {
 				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
@@ -221,7 +223,9 @@ namespace analysis {
 				EXPECT_TRUE(lhs != rhs)
 					<< *annotations::getLocation(call) << std::endl
 					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
-					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl
+					<< "LHS address " << call.getArgument(0) << std::endl
+					<< "RHS address " << call.getArgument(1) << std::endl;
 
 			} else if (name == "cba_expect_may_eq_int") {
 				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
@@ -232,7 +236,9 @@ namespace analysis {
 				EXPECT_TRUE(lhs.isUniversal() || rhs.isUniversal() || inter.size() > 0)
 					<< *annotations::getLocation(call) << std::endl
 					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
-					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl
+					<< "LHS address " << call.getArgument(0) << std::endl
+					<< "RHS address " << call.getArgument(1) << std::endl;
 
 			} else if (name == "cba_expect_one_of_int") {
 				ArithmeticSet lhs = getValue(ctxt,call.getArgument(0));
@@ -242,7 +248,9 @@ namespace analysis {
 				EXPECT_TRUE(lhs == rhs)
 					<< *annotations::getLocation(call) << std::endl
 					<< "LHS ArithmeticSet evaluates to " << lhs << std::endl
-					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl;
+					<< "RHS ArithmeticSet evaluates to " << rhs << std::endl
+					<< "LHS address " << call.getArgument(0) << std::endl
+					<< "RHS address " << call.getArgument(1) << std::endl;
 
 			// debugging
 			} else if (name == "cba_print_code") {
