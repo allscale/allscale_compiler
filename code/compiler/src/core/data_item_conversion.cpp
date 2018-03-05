@@ -122,6 +122,15 @@ namespace core {
 					// apply replacement
 					return (replacements.empty()) ? call : core::transform::replaceAll(mgr,replacements);
 				}
+
+				// we might need to fix some declarations
+			} else if(const auto decl = node.isa<core::DeclarationPtr>()) {
+				const auto& declType = decl->getType();
+				const auto& init = decl->getInitialization();
+				// in case we replaced a constructor call above and thus converted something of ref<> type to a value, we have to surround the initialization with a ref_temp_init
+				if(ext.isCallOfCreateDataItem(init) && core::transform::materialize(init->getType()) != declType) {
+					return builder.declaration(declType, builder.refTemp(init));
+				}
 			}
 
 			// everything else, we are not interested
@@ -135,6 +144,8 @@ namespace core {
 				removeDataItemMark(type);
 			}
 		},true,true);
+
+		assert_correct_ir(res);
 
 		// done
 		return res;
