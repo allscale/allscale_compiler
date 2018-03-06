@@ -72,7 +72,7 @@ instance Solver.Lattice DataRequirements where
         -- we are filtering out read-only requirement if there is an equal read/write requirement
         p d | accessMode d == ReadOnly = not $ BSet.member (d { accessMode = ReadWrite }) sum
         p _ = True
-    
+
     print (DataRequirements BSet.Universe) = "Universe"
     print (DataRequirements b)             = "{" ++ (intercalate "," $ printRequirement <$> BSet.toList b) ++ "}"
 
@@ -133,7 +133,7 @@ dataRequirements addr = case I.getNode addr of
 
             DataRequirements bodyRequirements  = (Solver.get a bodyDepVar)
 
-            val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)  
+            val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)
                   then BSet.Universe
                   else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )
 
@@ -158,7 +158,7 @@ dataRequirements addr = case I.getNode addr of
                 accessMode  = mode
             }
 
-            mode = case () of 
+            mode = case () of
                 _ | Sema.callsImplicitCopyConstructor addr -> ReadOnly
                   | Sema.callsImplicitMoveConstructor addr -> ReadWrite
                   | otherwise -> error "Unsupported implicit constructor call"
@@ -193,7 +193,7 @@ dataRequirements addr = case I.getNode addr of
     -- check user defined read requirement
     _ | isUserdefinedWriteRequirement $ I.node addr -> userDefinedRequirement ReadWrite
 
-    -- default handling through execution tree value analysis 
+    -- default handling through execution tree value analysis
     _ -> executionTreeValue analysis addr
 
   where
@@ -236,7 +236,7 @@ dataRequirements addr = case I.getNode addr of
     -- an operator handler handling known no-effect operators
     noAccessHandler = OperatorHandler cov dep val
       where
-        cov a = any (Q.isBuiltin a) ["ref_cast","ref_kind_cast"]
+        cov = isKnownSideEffectFree
         dep _ _ = []
         val _ _ = Solver.bot
 
@@ -246,7 +246,7 @@ dataRequirements addr = case I.getNode addr of
     --   and write accesses if passt as non-const value
     interceptedAccessHandler = OperatorHandler cov dep val
       where
-        cov a = (Q.isLiteral a) && (not $ Q.isaBuiltin a)
+        cov a = (not $ isKnownSideEffectFree a) && (Q.isLiteral a) && (not $ Q.isaBuiltin a)
         dep _ _ = Solver.toVar <$> referenceVars
         val _ = dataRequirements
 
@@ -289,7 +289,7 @@ dataRequirements addr = case I.getNode addr of
                     accessMode  = mode
                 }
 
-                mode = if Q.isConstReference p then ReadOnly else ReadWrite
+                mode = if not $ Q.isConstReference p then ReadWrite else ReadOnly
 
     -- user defined requirements --
     userRequirements = getUserdefinedRequirements addr
@@ -321,6 +321,19 @@ dataRequirements addr = case I.getNode addr of
     idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis
     varId = idGen addr
 
+    isKnownSideEffectFree a =
+        any (Q.isBuiltin a) ["ref_cast","ref_kind_cast"] ||
+        any (Q.isOperator a) [
+            "IMP_std_colon__colon_array::IMP__operator_subscript_",
+            "IMP_std_colon__colon_array::IMP_at",
+            "IMP_std_colon__colon_array::IMP_begin",
+            "IMP_std_colon__colon_array::IMP_end",
+            "IMP_std_colon__colon_vector::IMP__operator_subscript_",
+            "IMP_std_colon__colon_vector::IMP_at",
+            "IMP_std_colon__colon_vector::IMP_begin",
+            "IMP_std_colon__colon_vector::IMP_end"
+        ]
+
 
 -- tests whether a given IR structure is a user-defined no-more-dependency
 isUserdefinedNoRequirement :: I.Tree -> Bool
@@ -350,4 +363,3 @@ isUserdefinedRequirement a =
 getUserdefinedRequirements :: NodeAddress -> [NodeAddress]
 getUserdefinedRequirements c | Q.getNodeType c == I.CompoundStmt = filter (isUserdefinedRequirement . I.node) $ I.children c
 getUserdefinedRequirements _ = []
-

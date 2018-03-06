@@ -60,11 +60,61 @@ int main() {
 		transfers.size();
 	}
 
+	// creating an iterator should be for free too
+	{
+		cba_expect_data_requirements("{}");
+		transfers[pos].begin();
+		transfers[pos].end();
+	}
+
+	// also creating copies of iterators should be for free
+	{
+		cba_expect_data_requirements("{}");
+		auto a = transfers[pos].begin();
+		auto b = transfers[pos].end();
+	}
+
 	// clearing an element should be a dependency
 	{
 		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(v2, type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3)), ref_kind_cast(v1, type_lit(cpp_ref))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RW }}");
 		transfers[pos].clear();
 	}
+
+//	// reading values should cause a read dependency
+	// TODO: known bug, fix this when needed
+//	{
+//		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(v2, type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3)), ref_kind_cast(v1, type_lit(cpp_ref))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+//		std::vector<Particle> copy;
+//		auto& in = transfers[pos];
+//		copy.insert(copy.end(),in.begin(),in.end());
+//
+//		cba_debug_requirements();
+//	}
+
+	// test a replacement variant for moving particles
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(v2, type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3)), ref_kind_cast(v1, type_lit(cpp_ref))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+		std::vector<Particle> copy;
+		auto& in = transfers[pos];
+
+		// the current replacement for moving particles
+		copy.reserve(in.size());
+		for(std::size_t i=0; i<in.size(); i++) {
+			copy.push_back(in[i]);
+		}
+	}
+
+	// and a high-performance version
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(v2, type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3)), ref_kind_cast(v1, type_lit(cpp_ref))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+		std::vector<Particle> copy;
+		auto& in = transfers[pos];
+
+		// the current replacement for moving particles
+		copy.resize(in.size());
+		std::memcpy(&copy[0],&in[0],sizeof(Particle)*in.size());
+	}
+
 
 	// also adding a particle
 	{
@@ -131,7 +181,6 @@ int main() {
 									  "Requirement { ref_kind_cast(ref_kind_cast(v3, type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_3)), ref_kind_cast(v1, type_lit(cpp_ref))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RW }}");
 		importParticles(cells[pos],pos,transfers);
 	}
-
 
 	return 0;
 }

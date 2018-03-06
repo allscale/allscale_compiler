@@ -154,7 +154,7 @@ elementReferenceValue addr = case Q.getNodeType addr of
 
     refForwardHandler = OperatorHandler cov dep val
       where
-        cov a = any (Q.isBuiltin a) [ 
+        cov a = any (Q.isBuiltin a) [
                 "ref_reinterpret",
                 "ref_member_access",
                 "ref_component_access",
@@ -165,7 +165,9 @@ elementReferenceValue addr = case Q.getNodeType addr of
             ] ||
             any (Q.isOperator a) [
                 "IMP_std_colon__colon_array::IMP__operator_subscript_",
-                "IMP_std_colon__colon_array::IMP_at"
+                "IMP_std_colon__colon_array::IMP_at",
+                "IMP_std_colon__colon_vector::IMP_begin",
+                "IMP_std_colon__colon_vector::IMP_end"
             ]
         dep _ _ = [Solver.toVar refVar]
         val _ a = Solver.get a refVar
