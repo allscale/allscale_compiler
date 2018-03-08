@@ -45,7 +45,6 @@ import System.Timeout
 import System.Environment
 
 import Insieme.Analysis.Entities.FieldIndex (SimpleFieldIndex)
-import Insieme.Inspire.Visit (foldTreePrune)
 import qualified Data.ByteString as BS
 import qualified Insieme.Analysis.Framework.PropertySpace.ComposedValue as ComposedValue
 import qualified Insieme.Analysis.Reference as Ref
