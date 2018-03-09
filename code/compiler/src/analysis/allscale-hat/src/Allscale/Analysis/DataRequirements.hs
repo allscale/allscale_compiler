@@ -27,7 +27,7 @@ import Insieme.Analysis.Framework.ExecutionTree
 import Insieme.Analysis.Framework.PropertySpace.ComposedValue (isValue,toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), symbolicValue)
-import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Solver as Solver
 
 import qualified Insieme.Analysis.Utils.CppSemantic as Sema
 

@@ -19,7 +19,7 @@ import qualified Allscale.Analysis.Diagnostics as Diag
 import qualified Allscale.Analysis.Entities.DataRange as DR
 import qualified Allscale.Analysis.OutOfBounds as OOB
 import qualified Data.Set as Set
-import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Solver as Solver
 import qualified Insieme.Context as Ctx
 import qualified Insieme.Inspire as IR
 

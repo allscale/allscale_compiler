@@ -33,7 +33,7 @@ import Insieme.Analysis.Framework.Utils.OperatorHandler
 import qualified Insieme.Analysis.Entities.DataPath as DP
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 import qualified Insieme.Analysis.Reference as Ref
-import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Solver as Solver
 
 -- * Out Of Bounds
 

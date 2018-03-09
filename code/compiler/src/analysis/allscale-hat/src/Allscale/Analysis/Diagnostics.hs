@@ -22,7 +22,7 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toValue)
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.Reference
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
-import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Solver as Solver
 
 import Allscale.Analysis.DataItemElementReference
 import Allscale.Analysis.DataRequirements

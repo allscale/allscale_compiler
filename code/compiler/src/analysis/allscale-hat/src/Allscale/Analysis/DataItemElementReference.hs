@@ -26,7 +26,7 @@ import Insieme.Analysis.Framework.PropertySpace.ComposedValue (toComposed, toVal
 import Insieme.Analysis.Framework.Utils.OperatorHandler
 import Insieme.Analysis.SymbolicValue (SymbolicValueSet(..), SymbolicValueLattice, symbolicValue, genericSymbolicValue)
 import Insieme.Analysis.Reference (isMaterializingDeclaration, isMaterializingCall)
-import qualified Insieme.Analysis.Solver as Solver
+import qualified Insieme.Solver as Solver
 import qualified Insieme.Analysis.Framework.PropertySpace.ValueTree as ValueTree
 
 
