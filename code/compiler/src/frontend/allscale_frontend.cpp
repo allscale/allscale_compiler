@@ -14,8 +14,9 @@ namespace frontend {
 	void configureConversionJob(insieme::frontend::ConversionJob& job) {
 		job.addInterceptedHeaderDir(getAllscaleAPICoreIncludeDir() + getAllscaleAPIInterceptionIncludePath());
 		job.addInterceptedHeaderDir(getAllscaleAPICoreIncludeDir() + getAllscaleAPIDataItemsInterceptionIncludePath());
-		job.addInterceptedHeaderDir(getAllscaleAPIUtilsIncludeDir()); // XXX temporary fix necessary to compile review programs
+		job.addInterceptedHeaderDir(getAllscaleAPIUtilsIncludeDir());
 		job.addInterceptionWhitelistEntry("allscale/utils/vector.h");
+		job.addInterceptionWhitelistEntry("allscale/api/user/data/detail/adaptive_grid_detail.h");
 		job.setStandard(insieme::frontend::ConversionSetup::Standard::Cxx14);
 		job.registerDefaultExtensions();
 		job.registerFrontendExtension<AllscaleExtension, insieme::frontend::extensions::InterceptorExtension>();
