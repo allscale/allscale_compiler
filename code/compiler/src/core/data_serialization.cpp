@@ -181,24 +181,11 @@ namespace core {
 				valueDecls.push_back(utils::buildPassByValueDeclaration(call));
 			}
 
-			// add final return statement
+			// the return (and this) type
 			auto retType = binding->getTag();
-			auto refRetType = builder.refType(retType);
-			stmts.push_back(
-					builder.returnStmt(
-						builder.initExpr(
-								core::lang::buildRefDecl(refRetType),
-								valueDecls
-						),
-						refRetType
-					)
-			);
 
-			// create body
-			auto body = builder.compoundStmt(stmts);
-
-			// assemble store function
-			auto impl = builder.lambdaExpr(retType,{reader},body,"load");
+			// a dummy parameter we will add to a custom generated ctor if we do create one, in order to disambiguate it from other ctors
+			const auto dummyCtorArgumentType = builder.structType("DummyCtorParamType", {});
 
 			// build constructor
 			core::LambdaExprPtr ctor;
@@ -242,23 +229,49 @@ namespace core {
 						}
 					}
 
+					// if we can create a new ctor
 					if(!failed) {
+						// we add a dummy parameter to disambiguate calls
+						ctorVars.push_back(builder.variable(builder.refType(dummyCtorArgumentType), variableId++));
+						ctorParamTypes.push_back(dummyCtorArgumentType);
 						auto ctorType = builder.functionType(ctorParamTypes, defaultCtorType->getReturnType(), core::FunctionKind::FK_CONSTRUCTOR);
-
-						// test whether a ctor with the same signature already existists
-						bool preexisting = false;
-						for(const auto& ctor : record->getConstructors()) {
-							if (*ctor->getType() != *ctorType) continue;
-							preexisting = true;
-							break;
-						}
-
-						if (!preexisting) {
-							ctor = builder.lambdaExpr(ctorType, ctorVars, builder.compoundStmt(body));
-						}
+						ctor = builder.lambdaExpr(ctorType, ctorVars, builder.compoundStmt(body));
 					}
 				}
 			}
+
+			// add final return statement
+			auto refRetType = builder.refType(retType);
+			// if we generated a custom ctor, we create a call to it and also add a dummy argument
+			if(ctor) {
+				// create the dummy variable and add it to the body
+				const auto dummyVar = builder.variable(builder.refType(dummyCtorArgumentType), stmts.size());
+				stmts.push_back(builder.declarationStmt(dummyVar, builder.callExpr(core::analysis::getDefaultConstructor(dummyCtorArgumentType),
+				                                                                   core::lang::buildRefDecl(builder.refType(dummyCtorArgumentType)))));
+				// now create the return statement with the constructor call, also passing the dummy variable
+				valueDecls.insert(valueDecls.begin(), builder.declaration(builder.refType(refRetType), core::lang::buildRefDecl(refRetType)));
+				valueDecls.push_back(builder.declaration(builder.refType(dummyCtorArgumentType), builder.deref(dummyVar)));
+				stmts.push_back(
+					builder.returnStmt(
+						builder.callExpr(refRetType, ctor, valueDecls),
+						refRetType
+					)
+				);
+
+				// otherwise we use an init expression, since this struct can be initialized that way
+			} else {
+				stmts.push_back(
+					builder.returnStmt(
+						builder.initExpr(core::lang::buildRefDecl(refRetType), valueDecls),
+						refRetType
+					)
+				);
+			}
+
+			// create body
+			auto body = builder.compoundStmt(stmts);
+			// assemble load function
+			auto impl = builder.lambdaExpr(retType,{reader},body,"load");
 
 			// done
 			return { builder.staticMemberFunction(FUN_NAME_LOAD,impl), ctor };
