@@ -23,7 +23,6 @@ target_link_libraries(compiler
 if(NOT MSVC)
 	add_subdirectory(src/analysis/allscale-hat)
 	link_directories(${CMAKE_CURRENT_BINARY_DIR}/src/analysis/allscale-hat)
-	add_dependencies(compiler allscale_hat)
 	target_link_libraries(compiler ${allscale_hat})
 endif()
 
