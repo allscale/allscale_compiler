@@ -27,13 +27,15 @@ set(cabal ${haskell_env} ${CABAL_EXECUTABLE})
 set(runhaskell ${haskell_env} runhaskell)
 set(cabal_file ${CMAKE_CURRENT_SOURCE_DIR}/allscale-hat.cabal)
 
-add_custom_target(allscale_hat
+add_custom_target(allscale_hat DEPENDS liballscale-hat.so)
+
+add_custom_command(
+	OUTPUT liballscale-hat.so
+
 	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project -v1 --enable-tests flib:allscale-hat
 
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-
-	BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/liballscale-hat.so
 
 	DEPENDS insieme_hat
 
