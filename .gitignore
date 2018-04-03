@@ -4,4 +4,11 @@ build/
 *.swp
 *~
 .\#*
+.dir-locals.el
+
+# Various Tags formats
 tags
+TAGS
+GPATH
+GRTAGS
+GTAGS
