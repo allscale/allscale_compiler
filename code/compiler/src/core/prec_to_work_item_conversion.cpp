@@ -23,6 +23,9 @@
 #include "allscale/compiler/analysis/data_requirement.h"
 #include "allscale/compiler/env_vars.h"
 
+#include <fstream>
+#include <ctime>
+
 namespace allscale {
 namespace compiler {
 namespace core {
@@ -1287,6 +1290,8 @@ namespace core {
 
 		ExpressionPtr integrateDataRequirements(const ConversionConfig& config, const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
 			static const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
+			static const char* dump_stats = std::getenv(ALLSCALE_DUMP_DETAILED_ANALYSIS_STATS);
+                        std::fstream stats_file;
 
 			// this feature may be skipped for now
 			if(std::getenv(ALLSCALE_SKIP_ANALYSIS)) {
@@ -1314,6 +1319,9 @@ namespace core {
 			auto desc = backend::WorkItemDescription::fromIR(workItemDesc);
 			int counter = 0;
 			for(auto& variant : desc.getVariants()) {
+                                std::clock_t c_start, c_end;
+                                const string stats_postfix = "pareg" + std::to_string(precIndex) + "_var" + std::to_string(counter);
+
 				counter++;
 
 				// produce an id for this variant
@@ -1330,9 +1338,20 @@ namespace core {
 					continue;
 				}
 
+                                c_start = std::clock();
+
 				// obtaining data requirements for the body of this variant
 				analysis::AnalysisContext context;
 				auto requirements = analysis::getDataRequirements(context,target);
+
+                                if(dump_stats) {
+                                        c_end = std::clock();
+                                        double cputime = ((double) (c_end - c_start)) / CLOCKS_PER_SEC;
+
+                                        stats_file.open(dump_stats, std::ios_base::app);
+                                        stats_file << "get_datareq/cpu_sec/" << stats_postfix << ";" << cputime << std::endl;
+                                        stats_file.close();
+                                }
 
 				// integrate data requirement into variant
 				if (requirements && !requirements->isUniverse()) {
@@ -1384,12 +1403,30 @@ namespace core {
 				}
 
 				context.dumpStatistics();
+                                if(dump_stats) {
+                                        context.dumpStatisticsToFile(stats_postfix, dump_stats);
+                                }
 
 				// run diagnosis
+                                c_start = std::clock();
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
+                                if(dump_stats) {
+                                        std::clock_t c_end = std::clock();
+                                        double cputime = ((double) (c_end - c_start)) / CLOCKS_PER_SEC;
+
+                                        stats_file.open(dump_stats, std::ios_base::app);
+                                        stats_file << "run_diag/cpu_sec/" << stats_postfix << ";" << cputime << std::endl;
+                                        stats_file.close();
+                                }
 				report.addMessages(precCall, variantId, issues);
 
 				context.dumpStatistics();
+                                if(dump_stats) {
+                                        context.dumpStatisticsToFile(stats_postfix + "_diag", dump_stats);
+
+                                        std::cerr << "Wrote machine readable solver stats to file: " << dump_stats << std::endl;
+                                }
+
 
 				// integrate data item access instrumentation
 				if (config.checkDataItemAccesses) {
@@ -1418,6 +1455,8 @@ namespace core {
 				}
 
 			}
+
+                        stats_file.close();
 
 			// update work item description
 			auto newWorkItemDesc = desc.toIR(mgr);
