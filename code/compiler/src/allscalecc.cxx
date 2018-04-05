@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 	std::string backendString;
 
 	// Allows the AllScale driver to dump an input code as JSON/binary IR.
-	insieme::frontend::path dumpJSON, dumpBinaryIR;
+	insieme::frontend::path dumpJSON, dumpBinaryIR, dumpBackendIR;
 
 	allscale::compiler::core::ConversionConfig conversionConfig;
 
@@ -63,6 +63,7 @@ int main(int argc, char** argv) {
 	parser.addParameter(",O",        opt_level,     0u,                                     "optimization level");
 	parser.addParameter("dump-json", dumpJSON,      insieme::frontend::path(),              "dump intermediate representation (JSON)");
 	parser.addParameter("dump-binary-ir", dumpBinaryIR, insieme::frontend::path(),          "dump intermediate representation (binary)");
+	parser.addParameter("dump-backend-ir", dumpBackendIR, insieme::frontend::path(),        "dump backend intermediate representation");
 	parser.addParameter("backend",   backendString, std::string(""),                        "backend selection (for compatibility reasons - ignored)");
 	parser.addFlag("check-data-item-accesses",      conversionConfig.checkDataItemAccesses, "enables data item access instrumentation (debugging)");
 	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
@@ -220,6 +221,14 @@ int main(int argc, char** argv) {
 
 	// report time usage
 	std::cout << "Converted to AllScale Runtime code in " << timer.step() << "s\n";
+
+	// dump IR code after processing in core
+	if(!dumpBackendIR.empty()) {
+		std::cout << "Dumping backend intermediate representation ... " << std::flush;
+		std::ofstream out(dumpBackendIR.string());
+		out << core::printer::PrettyPrinter(program, core::printer::PrettyPrinter::PRINT_DEREFS);
+		std::cout << timer.step() << "s\n";
+	}
 
 	// Step 5: convert transformed IR to target code
 	std::cout << "Producing target code ... " << std::flush;
