@@ -3,6 +3,8 @@
 
 #include "insieme/utils/name_mangling.h"
 
+#include "insieme/annotations/c/include.h"
+
 #include "insieme/core/ir.h"
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/checks/full_check.h"
@@ -437,6 +439,9 @@ namespace core {
 			// -- AllScale Backend Types --
 
 			if (backend::isDataItemReference(type)) return true;
+
+			// all intercepted types are assumed to be serializable
+			if (insieme::annotations::c::hasIncludeAttached(type)) return true;
 		}
 
 		// if it is a user defined type

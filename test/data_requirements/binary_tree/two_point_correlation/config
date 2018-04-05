@@ -1,1 +1,2 @@
 env="NO_TIME_IN_OUTPUT=1"
+compFlags[insiemecc_seq_cpp_compile]="${compFlags[insiemecc_seq_cpp_compile]} -ftemplate-depth=1200"
