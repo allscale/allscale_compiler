@@ -47,7 +47,7 @@ Point<Dims> getRandomPoint(const Point<Dims>& low, const Point<Dims>& high) {
 }
 
 template<std::size_t Dims>
-struct BoundingBox : public allscale::utils::trivially_serializable {
+struct BoundingBox {
 	Point<Dims> low;
 	Point<Dims> high;
 
