@@ -80,8 +80,8 @@ namespace detail {
 		{"allscale::api::core::prec", 2, mapPrecFun},
 		{"allscale::api::core::prec", 3, mapPrecDirect},
 		// user defined data requirements
-		{"allscale::api::core::sema::needs_read_access", SimpleCallMapper("data_item_read_requirement")},
-		{"allscale::api::core::sema::needs_write_access", SimpleCallMapper("data_item_write_requirement")},
+		{"allscale::api::core::sema::needs_read_access", RequirementMapper("data_item_read_requirement")},
+		{"allscale::api::core::sema::needs_write_access", RequirementMapper("data_item_write_requirement")},
 		{"allscale::api::core::sema::no_more_dependencies", SimpleCallMapper("data_item_no_dependencies")},
 	};
 
@@ -714,6 +714,13 @@ namespace detail {
 		// here we 'emulate' a fun in between
 		auto funRes = doFunConstructionMapping(exprInfo.clangType, exprInfo.locStart, exprInfo.args[0], exprInfo.args[1], exprInfo.args[2], exprInfo.converter);
 		return lang::buildPrec(exprInfo.converter.getIRBuilder().tupleExpr(derefOrDematerialize(funRes)));
+	}
+
+	// RequirementMapper
+	insieme::core::ExpressionList RequirementMapper::postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args, insieme::frontend::conversion::Converter& converter) {
+		core::ExpressionList replacementArgs(args);
+		replacementArgs.back() = derefOrDematerialize(replacementArgs.back());
+		return replacementArgs;
 	}
 
 } // end namespace detail

@@ -136,6 +136,15 @@ namespace frontend {
 			virtual core::ExpressionPtr buildDepWrapper(const core::ExpressionPtr&) override;
 		};
 
+		/// For manual requirement functions, we need to deref/dematerialize the region (last) argument
+		class RequirementMapper : public SimpleCallMapper {
+		  public:
+			RequirementMapper(const string& targetIRString) : SimpleCallMapper(targetIRString) {}
+		  protected:
+			virtual core::ExpressionList postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
+				insieme::frontend::conversion::Converter& converter) override;
+		};
+
 
 		/// Utility to map the call to fun
 		core::ExpressionPtr mapToBuildRecFun(const fed::ClangExpressionInfo& exprInfo);
