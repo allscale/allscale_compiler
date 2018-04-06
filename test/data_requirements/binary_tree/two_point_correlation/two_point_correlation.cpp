@@ -132,6 +132,8 @@ namespace {
 template<std::size_t Dims, std::size_t depth>
 void fill(KDTree<Dims,depth>& tree, const Point<Dims>& min, const Point<Dims>& max) {
 
+	using region = StaticBalancedBinaryTreeRegion<depth>;
+
 	struct Args {
 		KDNode<depth> node;
 		Point<Dims> min;
@@ -144,7 +146,7 @@ void fill(KDTree<Dims,depth>& tree, const Point<Dims>& min, const Point<Dims>& m
 			return args.node.isLeaf();
 		},
 		[&tree](const Args& args) {
-			sema::needs_write_access(tree,StaticBalancedBinaryTreeRegion<depth>::subtree(args.node.getSubtreeIndex()));
+			sema::needs_write_access(tree,region::closure(args.node.getSubtreeIndex()));
 			fillSequential(tree,args.node,args.min,args.max);
 		},
 		pick(
@@ -179,7 +181,7 @@ void fill(KDTree<Dims,depth>& tree, const Point<Dims>& min, const Point<Dims>& m
 				);
 			},
 			[&tree](const Args& args, const auto&) {
-				sema::needs_write_access(tree,StaticBalancedBinaryTreeRegion<depth>::subtree(args.node.getSubtreeIndex()));
+				sema::needs_write_access(tree,region::closure(args.node.getSubtreeIndex()));
 				fillSequential(tree,args.node,args.min,args.max);
 			}
 		)
@@ -335,6 +337,9 @@ namespace {
 template<std::size_t Dims, std::size_t depth>
 std::size_t twoPointCorrelation(const KDTree<Dims,depth>& tree, const Point<Dims>& t, distance_t radius) {
 
+	// the kind of region used to address requirements
+	using region = StaticBalancedBinaryTreeRegion<depth>;
+
 	// square the radius (all computation operates on squares)
 	distance_t radiusSquared = radius * radius;
 
@@ -352,7 +357,7 @@ std::size_t twoPointCorrelation(const KDTree<Dims,depth>& tree, const Point<Dims
 			return args.node.isLeaf() || args.node.getLevel() > int(2*depth/3);
 		},
 		[=,&tree](const Args& args) {
-			sema::needs_read_access(tree,StaticBalancedBinaryTreeRegion<depth>::subtree(args.node.getSubtreeIndex()));
+			sema::needs_read_access(tree,region::closure(args.node.getSubtreeIndex()));
 			return twoPointCorrelationSequential(tree,t,radiusSquared,args.node,args.box);
 		},
 		pick(
@@ -389,7 +394,7 @@ std::size_t twoPointCorrelation(const KDTree<Dims,depth>& tree, const Point<Dims
 				return res + fA.get() + fB.get();
 			},
 			[=,&tree](const Args& args, const auto&) {
-				sema::needs_read_access(tree,StaticBalancedBinaryTreeRegion<depth>::subtree(args.node.getSubtreeIndex()));
+				sema::needs_read_access(tree,region::closure(args.node.getSubtreeIndex()));
 				return twoPointCorrelationSequential(tree,t,radiusSquared,args.node,args.box);
 			}
 		)
