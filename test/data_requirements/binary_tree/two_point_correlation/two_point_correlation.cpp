@@ -420,12 +420,15 @@ int main() {
 	auto now = []{ return std::chrono::high_resolution_clock::now(); };
 	auto ms = [](const auto& a, const auto& b) -> long {
 		if (std::getenv("NO_TIME_IN_OUTPUT")) {
-			return 1;
+			return -1;
 		}
 		return std::chrono::duration_cast<std::chrono::milliseconds>(b-a).count();
 	};
 	auto begin = now();
 	auto end = begin;
+
+	// print a test case summary
+	std::cout << "Two-Point-Correlation with 2^" << N << " points in [" << low << "," << high << ")^" << Dims << " space, radius=" << radius << "\n";
 
 	// 1) set up tree
 	std::cout << "Creating ... " << std::flush;
