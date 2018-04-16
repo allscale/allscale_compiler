@@ -13,6 +13,13 @@ function already_installed() {
         return 0
 }
 
+# Check architecture
+readonly supported_arch=(x86_64 ppc64le)
+if ! [[ ${supported_arch[*]} =~ $(arch) ]]; then
+	>&2 echo "Error: Unsupported architecture $(arch)"
+	exit 1
+fi
+
 # Install basic dependencies
 if ! [[ -f /usr/bin/apt-get && -f /usr/bin/dpkg-query ]]; then
 	>&2 echo "Error: Not running on a Debian based distribution."
@@ -23,7 +30,15 @@ elif ! already_installed $(cat "$DIR/system_packages"); then
 fi
 
 # Run installer with default settings to install additional dependencies.
-"$DIR/../../insieme/scripts/dependencies/installer" llvm boost cudd gmp zlib ghc cabal
+case $(arch) in
+	x86_64)
+		"$DIR/../../insieme/scripts/dependencies/installer" llvm boost cudd gmp zlib ghc cabal
+		;;
+
+	ppc64le)
+		"$DIR/../../insieme/scripts/dependencies/installer" llvm boost cudd gmp zlib cabal
+		;;
+esac
 
 # Run third party linker to ensure that all links are up-to-date.
 "$DIR/../../insieme/scripts/dependencies/third_party_linker"
