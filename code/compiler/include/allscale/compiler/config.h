@@ -14,10 +14,8 @@ namespace compiler {
 
 	using std::string;
 
-	const boost::filesystem::path up("../");
-
 	inline const string getAllscaleSourceRootDir() {
-		return (boost::filesystem::path(__FILE__).parent_path() / up / up / up / up).string();
+		return string(ALLSCALE_SOURCE_ROOT); // ALLSCALE_SOURCE_ROOT is supplied by cmake
 	}
 
 	inline const string getAllscaleTestRootDir() {

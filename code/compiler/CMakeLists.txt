@@ -2,6 +2,7 @@
 add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS)
 
 # required for backend part
+add_definitions("-DALLSCALE_SOURCE_ROOT=\"${PROJECT_SOURCE_DIR}/\"")
 add_definitions("-DALLSCALE_BUILD_ROOT=\"${PROJECT_BINARY_DIR}\"")
 
 add_module_library(compiler)
