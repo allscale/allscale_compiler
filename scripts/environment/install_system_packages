@@ -5,4 +5,4 @@ set -eu
 export DIR="$(dirname "$(readlink -f "$0")")"
 
 apt-get update
-apt-get -y --no-upgrade install $(cat "$DIR/system_packages")
+apt-get -y --no-upgrade install $(cat "$DIR/system_packages_$(arch)")

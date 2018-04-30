@@ -1,6 +1,3 @@
-get_filename_component(GMP_LIBRARIES_DIR ${GMP_LIBRARIES} PATH)
-get_filename_component(ZLIB_LIBRARIES_DIR ${ZLIB_LIBRARIES} PATH)
-
 file(GLOB_RECURSE allscale_hat_srcs allscale-hat.cabal src/*.hs)
 
 get_filename_component(CABAL_PATH_ENTRY "${CABAL_EXECUTABLE}" DIRECTORY)
@@ -15,13 +12,7 @@ else()
   set(CABAL_PATH_ENTRY "${THIRD_PARTY_DIR}/cabal/bin/:")
 endif()
 
-set(haskell_env
-  ${CMAKE_COMMAND} -E env
-  "PATH=${CABAL_PATH_ENTRY}${THIRD_PARTY_DIR}/ghc/bin/:$ENV{PATH}"
-  "LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
-  "LD_LIBRARY_PATH=${GMP_LIBRARIES_DIR}:${ZLIB_LIBRARIES_DIR}"
-  "HOME=${INSIEME_HAT_BINARY_DIR}/cabal-home" # reusing insieme-hat cabal-homedir
-)
+set(haskell_env sh ${CMAKE_BINARY_DIR}/haskell-env.sh)
 
 set(cabal ${haskell_env} ${CABAL_EXECUTABLE})
 set(runhaskell ${haskell_env} runhaskell)
