@@ -1,2 +1,2 @@
-# excludeSteps="insiemecc*","*_ocl_*","*_c_*","*_run_*"
+excludeSteps="insiemecc*","*_ocl_*","*_c_*","*_run_*"
 cpuTimeLimit=3600
