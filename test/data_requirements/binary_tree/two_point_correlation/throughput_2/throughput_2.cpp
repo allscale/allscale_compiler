@@ -1,10 +1,15 @@
 #include "../two_point_correlation.h"
 
-int main() {
+int main(int argc, char** argv) {
 
 	const int Dims = 7;				// number of dimensions of points
 	const std::size_t N = 29;		// number of points = 2^N
-	const std::size_t M = 1000;		// number of queries
+	std::size_t M = 1000;		    // number of queries
+
+    // parse parameters
+    if (argc > 1) {
+        M = std::atoi(argv[1]);
+    }
 
 	// lower and upper boundary of nodes
 	const coordinate_t low = 0;
@@ -25,7 +30,7 @@ int main() {
 	auto end = begin;
 
 	// print a test case summary
-	std::cout << "Two-Point-Correlation with 2^" << N << " points in [" << low << "," << high << ")^" << Dims << " space, radius=" << radius << "\n";
+	std::cout << "Two-Point-Correlation with 2^" << N << " points in [" << low << "," << high << ")^" << Dims << " space, radius=" << radius << ", performing M=" << M << " queries\n";
 
 	// 1) set up tree
 	std::cout << "Creating ... " << std::flush;
@@ -41,7 +46,7 @@ int main() {
 	end = now();
 	std::cout << std::setw(6) << ms(begin,end) << "ms\n";
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 
 	// check the tree
 	std::cout << "Checking ... " << std::flush;
@@ -69,7 +74,7 @@ int main() {
 	std::cout << "\n";
 	std::cout << "Computing correlation for p=" << p << " par ... " << std::flush;
 	begin = now();
-	auto resPar = twoPointCorrelation(tree, p, radius);
+	auto resPar = twoPointCorrelation(tree, p, radius).get();
 	end = now();
 	std::cout << std::setw(6) << ms(begin,end) << "ms\n";
 	std::cout << "Number of points within region: " << resPar << "\n\n";
@@ -86,14 +91,14 @@ int main() {
 	std::cout << "\n";
 	std::cout << "Computing correlation for p=" << p << " seq ... " << std::flush;
 	begin = now();
-	resSeq = twoPointCorrelationSequential(tree, p, radius);
+	resSeq = twoPointCorrelationSequential(tree, p, radius).get();
 	end = now();
 	std::cout << std::setw(6) << ms(begin,end) << "ms\n";
 	std::cout << "Number of points within region: " << resSeq << "\n\n";
 
 	std::cout << "Computing correlation for p=" << p << " par ... " << std::flush;
 	begin = now();
-	resPar = twoPointCorrelation(tree, p, radius);
+	resPar = twoPointCorrelation(tree, p, radius).get();
 	end = now();
 	std::cout << std::setw(6) << ms(begin,end) << "ms\n";
 	std::cout << "Number of points within region: " << resPar << "\n\n";
@@ -121,9 +126,9 @@ int main() {
     std::cout << "Benchmarking ... " << std::flush;
     begin = now();
     // start all computations
-    std::vector<treeture<std::size_t>> jobs(M);
+    std::vector<treeture<std::size_t>> jobs;
     for(std::size_t i=0; i<M; i++) {
-        jobs[i] = twoPointCorrelation(tree,points[1],radius);
+        jobs.emplace_back(twoPointCorrelation(tree,points[1],radius));
     }
     // join all computations
     for(auto& cur : jobs) {

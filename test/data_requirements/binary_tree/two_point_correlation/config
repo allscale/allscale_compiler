@@ -1,1 +1,5 @@
 env="NO_TIME_IN_OUTPUT=1"
+compFlags="${compFlags} -DNDEBUG"
+compFlags[insiemecc_seq_cpp_convert]="${compFlags[insiemecc_seq_cpp_convert]} -DNDEBUG"
+compFlags[insiemecc_seq_cpp_compile]="${compFlags[insiemecc_seq_cpp_compile]} -DNDEBUG"
+
