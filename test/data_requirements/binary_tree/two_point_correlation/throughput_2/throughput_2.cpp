@@ -127,8 +127,9 @@ int main(int argc, char** argv) {
     begin = now();
     // start all computations
     std::vector<treeture<std::size_t>> jobs;
+    jobs.reserve(M);
     for(std::size_t i=0; i<M; i++) {
-        jobs.emplace_back(twoPointCorrelation(tree,points[1],radius));
+        jobs.emplace_back(twoPointCorrelation(tree,points[i],radius));
     }
     // join all computations
     for(auto& cur : jobs) {
