@@ -12,6 +12,7 @@
 #include "insieme/core/dump/json_dump.h"
 
 #include "insieme/utils/name_mangling.h"
+#include "insieme/utils/unused.h"
 
 #include "allscale/compiler/analysis/diagnostics.h"
 #include "allscale/compiler/lang/allscale_ir.h"
@@ -1224,7 +1225,7 @@ namespace core {
 						return Action::Descent;
 					},true);
 					for(const auto& invalid_call : invalid_calls) {
-						visitDepthFirstOnceInterruptible(precCall, [&](const CallExprAddress& node) {
+						__insieme_unused auto found = visitDepthFirstOnceInterruptible(precCall, [&](const CallExprAddress& node) {
 							if(node.getAddressedNode() == invalid_call) {
 								auto msg = "Use of blacklisted function " + insieme::utils::demangle(invalid_call->getFunctionExpr().as<LiteralPtr>()->getValue()->getValue());
 								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::CallToInvalidFunctionForDistributedMemory, msg));
@@ -1232,6 +1233,7 @@ namespace core {
 							}
 							return Action::Continue;
 						});
+						assert_true(found);
 					}
 				}
 
@@ -1250,7 +1252,7 @@ namespace core {
 
 						// ignore strings
 						std::string value = lit.getValue().getValue();
-						if(!value.empty() && value[0] == '"') {
+						if((!value.empty() && value[0] == '"') || lit.getNodeManager().getLangBasic().isString(lit->getType())) {
 							return Action::Prune;
 						}
 
@@ -1266,7 +1268,7 @@ namespace core {
 						return Action::Prune;
 					},true);
 					for(const auto& use : uses_of_global) {
-						visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
+						__insieme_unused auto found = visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
 							if(node.getAddressedNode() == use) {
 								std::string msg = "Use of global " + use->getValue()->getValue();
 								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory, msg));
@@ -1274,6 +1276,7 @@ namespace core {
 							}
 							return Action::Continue;
 						});
+						assert_true(found);
 					}
 				}
 
@@ -1306,11 +1309,14 @@ namespace core {
 			ExpressionPtr workItemDesc;
 			visitDepthFirstOnceInterruptible(precFun,[&](const CallExprPtr& call) {
 				if (backend::WorkItemDescription::isEncoding(call)) {
-					workItemDesc = call;
-					return Action::Interrupt;
+					auto desc = backend::WorkItemDescription::fromIR(call);
+					if (desc.getName() == format("allscale_wi_%d",precIndex)) {
+						workItemDesc = call;
+						return Action::Interrupt;
+					}
 				}
 				return Action::Continue;
-			});
+			},false,false);
 
 			// make sure a work item description has been found
 			assert_true(workItemDesc);
