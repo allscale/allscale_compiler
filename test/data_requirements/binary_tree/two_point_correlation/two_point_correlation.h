@@ -89,10 +89,11 @@ struct BoundingBox {
 
 
 template<std::size_t Dims, std::size_t depth>
-using KDTree = StaticBalancedBinaryTree<Point<Dims>,depth>;
+//using KDTree = StaticBalancedBinaryTree<Point<Dims>,depth,StaticBalancedBinaryTreeBlockedRegion>;
+using KDTree = StaticBalancedBinaryTree<Point<Dims>,depth,StaticBalancedBinaryTreeRegion>;
 
 template<std::size_t depth>
-using KDNode = StaticBalancedBinaryTreeElementAddress<depth>;
+using KDNode = StaticBalancedBinaryTreeElementAddress<typename KDTree<2,depth>::region_type>;
 
 namespace {
 
@@ -146,7 +147,7 @@ void fill(KDTree<Dims,depth>& tree, const Point<Dims>& min, const Point<Dims>& m
 			return args.node.isLeaf();
 		},
 		[&tree](const Args& args) {
-			sema::needs_write_access(tree,region::closure(args.node.getSubtreeIndex()));
+			sema::needs_write_access(tree,region::closure(args.node));
 			fillSequential(tree,args.node,args.min,args.max);
 		},
 		pick(
@@ -181,7 +182,7 @@ void fill(KDTree<Dims,depth>& tree, const Point<Dims>& min, const Point<Dims>& m
 				);
 			},
 			[&tree](const Args& args, const auto&) {
-				sema::needs_write_access(tree,region::closure(args.node.getSubtreeIndex()));
+				sema::needs_write_access(tree,region::closure(args.node));
 				fillSequential(tree,args.node,args.min,args.max);
 			}
 		)
@@ -357,7 +358,7 @@ treeture<std::size_t> twoPointCorrelation(const KDTree<Dims,depth>& tree, const 
 			return args.node.isLeaf() || args.node.getLevel() > int(2*depth/3);
 		},
 		[=,&tree](const Args& args) {
-			sema::needs_read_access(tree,region::closure(args.node.getSubtreeIndex()));
+			sema::needs_read_access(tree,region::closure(args.node));
 			return twoPointCorrelationSequential(tree,t,radiusSquared,args.node,args.box);
 		},
 		pick(
@@ -394,7 +395,7 @@ treeture<std::size_t> twoPointCorrelation(const KDTree<Dims,depth>& tree, const 
 				return res + fA.get() + fB.get();
 			},
 			[=,&tree](const Args& args, const auto&) {
-				sema::needs_read_access(tree,region::closure(args.node.getSubtreeIndex()));
+				sema::needs_read_access(tree,region::closure(args.node));
 				return twoPointCorrelationSequential(tree,t,radiusSquared,args.node,args.box);
 			}
 		)
