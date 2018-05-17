@@ -17,7 +17,8 @@ import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Inspire (substituteInLocalScope)
 
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as HashMap
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -61,7 +62,7 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
       where
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
         
-        sub' o n t = substituteInLocalScope (Map.singleton o n) t
+        sub' o n t = substituteInLocalScope (HashMap.singleton o n) t
 
 printRange :: DataRange -> String
 printRange (DataRange BSet.Universe) = "-all-"

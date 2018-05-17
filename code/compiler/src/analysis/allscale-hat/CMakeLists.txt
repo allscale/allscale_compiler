@@ -28,6 +28,7 @@ add_custom_command(
 	# copy library to binary dir
 	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%comp:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
+	DEPENDS ${allscale_hat_srcs}
 	DEPENDS insieme_hat ${INSIEME_HAT_BINARY_DIR}/libinsieme-hat.so
 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
