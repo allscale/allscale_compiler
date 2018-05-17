@@ -246,6 +246,12 @@ namespace core {
 			auto refRetType = builder.refType(retType);
 			// if we generated a custom ctor, we create a call to it and also add a dummy argument
 			if(ctor) {
+				// for a ctor-call do not materialize moved parameters, pass them as an r-value reference
+				for(auto& decl : valueDecls) {
+					auto val = decl->getInitialization();
+					decl = builder.declaration(val->getType(),val);
+				}
+
 				// create the dummy variable and add it to the body
 				const auto dummyVar = builder.variable(builder.refType(dummyCtorArgumentType), stmts.size());
 				stmts.push_back(builder.declarationStmt(dummyVar, builder.callExpr(core::analysis::getDefaultConstructor(dummyCtorArgumentType),
