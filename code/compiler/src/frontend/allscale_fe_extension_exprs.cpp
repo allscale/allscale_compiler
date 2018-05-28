@@ -308,11 +308,11 @@ namespace detail {
 	// mapToFirstArgument
 	core::ExpressionPtr mapToFirstArgument(const fed::ClangExpressionInfo& exprInfo) {
 		if(auto thisArg = exprInfo.implicitObjectArgument) {
-			return exprInfo.converter.convertExpr(thisArg);
+			return exprInfo.converter.convertExpr(skipStdMoveOnAllscaleTypes(thisArg, exprInfo.converter));
 		}
 		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
 				<< " has " << exprInfo.numArgs << " arguments";
-		return exprInfo.converter.convertExpr(exprInfo.args[0]);
+		return exprInfo.converter.convertExpr(skipStdMoveOnAllscaleTypes(exprInfo.args[0], exprInfo.converter));
 	}
 
 

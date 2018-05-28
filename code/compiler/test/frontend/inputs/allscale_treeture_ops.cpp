@@ -107,9 +107,9 @@ int main() {
 		parallel(std::move(a), std::move(b));
 		combine(std::move(a), std::move(b), [](int m, int n) { return m + n; });
 
-		impl::reference::seq(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
-		impl::reference::par(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b));
-		impl::reference::combine(std::move((impl::reference::unreleased_treeture<int>) a), std::move((impl::reference::unreleased_treeture<int>) b),
+		impl::reference::seq(std::move((impl::reference::unreleased_treeture<int>) std::move(a)), std::move((impl::reference::unreleased_treeture<int>) std::move(b)));
+		impl::reference::par(std::move((impl::reference::unreleased_treeture<int>) std::move(a)), std::move((impl::reference::unreleased_treeture<int>) std::move(b)));
+		impl::reference::combine(std::move((impl::reference::unreleased_treeture<int>) std::move(a)), std::move((impl::reference::unreleased_treeture<int>) std::move(b)),
 		                         [](int m, int n) { return m + n; });
 	}
 
