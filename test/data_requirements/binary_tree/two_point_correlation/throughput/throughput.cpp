@@ -3,7 +3,7 @@
 int main(int argc, char** argv) {
 
 	const int Dims = 7;				// number of dimensions of points
-	const std::size_t N = 29;		// number of points = 2^N
+	const std::size_t N = 20;		// number of points = 2^N
 	std::size_t M = 1000;		    // number of queries
 
     // parse parameters
