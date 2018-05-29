@@ -1165,6 +1165,12 @@ namespace core {
 						return Action::Continue;
 					}
 
+					// prune function types
+					auto funType = node.isa<FunctionTypePtr>();
+					if (funType) {
+						return Action::Prune;
+					}
+
 					bool invalid_capture_by_ref = core::lang::isReference(type)
 					                            && !core::lang::isQualifiedReference(type)
 					                            && !backend::isDataItemReference(insieme::core::analysis::getReferencedType(type)); // data items are captured by reference, this is ok
