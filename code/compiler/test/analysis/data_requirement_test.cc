@@ -7,6 +7,7 @@
 #include "insieme/utils/string_utils.h"
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/dump/json_dump.h"
+#include "insieme/core/dump/binary_haskell.h"
 
 namespace allscale {
 namespace compiler {
@@ -151,12 +152,16 @@ namespace analysis {
 			// check for semantic errors
 			assert_correct_ir(stmt);
 
+                        if(debug) {
+                                insieme::core::dump::binary::haskell::dumpIR("ir.irbh",stmt);
+				insieme::core::dump::json::dumpIR("ir.json",stmt);
+                        }
+
 			// compute data requirements
 			insieme::analysis::cba::haskell::Context ctxt;
 			auto res = allscale::compiler::analysis::getDataRequirements(ctxt,stmt);
 
 			if (debug) {
-				insieme::core::dump::json::dumpIR("ir.json",stmt);
 				ctxt.dumpStatistics();
 				ctxt.dumpSolution();
 			}
