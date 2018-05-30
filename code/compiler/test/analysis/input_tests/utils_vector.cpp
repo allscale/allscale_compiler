@@ -123,21 +123,21 @@ void check4D() {
 	cba_expect_undefined_int(a[2]);
 	cba_expect_undefined_int(a[3]);
 
-//	// check initialization
-//	Vector<int,4> b { 1, 2, 3, 4 };
-//
-//	cba_expect_eq_int(1,b[0]);
-//	cba_expect_eq_int(2,b[1]);
-//	cba_expect_eq_int(3,b[2]);
-//	cba_expect_eq_int(4,b[3]);
+	// check initialization
+	Vector<int,4> b { 1, 2, 3, 4 };
 
-//	// check initialization
-//	Vector<int,4> c = Vector<int,4> { 1, 2, 3, 4 };
-//
-//	cba_expect_eq_int(1,c[0]);
-//	cba_expect_eq_int(2,c[1]);
-//	cba_expect_eq_int(3,c[2]);
-//	cba_expect_eq_int(4,c[3]);
+	cba_expect_eq_int(1,b[0]);
+	cba_expect_eq_int(2,b[1]);
+	cba_expect_eq_int(3,b[2]);
+	cba_expect_eq_int(4,b[3]);
+
+	// check initialization
+	Vector<int,4> c = Vector<int,4> { 1, 2, 3, 4 };
+
+	cba_expect_eq_int(1,c[0]);
+	cba_expect_eq_int(2,c[1]);
+	cba_expect_eq_int(3,c[2]);
+	cba_expect_eq_int(4,c[3]);
 
 //	cba_debug();
 
