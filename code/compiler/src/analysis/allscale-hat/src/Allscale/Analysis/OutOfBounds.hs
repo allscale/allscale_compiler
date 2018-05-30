@@ -16,6 +16,7 @@ import Control.DeepSeq
 import Data.Foldable (or)
 import Data.Typeable
 import Data.Maybe
+import Data.Hashable
 import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
@@ -87,7 +88,7 @@ outOfBounds init addr = (result,ns')
 data ArrayAccess = ArrayAccess (DP.DataPath SimpleFieldIndex) SymbolicFormula
                  | NotAnArrayAccess
                  | UnknownIndexAccess
-  deriving (Eq,Ord,Show,Generic,NFData)
+  deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 convertArrayIndex :: Ref.ReferenceSet SimpleFieldIndex -> BSet.UnboundSet ArrayAccess
 convertArrayIndex = BSet.changeBound

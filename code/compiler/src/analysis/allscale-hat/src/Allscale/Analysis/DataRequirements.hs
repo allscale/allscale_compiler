@@ -14,6 +14,7 @@ import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
 import Data.List
 import Data.Typeable
+import Data.Hashable
 import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
@@ -37,7 +38,7 @@ import qualified Insieme.Analysis.Utils.CppSemantic as Sema
 
 data AccessMode = ReadOnly
                 | ReadWrite
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 
 --
@@ -49,7 +50,7 @@ data DataRequirement = DataRequirement {
                             range       :: DataRange,
                             accessMode  :: AccessMode
                         }
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 
 printRequirement :: DataRequirement -> String
@@ -60,7 +61,7 @@ printRequirement (DataRequirement i r a) = "Requirement{" ++ (pprintTree i) ++ "
 --
 
 data DataRequirements = DataRequirements (BSet.UnboundSet DataRequirement)
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 instance Solver.Lattice DataRequirements where
     bot   = DataRequirements $ BSet.empty

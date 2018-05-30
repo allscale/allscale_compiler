@@ -12,6 +12,7 @@ module Allscale.Analysis.DataItemElementReference (
 import Allscale.Analysis.Entities.DataRange
 import Control.DeepSeq
 import Data.Typeable
+import Data.Hashable
 import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
@@ -65,14 +66,14 @@ data ElementReference = ElementReference {
             reference :: I.Tree,
             range     :: DataRange
         }
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 --
 -- * A lattice for the data item reference analysis
 --
 
 data ElementReferenceSet = ElementReferenceSet { unERS :: BSet.UnboundSet ElementReference }
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 instance Solver.Lattice ElementReferenceSet where
     bot   = ElementReferenceSet $ BSet.empty

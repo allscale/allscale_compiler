@@ -14,6 +14,7 @@ module Allscale.Analysis.DataItemAccesses (
 import Allscale.Analysis.DataItemElementReference hiding (range)
 import Control.DeepSeq
 import Data.Typeable
+import Data.Hashable
 import GHC.Generics (Generic)
 
 import Insieme.Inspire (NodeAddress)
@@ -34,7 +35,7 @@ import qualified Insieme.Solver as Solver
 
 -- the set of accesses is universe, if there is some access to an unknown location
 data DataItemAccesses = DataItemAccesses (BSet.UnboundSet NodeAddress)
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Show, Generic, NFData, Hashable)
 
 instance Solver.Lattice DataItemAccesses where
 

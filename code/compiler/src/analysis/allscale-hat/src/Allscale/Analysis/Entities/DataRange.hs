@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Allscale.Analysis.Entities.DataRange (
     DataPoint(..),
@@ -13,12 +14,11 @@ module Allscale.Analysis.Entities.DataRange (
 ) where
 
 import Control.DeepSeq
+import Data.Hashable
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Inspire (substituteInLocalScope)
 
-import qualified Data.Map.Strict as Map
-import qualified Data.HashMap.Strict as HashMap
 import qualified Insieme.Inspire as IR
 import qualified Insieme.Utils.BoundSet as BSet
 
@@ -28,7 +28,7 @@ import qualified Insieme.Utils.BoundSet as BSet
 --
 
 data DataPoint = DataPoint IR.Tree
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 printPoint :: DataPoint -> String
 printPoint (DataPoint t) = pprintTree t
@@ -38,10 +38,10 @@ data DataSpan = DataSpan {
                     from :: DataPoint,
                     to   :: DataPoint
               }
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 data DataRange = DataRange (BSet.UnboundSet DataSpan)
-    deriving (Eq,Ord,Show,Generic,NFData)
+    deriving (Eq, Ord, Show, Generic, NFData, Hashable)
 
 
 point :: IR.Tree -> DataRange
@@ -62,7 +62,7 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
       where
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
         
-        sub' o n t = substituteInLocalScope (HashMap.singleton o n) t
+        sub' o n t = substituteInLocalScope (\case t | t == o -> n; t -> t) t
 
 printRange :: DataRange -> String
 printRange (DataRange BSet.Universe) = "-all-"
