@@ -135,6 +135,7 @@ int main(int argc, char** argv) {
 	}
 
 	if(!dumpBinaryIR.empty()) {
+		std::cout << "Dumping binary IR to " << dumpBinaryIR << " ...\n";
 		vector<core::NodeAddress> targets;
 		core::NodePtr ref_deref = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefDeref();
 		core::NodePtr ref_assign = mgr.getLangExtension<core::lang::ReferenceExtension>().getRefAssign();
@@ -152,7 +153,7 @@ int main(int argc, char** argv) {
 
 	// dump JSON IR representation
 	if(!dumpJSON.empty()) {
-		std::cout << "Dumping JSON representation ...\n";
+		std::cout << "Dumping JSON IR to " << dumpJSON << " ...\n";
 		std::ofstream out(dumpJSON.string());
 		core::dump::json::dumpIR(out, program);
 	}
