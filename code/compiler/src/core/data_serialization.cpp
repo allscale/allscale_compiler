@@ -446,8 +446,7 @@ namespace core {
 
 			if (backend::isDataItemReference(type)) return true;
 
-			// all intercepted types are assumed to be serializable
-			if (insieme::annotations::c::hasIncludeAttached(type)) return true;
+			// all intercepted types used to be considered serializable, which was to presumptuous
 		}
 
 		// if it is a user defined type
