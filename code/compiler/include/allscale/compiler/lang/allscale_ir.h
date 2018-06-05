@@ -38,10 +38,12 @@ namespace lang {
 
 		// treetures
 
-		LANG_EXT_LITERAL(TreetureDone, "treeture_done", "('a) -> treeture<'a, f>")
+		LANG_EXT_LITERAL(TreetureDone,        "treeture_done",          "('a)              -> treeture<'a, f>")
+		LANG_EXT_LITERAL(TreetureDoneFromRef, "treeture_done_from_ref", "(ref<'a,'c,f,'k>) -> treeture<'a, f>")
 		LANG_EXT_LITERAL(TreetureRun, "treeture_run", "(treeture<'a, f>) -> treeture<'a, t>")
 
-		LANG_EXT_LITERAL(TreetureGet, "treeture_get", "(treeture<'a,'r>) -> 'a")
+		LANG_EXT_LITERAL(TreetureGet,     "treeture_get",     "(treeture<'a,'r>) -> 'a")
+		LANG_EXT_LITERAL(TreetureExtract, "treeture_extract", "(treeture<'a,'r>) -> ref<'a,f,f,cpp_rref>") // this is the version of treeture_get, which can be used to move the result
 		LANG_EXT_DERIVED(TreetureLeft, "(t : treeture<'a,'r>) -> task_ref { return task_ref_left(treeture_to_task_ref(t)); }")
 		LANG_EXT_DERIVED(TreetureRight, "(t : treeture<'a,'r>) -> task_ref { return task_ref_right(treeture_to_task_ref(t)); }")
 		LANG_EXT_DERIVED(TreetureWait, "(t : treeture<'a,'r>) -> unit { treeture_get(t); }")
@@ -340,6 +342,7 @@ namespace lang {
 	                                         const insieme::core::ExpressionPtr& combinerLambda, const insieme::core::ExpressionPtr& parallel);
 
 	insieme::core::ExpressionPtr buildTreetureGet(const insieme::core::ExpressionPtr& param);
+	insieme::core::ExpressionPtr buildTreetureExtract(const insieme::core::ExpressionPtr& param);
 
 	insieme::core::ExpressionPtr buildTreetureToRef(const insieme::core::ExpressionPtr& treetureExpr, const insieme::core::TypePtr& targetType);
 

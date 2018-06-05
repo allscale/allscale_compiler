@@ -97,7 +97,7 @@ namespace core {
 				auto call = node.isa<core::CallExprPtr>();
 				if (!call) return node;
 
-				if (core::analysis::isCallOf(call,ext.getTreetureDone())) {
+				if (ext.isCallOfTreetureDone(call) || ext.isCallOfTreetureDoneFromRef(call)) {
 					return builder.callExpr(basic.getId(), call->getArgument(0));
 				}
 
@@ -105,7 +105,7 @@ namespace core {
 					return call->getArgument(0);
 				}
 
-				if (core::analysis::isCallOf(call,ext.getTreetureGet())) {
+				if (ext.isCallOfTreetureGet(call) || ext.isCallOfTreetureExtract(call)) {
 					return call->getArgument(0);
 				}
 
@@ -605,9 +605,9 @@ namespace core {
 					// check the base case test
 					builder.callExpr(function.getBaseCaseTest(), inVal),
 					// if in the base case => run base case
-					builder.returnStmt(builder.callExpr(function.getBaseCases()[0],inVal)),
+					builder.returnStmt(core::transform::materializeCall(builder.callExpr(function.getBaseCases()[0],inVal))),
 					// else run step case
-					builder.returnStmt(builder.callExpr(stepFun,inVal))
+					builder.returnStmt(core::transform::materializeCall(builder.callExpr(stepFun,inVal)))
 				)
 			);
 
@@ -695,15 +695,13 @@ namespace core {
 
 			core::NodeManager& mgr = lambda.getNodeManager();
 			core::IRBuilder builder(mgr);
-			auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
 
 			// create a wrapper which is spawning a treeture
 			auto body =
 				builder.compoundStmt(
 					builder.returnStmt(
-						builder.callExpr(
-							ext.getTreetureDone(),
-							builder.callExpr(lambda,lambda->getParameterList()[0])
+						lang::buildTreetureDone(
+							core::transform::materializeCall(builder.callExpr(lambda,lambda->getParameterList()[0]))
 						)
 					)
 				);
@@ -717,7 +715,11 @@ namespace core {
 				// the body is also different
 				body = builder.compoundStmt(
 						builder.callExpr(lambda,lambda->getParameterList()[0]),
-						builder.returnStmt(builder.callExpr(ext.getTreetureDone(), builder.callExpr(backendExt.getMakeUnusedType())))
+						builder.returnStmt(
+								lang::buildTreetureDone(
+										core::transform::materializeCall(builder.callExpr(backendExt.getMakeUnusedType()))
+								)
+						)
 				);
 			}
 

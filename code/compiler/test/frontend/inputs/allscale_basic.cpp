@@ -161,7 +161,7 @@ int main() {
 	// result type of call to prec assigned to a variable - also calling get on the result and directly assigning the result
 	#pragma test expect_ir(SIMPLE_PREC_IR, "{", SIMPLE_FUN_IR, SIMPLE_PREC_CALL, R"(
 			;
-			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(precfun_to_fun(*simpleFun)(13)));
+			var ref<int<4>,f,f,plain> i = *treeture_extract(treeture_run(precfun_to_fun(*simpleFun)(13)));
 		}
 	)")
 	{

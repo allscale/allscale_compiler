@@ -6,6 +6,18 @@
 
 using namespace allscale::api::core;
 
+struct MovableOnly {
+	MovableOnly() {}
+	MovableOnly(const MovableOnly&) = delete;
+	MovableOnly(MovableOnly&&) = default;
+	MovableOnly& operator=(const MovableOnly&) = delete;
+	MovableOnly& operator=(MovableOnly&&) = default;
+};
+
+struct NonTrivial {
+	~NonTrivial() {42;}
+};
+
 int main() {
 	; // this is required because of the clang compound source location bug
 
@@ -49,6 +61,58 @@ int main() {
 		a.getRight();
 		a.isDone();
 		a.isValid();
+	}
+
+	// calling get on a treeture of a movable-only object
+	#pragma test expect_ir(R"(
+		def struct IMP_MovableOnly {
+			ctor function (other : ref<IMP_MovableOnly,t,f,cpp_ref>) = delete;
+			ctor function (other : ref<IMP_MovableOnly,f,f,cpp_rref>) = default;
+			ctor function () { }
+			function IMP__operator_assign_ = (rhs : ref<IMP_MovableOnly,t,f,cpp_ref>) -> ref<IMP_MovableOnly,f,f,cpp_ref> = delete;
+			function IMP__operator_assign_ = (rhs : ref<IMP_MovableOnly,f,f,cpp_rref>) -> ref<IMP_MovableOnly,f,f,cpp_ref> = default;
+		};
+		{
+			var ref<ptr<treeture<IMP_MovableOnly,t>>,f,f,plain> v0 = ref_decl(
+					type_lit(ref<ptr<treeture<IMP_MovableOnly,t>>,f,f,plain>)
+			);
+			var ref<IMP_MovableOnly,f,f,plain> v1 = treeture_extract(
+					*instantiate_fun(
+							lit("target_type" : (ref<treeture<IMP_MovableOnly,t>,f,f,cpp_ref>) -> ref<treeture<IMP_MovableOnly,t>,f,f,cpp_rref>),
+							lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
+							)(ref_kind_cast(ptr_to_ref(*v0), type_lit(cpp_ref)))
+					);
+		}
+	)")
+	{
+		impl::reference::treeture<MovableOnly>* m;
+		auto r = std::move((*m)).get();
+	}
+
+	// calling done on a movable-only object
+	#pragma test expect_ir(R"(
+		def struct IMP_MovableOnly {
+			ctor function (other : ref<IMP_MovableOnly,t,f,cpp_ref>) = delete;
+			ctor function (other : ref<IMP_MovableOnly,f,f,cpp_rref>) = default;
+			ctor function () { }
+			function IMP__operator_assign_ = (rhs : ref<IMP_MovableOnly,t,f,cpp_ref>) -> ref<IMP_MovableOnly,f,f,cpp_ref> = delete;
+			function IMP__operator_assign_ = (rhs : ref<IMP_MovableOnly,f,f,cpp_rref>) -> ref<IMP_MovableOnly,f,f,cpp_ref> = default;
+		};
+		{
+			var ref<IMP_MovableOnly,f,f,plain> v0 = IMP_MovableOnly::(
+					ref_decl(type_lit(ref<IMP_MovableOnly,f,f,plain>))
+			);
+			var ref<treeture<IMP_MovableOnly,f>,f,f,plain> v1 = treeture_done_from_ref(
+					instantiate_fun(
+							lit("target_type" : (ref<IMP_MovableOnly,f,f,cpp_ref>) -> ref<IMP_MovableOnly,f,f,cpp_rref>),
+							lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
+							)(ref_kind_cast(v0, type_lit(cpp_ref)))
+					);
+		}
+	)")
+	{
+		MovableOnly m;
+		auto r = done(std::move(m));
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// COMBINATIONS ////

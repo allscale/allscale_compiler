@@ -32,15 +32,15 @@ namespace detail {
 		{"allscale::api::core::rec_defs.*rec_defs", mapCopyAndMoveConstructor},                     // copy|move ctor call
 		{"allscale::api::core::detail::prec_operation.*prec_operation", mapCopyAndMoveConstructor}, // copy|move ctor call
 		// completed_tasks
-		{"allscale::api::core::done", 0, mapDoneCall},
-		{"allscale::api::core::done", SimpleCallMapper("treeture_done", false, true)},
+		{"allscale::api::core::done", 0, mapDoneVoidCall},
+		{"allscale::api::core::done", mapDoneCall},
 		{"allscale::api::core::.*::completed_task<.*>::operator treeture", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::run", SimpleCallMapper("treeture_run")},
 		{"allscale::api::core::.*::completed_task<.*>::operator unreleased_treeture", mapToFirstArgument}, // conversion operator
 		{"allscale::api::core::.*::completed_task<.*>::completed_task", mapCopyAndMoveConstructor},        // copy|move ctor call
 		// treeture
 		{"allscale::api::core::impl::.*treeture.*::wait", SimpleCallMapper("treeture_wait", true)},
-		{"allscale::api::core::impl::.*treeture.*::get", SimpleCallMapper("treeture_get", true)},
+		{"allscale::api::core::impl::.*treeture.*::get", mapGetCall},
 		{"allscale::api::core::impl::.*treeture.*::getLeft", SimpleCallMapper("treeture_left", true)},
 		{"allscale::api::core::impl::.*treeture.*::getRight", SimpleCallMapper("treeture_right", true)},
 		{"allscale::api::core::impl::.*treeture.*::isDone", SimpleCallMapper("treeture_is_done", true)},
@@ -325,8 +325,14 @@ namespace detail {
 
 
 	// mapDoneCall
-	core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo& exprInfo) {
+	core::ExpressionPtr mapDoneVoidCall(const fed::ClangExpressionInfo& exprInfo) {
 		return lang::buildTreetureDone(exprInfo.converter.getIRBuilder().getLangBasic().getUnitConstant());
+	}
+	core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo& exprInfo) {
+		assert_true(exprInfo.numArgs == 1);
+		auto arg = exprInfo.converter.convertCxxArgExpr(exprInfo.args[0]);
+		// if we have a reference here, we have to use the other variant of treeture_done, which will get rid of it. By using the factory buildTreetureDone, this is handled automatically
+		return lang::buildTreetureDone(arg);
 	}
 
 
@@ -354,7 +360,6 @@ namespace detail {
 		}
 		return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(callee, args, converter));
 	}
-
 	core::ExpressionPtr SimpleCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
 		return removeImplicitMaterializations(converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter)));
 	}
@@ -369,11 +374,30 @@ namespace detail {
 	core::ExpressionPtr SimpleCallMapper::postprocessCall(const fed::ClangExpressionInfo& exprInfo, const core::ExpressionPtr& translatedCall) {
 		return translatedCall;
 	}
-
 	core::ExpressionPtr SimpleCallMapper::operator()(const fed::ClangExpressionInfo& exprInfo) {
 		auto callee = generateCallee(exprInfo);
 		auto translatedCall = buildCallWithDefaultParamConversion(callee, exprInfo);
 		return postprocessCall(exprInfo, translatedCall);
+	}
+
+
+	// mapGetCall
+	core::ExpressionPtr mapGetCall(const fed::ClangExpressionInfo& exprInfo) {
+		auto& implicitObject = exprInfo.implicitObjectArgument;
+		assert_true(implicitObject);
+		auto thisArg = derefOrDematerialize(exprInfo.converter.convertExpr(implicitObject));
+
+		// if the user called the R-value qualified variant of get, we create a call to treeture_extract
+		auto& sourceExpr = exprInfo.sourceExpression;
+		if(const auto& memberCallExpr = llvm::dyn_cast<clang::CXXMemberCallExpr>(sourceExpr)) {
+			auto calleeDecl = memberCallExpr->getMethodDecl();
+			if(calleeDecl->getRefQualifier() == clang::RQ_RValue) {
+				return lang::buildTreetureExtract(thisArg);
+			}
+		}
+
+		// otherwise a call to treeture_get
+		return lang::buildTreetureGet(thisArg);
 	}
 
 

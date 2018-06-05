@@ -315,12 +315,20 @@ namespace backend {
 					);
 				}
 
+				// for materializing calls we need to add another deref in the c_ast
+				auto arg = CONVERT_ARG(0);
+				if(insieme::core::lang::isPlainReference(ARG(0))) {
+					arg = c_ast::deref(arg);
+				}
+
 				// create result value via constructor call
 				return c_ast::call(
 						resTypeInfo.rValueType,
-						CONVERT_ARG(0)
+						arg
 				);
 			};
+
+			table[ext.getTreetureDoneFromRef()] = table[ext.getTreetureDone()];
 
 			table[ext.getTreetureRun()] = OP_CONVERTER {
 
@@ -341,6 +349,8 @@ namespace backend {
 				// convert to member call
 				return c_ast::memberCall(CONVERT_ARG(0), C_NODE_MANAGER->create("get_result"), {});
 			};
+
+			table[ext.getTreetureExtract()] = table[ext.getTreetureGet()];
 
 			table[ext.getTreetureIsDone()] = OP_CONVERTER {
 

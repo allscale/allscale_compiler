@@ -521,9 +521,17 @@ namespace lang {
 		assert_true(param) << "Given node is null!";
 		auto& mgr = param->getNodeManager();
 		ic::IRBuilder builder(mgr);
-		ic::GenericTypePtr returnType = TreetureType(param->getType(), false);
 		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(returnType, allS.getTreetureDone(), param);
+		ic::GenericTypePtr returnType;
+		ic::ExpressionPtr callee;
+		if(ic::lang::isReference(param)) {
+			returnType = TreetureType(ic::analysis::getReferencedType(param->getType()), false);
+			callee = allS.getTreetureDoneFromRef();
+		} else {
+			returnType = TreetureType(param->getType(), false);
+			callee = allS.getTreetureDone();
+		}
+		return builder.callExpr(returnType, callee, param);
 	}
 
 	ic::ExpressionPtr buildTreetureRun(const ic::ExpressionPtr& param) {
@@ -561,14 +569,24 @@ namespace lang {
 		return builder.callExpr(returnType, allS.getTreetureCombine(), a, b, combinerLambda, parallel);
 	}
 
+	namespace {
+		ic::ExpressionPtr buildTreetureGetOrExtract(const ic::ExpressionPtr& param, bool buildGet) {
+			assert_true(param) << "Given node is null!";
+			auto& mgr = param->getNodeManager();
+			ic::IRBuilder builder(mgr);
+			TreetureType treeture(param);
+			auto returnType = buildGet ? treeture.getValueType() : builder.refType(treeture.getValueType(), false, false, ic::lang::ReferenceType::Kind::CppRValueReference);
+			auto& allS = mgr.getLangExtension<AllscaleModule>();
+			return builder.callExpr(returnType, buildGet ? allS.getTreetureGet() : allS.getTreetureExtract(), param);
+		}
+	}
+
 	ic::ExpressionPtr buildTreetureGet(const ic::ExpressionPtr& param) {
-		assert_true(param) << "Given node is null!";
-		auto& mgr = param->getNodeManager();
-		ic::IRBuilder builder(mgr);
-		TreetureType treeture(param);
-		auto returnType = treeture.getValueType();
-		auto& allS = mgr.getLangExtension<AllscaleModule>();
-		return builder.callExpr(returnType, allS.getTreetureGet(), param);
+		return buildTreetureGetOrExtract(param, true);
+	}
+
+	ic::ExpressionPtr buildTreetureExtract(const ic::ExpressionPtr& param) {
+		return buildTreetureGetOrExtract(param, false);
 	}
 
 	ic::ExpressionPtr buildTreetureToRef(const ic::ExpressionPtr& treetureExpr, const ic::TypePtr& targetType) {

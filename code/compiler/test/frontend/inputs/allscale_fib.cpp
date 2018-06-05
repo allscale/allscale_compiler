@@ -59,7 +59,7 @@ int main() {
 							)]
 					))
 			);
-			var ref<int<4>,f,f,plain> i = treeture_get(treeture_run(precfun_to_fun(*fibEager)(12)));
+			var ref<int<4>,f,f,plain> i = *treeture_extract(treeture_run(precfun_to_fun(*fibEager)(12)));
 		}
 	)")
 	{

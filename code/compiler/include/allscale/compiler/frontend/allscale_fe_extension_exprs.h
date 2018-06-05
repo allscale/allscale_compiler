@@ -42,6 +42,8 @@ namespace frontend {
 
 
 		/// Utility for the mapping of the call to done without arguments
+		core::ExpressionPtr mapDoneVoidCall(const fed::ClangExpressionInfo&);
+		/// Utility for the mapping of the call to done with an argument
 		core::ExpressionPtr mapDoneCall(const fed::ClangExpressionInfo&);
 
 
@@ -68,6 +70,11 @@ namespace frontend {
 				targetIRString(targetIRString), derefThisArg(derefThisArg), derefOtherArgs(derefOtherArgs) {}
 			core::ExpressionPtr operator()(const fed::ClangExpressionInfo& exprInfo);
 		};
+
+
+
+		/// Mapper for handling treeture_get and treeture_extract
+		core::ExpressionPtr mapGetCall(const fed::ClangExpressionInfo&);
 
 
 		/// Utility for the specification of task_reference constructor calls
