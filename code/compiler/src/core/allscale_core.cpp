@@ -54,11 +54,11 @@ namespace core {
 			callback(ProgressUpdate("Optimizing DataItem accesses ..."));
 			res = performDataItemGetLoopHoisting(res, callback);
 
-			// Step 6: adding serialization code
-			callback(ProgressUpdate("Adding serialization code ..."));
-			res = addAutoSerializationCode(res,callback);
-
 		}
+
+		// Step 6: adding serialization code
+		callback(ProgressUpdate("Adding serialization code ..."));
+		res = addAutoSerializationCode(res,callback);
 
 		// Step 7: convert prec calls
 		auto precConversionResult = convertPrecToWorkItem(config, res, callback);
