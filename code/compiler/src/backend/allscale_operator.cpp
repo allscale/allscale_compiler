@@ -441,30 +441,6 @@ namespace backend {
 				// add dependency to result type
 				context.addDependency(GET_TYPE_INFO(call->getType()).definition);
 
-				// create a wrapper for the operator part
-				auto paramType0 = lang::TreetureType(ARG(1)).getValueType();
-				auto paramType1 = lang::TreetureType(ARG(2)).getValueType();
-				auto resType = lang::TreetureType(call->getType()).getValueType();
-
-				auto funType = builder.functionType({ paramType0, paramType1 }, resType );
-				auto param0 = builder.variable(builder.refType(paramType0));
-				auto param1 = builder.variable(builder.refType(paramType1));
-
-				auto body = builder.compoundStmt(
-						builder.returnStmt(
-								builder.callExpr(
-										ARG(3),
-										builder.deref(param0),
-										builder.deref(param1)
-								)
-						)
-				);
-
-				auto lambda = builder.lambdaExpr(funType, { param0, param1 }, body);
-				auto info = context.getConverter().getFunctionManager().getInfo(context, lambda);
-				context.addDependency(info.prototype);
-				context.addRequirement(info.definition);
-
 				// create target for implicit std::move call
 				context.addInclude("utility");
 				auto std_move = C_NODE_MANAGER->create("std::move");
@@ -475,7 +451,7 @@ namespace backend {
 						CONVERT_ARG(0),
 						c_ast::call(std_move, CONVERT_ARG(1)),
 						c_ast::call(std_move, CONVERT_ARG(2)),
-						c_ast::ref(info.function->name)
+						CONVERT_ARG(3)
 				);
 			};
 
