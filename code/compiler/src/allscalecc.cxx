@@ -202,8 +202,8 @@ int main(int argc, char** argv) {
 
 	// create HTML report
 	{
-		auto report_filename = "report.html";
-		summary.report.toHTML(report_filename);
+		auto report_filename = boost::filesystem::path(commonOptions.outFile).concat("_report.html");
+		summary.report.toHTML(report_filename.string());
 		std::cout << "Full HTML report located at: " << boost::filesystem::current_path() / report_filename << "\n\n";
 	}
 

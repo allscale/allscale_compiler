@@ -277,7 +277,7 @@ namespace reporting {
 		in >> std::noskipws;
 
 		std::ofstream out(filename);
-		assert_true(out) << "could not open output file for conversion report";
+		assert_true(out) << "could not open output file for conversion report (" << filename << ")";
 
 		std::stringstream report_buffer;
 		write_json(report_buffer, toPropertyTree(*this));
