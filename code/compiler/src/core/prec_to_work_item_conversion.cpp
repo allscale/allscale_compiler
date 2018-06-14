@@ -18,6 +18,7 @@
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 #include "allscale/compiler/backend/allscale_runtime_entities.h"
+#include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/allscale_utils.h"
 
 #include "allscale/compiler/analysis/data_item_access.h"
@@ -1165,6 +1166,11 @@ namespace core {
 					auto type = node.isa<TypePtr>();
 					if(!type) {
 						return Action::Continue;
+					}
+
+					// prune serializable types
+					if (isSerializable(type)) {
+						return Action::Prune;
 					}
 
 					// prune function types
