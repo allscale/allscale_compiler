@@ -218,11 +218,39 @@ namespace frontend {
 			return decl;
 		}, core::transform::globalReplacement);
 
+		// XXX: Replace all occurrences of the dummy dependent type replacement type in function return types with unit
+		//
+		// Rationale: We stumbled upon several instances of innocent looking lambdas like:
+		//   [](X& x) { x.foo(); }
+		// which caused the dummy replacement type to end up in the final IR. This can be fixed manually by specifying the return type of the lambda explicitly like:
+		//   [](X& x) -> void { x.foo(); }
+		// Normally, this should not be necessary, since in this case the result type can only be void, but it seems like that if a lambda is defined
+		// inside a templated function, clang always tells us that the return type is an auto type and dependent.
+		//
+		// WARNING: We know that replacing the return type with unit might be wrong.
+		// It fixed some problems for us but might lead to semantic errors which could be hard to diagnose. For this reason, we print a warning,
+		// whenever we are applying this transformation, pointing the user to this comment here which gives some background and enables him to
+		// verify the correctness. Getting rid of this warning will probably imply finding the offending lambda and specifying the return type
+		// explicitly (has always been void for us to date).
+		const auto dependentTypePlaceholder = builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER);
+		prog = core::transform::transformBottomUpGen(prog, [&](const core::FunctionTypePtr& funType) {
+			// if we have a function type with the dummy dependent type replacement type as result type
+			if(funType->getReturnType() == dependentTypePlaceholder) {
+				// we print a warning and replace the return type with unit
+				std::cout << "\n\nWARNING: We replaced an ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER node with the unit type in a function return type." << std::endl;
+				std::cout << "         This might not be the correct type and should be investigated. For further details, have a look at the comment block" << std::endl;
+				std::cout << "         above the code generating this warning message in file " << __FILE__ << " above line " << __LINE__ << "\n" << std::endl;
+				return core::transform::replaceNode(funType.getNodeManager(), core::FunctionTypeAddress(funType)->getReturnType(),
+				                                    builder.getLangBasic().getUnit()).as<core::FunctionTypePtr>();
+			}
+			return funType;
+		}, core::transform::globalReplacement);
+
 		// temporarily dump the generated IR in a readable format
 		if(debug) dumpReadable(prog);
 
 		// make sure that we don't have the dummy dependent type replacement type in the program anywhere anymore
-		assert_eq(core::analysis::countInstances(prog, builder.genericType(ALLSCALE_DEPENDENT_TYPE_PLACEHOLDER), false), 0);
+		assert_eq(core::analysis::countInstances(prog, dependentTypePlaceholder, false), 0);
 
 		// also make sure that the output doesn't contain any node which has any header from the core attached. if that happens we should have intercepted it
 		assert_decl({
