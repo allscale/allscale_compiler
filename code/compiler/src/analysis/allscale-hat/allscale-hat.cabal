@@ -44,7 +44,7 @@ foreign-library allscale-hat
     if flag(profiling)
       buildable: False
 
-    hs-source-dirs:     src/,
+    hs-source-dirs:     flib,
                         ../../../../../insieme/code/analysis/src/cba/haskell/insieme-hat/flib
     other-modules:      Allscale.Adapter,
                         Insieme.Adapter

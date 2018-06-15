@@ -10,7 +10,6 @@ import Data.Maybe
 import Foreign
 import Foreign.C.String
 import Foreign.C.Types
-import Insieme.Inspire.NodeAddress
 import System.Timeout (timeout)
 
 import qualified Allscale.Analysis.DataItemAccesses as DIaccess
@@ -18,9 +17,11 @@ import qualified Allscale.Analysis.DataRequirements as Dreq
 import qualified Allscale.Analysis.Diagnostics as Diag
 import qualified Allscale.Analysis.Entities.DataRange as DR
 import qualified Allscale.Analysis.OutOfBounds as OOB
-import qualified Data.Set as Set
+import qualified Data.AbstractSet as Set
 import qualified Insieme.Solver as Solver
 import qualified Insieme.Context as Ctx
+
+import Insieme.Inspire (NodeAddress)
 import qualified Insieme.Inspire as IR
 
 -- * Exports
