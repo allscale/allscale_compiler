@@ -97,9 +97,8 @@ passIssues ctx (Diag.Issues is) = bracket
 selectDiags :: DiagnosisFlags -> [Diag.DiagnosisFunction]
 selectDiags = catMaybes . map sel . zip [0..] . toListLE
   where
-    sel (0, True) = Just Diag.unknownReferenceDiagnosis
-    sel (1, True) = Just Diag.globalVariableDiagnosis
-    sel (2, True) = Just Diag.uncertainAccessDiagnosis
+    sel (0, True) = Just Diag.globalVariableDiagnosis
+    sel (1, True) = Just Diag.uncertainAccessDiagnosis
     sel _         = Nothing
 
 -- * Data Range
@@ -210,4 +209,3 @@ dataItemAccesses ctx_hs stmt_hs = do
     serialize ctx_c results = passBoundSet (passNodeAddress ctx_c) mkCNodeAddressSet
                             $ case results of
                                 DIaccess.DataItemAccesses s -> s
-
