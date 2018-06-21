@@ -306,12 +306,14 @@ namespace backend {
 
 				// special handling of unit treetures
 				if (NODE_MANAGER.getLangBasic().isUnit(valueType)) {
-					// a void can not be passed => use the comma operator
-					return c_ast::comma(
+					// a void can not be passed => use the comma operator (but note to parenthesize it, as it might be used when passing arguments
+					return c_ast::parentheses(
+						c_ast::comma(
 							// trigger the computation
 							CONVERT_ARG(0),
 							// create resulting void-treeture
 							c_ast::call(C_NODE_MANAGER->create<c_ast::Literal>("allscale::make_ready_treeture"))
+						)
 					);
 				}
 

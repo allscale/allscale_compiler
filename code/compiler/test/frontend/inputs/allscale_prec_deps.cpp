@@ -27,7 +27,7 @@ using namespace allscale::api::core;
 	def struct __any_string__step {
 		const function IMP__operator_call_ = (v133 : ref<int<4>,f,f,plain>, v134 : ref<(recfun<int<4>,int<4>>),f,f,plain>) -> treeture<int<4>,f> {
 			var ref<dependencies,f,f,plain> v194 = dependency_after();
-			recfun_to_dep_fun(tuple_member_access(*v134, 0ul, type_lit(recfun<int<4>,int<4>>)))(*v194, *v133-1);
+			recfun_to_dep_fun(tuple_member_access(*v134, 0ul, type_lit(recfun<int<4>,int<4>>)))(*ref_move_plain(v194), *v133-1);
 			return treeture_done(1);
 		}
 	};)"

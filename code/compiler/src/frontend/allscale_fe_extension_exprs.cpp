@@ -203,19 +203,6 @@ namespace detail {
 			return converter.getIRBuilder().callExpr(allscaleExt.getDependencyAfter());
 		}
 
-		const clang::Expr* skipStdMoveOnAllscaleTypes(const clang::Expr* clangExpr, insieme::frontend::conversion::Converter& converter) {
-			if(auto clangCall = llvm::dyn_cast<clang::CallExpr>(clangExpr)) {
-				if(auto namedDecl = llvm::dyn_cast_or_null<clang::NamedDecl>(clangCall->getCalleeDecl())) {
-					if(namedDecl->getQualifiedNameAsString() == "std::move") {
-						if(lang::isAllscaleType(converter.convertType(clangExpr->getType()))) {
-							return clangCall->getArg(0);
-						}
-					}
-				}
-			}
-			return clangExpr;
-		}
-
 		/**
 		 * Removes all duplicate call operators in the passed type
 		 */
@@ -308,11 +295,11 @@ namespace detail {
 	// mapToFirstArgument
 	core::ExpressionPtr mapToFirstArgument(const fed::ClangExpressionInfo& exprInfo) {
 		if(auto thisArg = exprInfo.implicitObjectArgument) {
-			return exprInfo.converter.convertExpr(skipStdMoveOnAllscaleTypes(thisArg, exprInfo.converter));
+			return exprInfo.converter.convertExpr(thisArg);
 		}
 		assert_eq(exprInfo.numArgs, 1) << "Given sourceExpr " << dumpClang(exprInfo.sourceExpression, exprInfo.converter.getSourceManager())
 				<< " has " << exprInfo.numArgs << " arguments";
-		return exprInfo.converter.convertExpr(skipStdMoveOnAllscaleTypes(exprInfo.args[0], exprInfo.converter));
+		return exprInfo.converter.convertExpr(exprInfo.args[0]);
 	}
 
 
@@ -361,7 +348,7 @@ namespace detail {
 		return converter.getIRBuilder().callExpr(callee, postprocessArgumentList(callee, args, converter));
 	}
 	core::ExpressionPtr SimpleCallMapper::convertArgument(const clang::Expr* clangArg, insieme::frontend::conversion::Converter& converter) {
-		return removeImplicitMaterializations(converter.convertExpr(skipStdMoveOnAllscaleTypes(clangArg, converter)));
+		return removeImplicitMaterializations(converter.convertExpr(clangArg));
 	}
 	core::ExpressionList SimpleCallMapper::postprocessArgumentList(const core::ExpressionPtr& callee, const core::ExpressionList& args,
 	                                                               insieme::frontend::conversion::Converter& converter) {

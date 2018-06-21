@@ -76,12 +76,7 @@ int main() {
 			var ref<ptr<treeture<IMP_MovableOnly,t>>,f,f,plain> v0 = ref_decl(
 					type_lit(ref<ptr<treeture<IMP_MovableOnly,t>>,f,f,plain>)
 			);
-			var ref<IMP_MovableOnly,f,f,plain> v1 = treeture_extract(
-					*instantiate_fun(
-							lit("target_type" : (ref<treeture<IMP_MovableOnly,t>,f,f,cpp_ref>) -> ref<treeture<IMP_MovableOnly,t>,f,f,cpp_rref>),
-							lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
-							)(ref_kind_cast(ptr_to_ref(*v0), type_lit(cpp_ref)))
-					);
+			var ref<IMP_MovableOnly,f,f,plain> v1 = treeture_extract(*ref_move_plain(ptr_to_ref(*v0)));
 		}
 	)")
 	{
@@ -102,12 +97,7 @@ int main() {
 			var ref<IMP_MovableOnly,f,f,plain> v0 = IMP_MovableOnly::(
 					ref_decl(type_lit(ref<IMP_MovableOnly,f,f,plain>))
 			);
-			var ref<treeture<IMP_MovableOnly,f>,f,f,plain> v1 = treeture_done_from_ref(
-					instantiate_fun(
-							lit("target_type" : (ref<IMP_MovableOnly,f,f,cpp_ref>) -> ref<IMP_MovableOnly,f,f,cpp_rref>),
-							lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
-							)(ref_kind_cast(v0, type_lit(cpp_ref)))
-					);
+			var ref<treeture<IMP_MovableOnly,f>,f,f,plain> v1 = treeture_done_from_ref(ref_move_plain(v0));
 		}
 	)")
 	{
@@ -137,12 +127,12 @@ int main() {
 		{
 			var ref<treeture<int<4>,f>,f,f,plain> a = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> b = treeture_done(2);
-			treeture_sequential(dependency_after(), *a, *b);
-			treeture_parallel(dependency_after(), *a, *b);
+			treeture_sequential(dependency_after(), *ref_move_plain(a), *ref_move_plain(b));
+			treeture_parallel(dependency_after(), *ref_move_plain(a), *ref_move_plain(b));
 			treeture_combine(
 				dependency_after(),
-				*a,
-				*b,
+				*ref_move_plain(a),
+				*ref_move_plain(b),
 				cpp_lambda_to_lambda(
 					*<ref<__any_string__combine_1,f,f,plain>>(ref_temp(type_lit(__any_string__combine_1))) {},
 					type_lit((int<4>, int<4>) -> int<4>)
@@ -150,12 +140,12 @@ int main() {
 				true
 			);
 
-			treeture_sequential(dependency_after(), *a, *b);
-			treeture_parallel(dependency_after(), *a, *b);
+			treeture_sequential(dependency_after(), *ref_move_r_value_reference(ref_move_plain(a)), *ref_move_r_value_reference(ref_move_plain(b)));
+			treeture_parallel(dependency_after(), *ref_move_r_value_reference(ref_move_plain(a)), *ref_move_r_value_reference(ref_move_plain(b)));
 			treeture_combine(
 				dependency_after(),
-				*a,
-				*b,
+				*ref_move_r_value_reference(ref_move_plain(a)),
+				*ref_move_r_value_reference(ref_move_plain(b)),
 				cpp_lambda_to_lambda(
 					*<ref<__any_string__combine_2,f,f,plain>>(ref_temp(type_lit(__any_string__combine_2))) {},
 					type_lit((int<4>, int<4>) -> int<4>)
@@ -194,8 +184,8 @@ int main() {
 		def __any_string__user_api_add = function (v628 : ref<treeture<int<4>,f>,f,f,cpp_rref>, v629 : ref<treeture<int<4>,f>,f,f,cpp_rref>) -> treeture<int<4>,f> {
 			return treeture_combine(
 				dependency_after(),
-				*v628,
-				*v629,
+				*ref_move_r_value_reference(v628),
+				*ref_move_r_value_reference(v629),
 				cpp_lambda_to_lambda(
 					*<ref<__any_string__adder,f,f,plain>>(ref_temp(
 						type_lit(__any_string__adder)
@@ -208,16 +198,7 @@ int main() {
 		{
 			var ref<treeture<int<4>,f>,f,f,plain> v665 = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> v666 = treeture_done(2);
-			__any_string__user_api_add(
-				instantiate_fun(
-					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
-					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
-				)(ref_kind_cast(v665, type_lit(cpp_ref))),
-				instantiate_fun(
-					lit("target_type" : (ref<treeture<int<4>,f>,f,f,cpp_ref>) -> ref<treeture<int<4>,f>,f,f,cpp_rref>),
-					lit("IMP_std_colon__colon_move" : (ref<'T_0_0,f,f,cpp_rref>) -> ref<'IMP_typename_space_std_colon__colon_remove_reference_lt__Tp_gt__colon__colon_type,f,f,cpp_rref>)
-				)(ref_kind_cast(v666, type_lit(cpp_ref)))
-			);
+			__any_string__user_api_add(ref_move_plain(v665), ref_move_plain(v666));
 		}
 	)")
 	{
@@ -247,11 +228,11 @@ int main() {
 			var ref<treeture<int<4>,f>,f,f,plain> v0 = treeture_done(1);
 			var ref<treeture<int<4>,f>,f,f,plain> v1 = treeture_done(2);
 			var ref<dependencies,f,f,plain> v2 = dependency_after();
-			treeture_sequential(*v2, *v0, *v1);
-			treeture_parallel(*v2, *v0, *v1);
-			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {}, type_lit((int<4>, int<4>) -> int<4>)), true);
+			treeture_sequential(*ref_move_plain(v2), *ref_move_plain(v0), *ref_move_plain(v1));
+			treeture_parallel(*ref_move_plain(v2), *ref_move_plain(v0), *ref_move_plain(v1));
+			treeture_combine(*ref_move_plain(v2), *ref_move_plain(v0), *ref_move_plain(v1), cpp_lambda_to_lambda(*<ref<__any_string__combine,f,f,plain>>(ref_temp(type_lit(__any_string__combine))) {}, type_lit((int<4>, int<4>) -> int<4>)), true);
 			var ref<__any_string__combine_variable,f,f,plain> v3 = ref_cast(<ref<__any_string__combine_variable,f,f,plain>>(ref_temp(type_lit(__any_string__combine_variable))) {}, type_lit(f), type_lit(f), type_lit(cpp_rref));
-			treeture_combine(*v2, *v0, *v1, cpp_lambda_to_lambda(*v3, type_lit((int<4>, int<4>) -> int<4>)), true);
+			treeture_combine(*v2, *ref_move_plain(v0), *ref_move_plain(v1), cpp_lambda_to_lambda(*v3, type_lit((int<4>, int<4>) -> int<4>)), true);
 		}
 	)")
 	{ // this code is not actually correct, but it is sufficient for testing
