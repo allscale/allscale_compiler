@@ -179,7 +179,7 @@ namespace core {
 				stmts.push_back(decl);
 
 				// record new declaration for init
-				auto call = builder.callExpr(refExt.getRefMove(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference));
+				auto call = builder.callExpr(refExt.getRefMoveReference(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference));
 				valueDecls.push_back(utils::buildPassByValueDeclaration(call));
 			}
 
