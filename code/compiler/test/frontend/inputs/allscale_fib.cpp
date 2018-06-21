@@ -121,8 +121,8 @@ int main() {
 		def __any_string__user_add = function (v1 : ref<treeture<int<4>,f>,f,f,cpp_rref>, v2 : ref<treeture<int<4>,f>,f,f,cpp_rref>) -> treeture<int<4>,f> {
 			return treeture_combine(
 					dependency_after(),
-					*v1,
-					*v2,
+					*ref_move_r_value_reference(v1),
+					*ref_move_r_value_reference(v2),
 					cpp_lambda_to_lambda(
 							*<ref<__any_string__add_lambda_operator,f,f,plain>>(ref_temp(
 									type_lit(__any_string__add_lambda_operator)
