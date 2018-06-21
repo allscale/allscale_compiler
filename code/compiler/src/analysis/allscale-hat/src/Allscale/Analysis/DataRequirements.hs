@@ -206,7 +206,7 @@ dataRequirements addr = case I.getNode addr of
   where
 
     -- configure the underlying execution tree analysis
-    analysis = (mkExecutionTreeAnalysis DataRequirementAnalysis "DR" dataRequirements) {
+    analysis = (mkExecutionTreeAnalysis DataRequirementAnalysis "DR" dataRequirements (const Solver.top) (const Solver.top)) {
 
         -- register analysis specific operator handler
         opHandler = [accessHandler,interceptedAccessHandler,noAccessHandler],

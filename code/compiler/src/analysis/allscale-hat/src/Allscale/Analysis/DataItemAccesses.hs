@@ -66,7 +66,7 @@ dataItemAccesses addr = executionTreeValue analysis addr
   where
 
     -- configure the underlying execution tree analysis
-    analysis = (mkExecutionTreeAnalysis DataItemAccessesAnalysis "DI_Access" dataItemAccesses) {
+    analysis = (mkExecutionTreeAnalysis DataItemAccessesAnalysis "DI_Access" dataItemAccesses (const Solver.top) (const Solver.top)) {
 
         -- register analysis specific operator handler
         opHandler = [accessHandler],

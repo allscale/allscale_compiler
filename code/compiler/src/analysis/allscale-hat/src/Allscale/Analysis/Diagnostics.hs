@@ -42,10 +42,6 @@ instance Solver.Lattice Issues where
     bot = Issues Set.empty
     Issues x `merge` Issues y = Issues $ Set.union x y
 
-instance Solver.ExtLattice Issues where
-    top = undefined
-
-
 mkOneIssue :: Issue -> Issues
 mkOneIssue = Issues . Set.singleton
 
@@ -115,7 +111,7 @@ diagnosis diag addr = case () of
   where
 
     -- configure the underlying execution tree analysis
-    analysis = (mkExecutionTreeAnalysis (analysisToken diag) ("DIAG_" ++ analysisName diag) (varGen diag)) {
+    analysis = (mkExecutionTreeAnalysis (analysisToken diag) ("DIAG_" ++ analysisName diag) (varGen diag) (const Solver.bot) (const Solver.bot)) {
 
         -- register analysis specific operator handler
         opHandler = skipHandler : operatorHandler diag,
