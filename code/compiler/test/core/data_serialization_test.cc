@@ -62,6 +62,8 @@ namespace core {
 
 		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"std::vector<std::pair<std::array<int,3>,std::string>>"));
 
+		EXPECT_PRED1(isSerializable, frontend::parseType(mgr, "std::map<int,int>"));
+
 		// check runtime types
 		EXPECT_PRED1(isSerializable, backend::getDataItemReferenceType(basic.getInt8()));
 
@@ -191,6 +193,33 @@ namespace core {
 
 		// it should also not change when adding serialization code
 		EXPECT_EQ(type,tryMakeSerializable(type));
+	}
+
+	TEST(AutoSerialization, UserDefinedSerialization2) {
+		NodeManager mgr;
+		IRBuilder builder(mgr);
+
+		TypePtr type;
+		type = frontend::parseType(
+			mgr,
+			"#include <allscale/utils/serializer.h>\n#include <map>",
+			"struct A { "
+			"	std::map<int,int> a; "
+			"}"
+		);
+		EXPECT_TRUE(type);
+		assert_correct_ir(type);
+
+		// this one should not be serializable
+		EXPECT_FALSE(isSerializable(type)) << *type;
+
+
+		// it should change when adding serialization code
+		const auto& type2 = tryMakeSerializable(type);
+		EXPECT_NE(type, type2);
+
+		// this one should be serializable
+		EXPECT_TRUE(isSerializable(type2)) << *type2;
 	}
 
 	TEST(AutoSerialization, RecursiveTypes) {

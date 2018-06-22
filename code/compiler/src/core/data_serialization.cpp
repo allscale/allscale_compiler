@@ -441,6 +441,7 @@ namespace core {
 
 			if (lang::isStdArray(type)) return isSerializable(lang::getStdArrayElementType(type));
 			if (lang::isStdVector(type)) return isSerializable(lang::getStdVectorElementType(type));
+			if (lang::isStdMap(type)) return isSerializable(lang::getStdMapKeyType(type)) && isSerializable(lang::getStdMapValueType(type));
 
 			// -- AllScale Backend Types --
 
