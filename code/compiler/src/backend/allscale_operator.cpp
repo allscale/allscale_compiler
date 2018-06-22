@@ -542,6 +542,14 @@ namespace backend {
 				return nullptr;
 			};
 
+			table[ext.getDataItemReadRequirementOn()] = OP_CONVERTER {
+				return nullptr;
+			};
+
+			table[ext.getDataItemWriteRequirementOn()] = OP_CONVERTER {
+				return nullptr;
+			};
+
 			table[ext.getDataItemNoDependencies()] = OP_CONVERTER {
 				return nullptr;
 			};
