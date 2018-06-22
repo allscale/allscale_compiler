@@ -191,8 +191,14 @@ dataRequirements addr = case I.getNode addr of
     -- check user defined read requirement
     _ | isUserdefinedReadRequirement $ I.node addr -> userDefinedRequirement ReadOnly
 
+    -- check user defined element read requirement
+    _ | isUserdefinedElementReadRequirement $ I.node addr -> userDefinedElementRequirement ReadOnly
+
     -- check user defined read requirement
     _ | isUserdefinedWriteRequirement $ I.node addr -> userDefinedRequirement ReadWrite
+
+    -- check user defined element read requirement
+    _ | isUserdefinedElementWriteRequirement $ I.node addr -> userDefinedElementRequirement ReadWrite
 
     -- default handling through execution tree value analysis
     _ -> executionTreeValue analysis addr
@@ -296,7 +302,8 @@ dataRequirements addr = case I.getNode addr of
     userRequirements = getUserdefinedRequirements addr
     hasUserRequirements = not $ null userRequirements
 
-    userDefinedRequirement mode = var
+    -- a general function computing user defined requirements
+    userDefinedReq refNode mode = var
       where
         var = Solver.mkVariable varId [con] Solver.bot
         con = Solver.createConstraint dep val var
@@ -304,7 +311,7 @@ dataRequirements addr = case I.getNode addr of
         dep _ = [Solver.toVar referenceVar]
         val = dataRequirements
 
-        referenceVar = elementReferenceValue $ addr
+        referenceVar = elementReferenceValue $ refNode
         referenceVal a = toSet $ if isValue val then toValue val else ElementReferenceSet BSet.empty
           where
             val = Solver.get a referenceVar
@@ -317,6 +324,12 @@ dataRequirements addr = case I.getNode addr of
                 range       = range,
                 accessMode  = mode
             }
+
+    -- a specialization of the user defined requirements for user provided ranges
+    userDefinedRequirement = userDefinedReq addr
+
+    -- a specialization of the user defined requirements for element wise requirements
+    userDefinedElementRequirement = userDefinedReq (I.goDown 1 $ I.goDown 2 addr)
 
     -- utilities --
     idGen = Solver.mkIdentifierFromExpression $ analysisIdentifier analysis
@@ -346,10 +359,20 @@ isUserdefinedReadRequirement :: I.Tree -> Bool
 isUserdefinedReadRequirement (I.Node I.CallExpr [_,f,_,_]) = I.isBuiltin f "data_item_read_requirement"
 isUserdefinedReadRequirement _ = False
 
+-- tests whether a given IR structure is a indirect user-defined read requirement
+isUserdefinedElementReadRequirement :: I.Tree -> Bool
+isUserdefinedElementReadRequirement (I.Node I.CallExpr [_,f,_]) = I.isBuiltin f "data_item_read_requirement_on"
+isUserdefinedElementReadRequirement _ = False
+
 -- tests whether a given IR structure is a user-defined read requirement
 isUserdefinedWriteRequirement :: I.Tree -> Bool
 isUserdefinedWriteRequirement (I.Node I.CallExpr [_,f,_,_]) = I.isBuiltin f "data_item_write_requirement"
 isUserdefinedWriteRequirement _ = False
+
+-- tests whether a given IR structure is a indirect user-defined write requirement
+isUserdefinedElementWriteRequirement :: I.Tree -> Bool
+isUserdefinedElementWriteRequirement (I.Node I.CallExpr [_,f,_]) = I.isBuiltin f "data_item_write_requirement_on"
+isUserdefinedElementWriteRequirement _ = False
 
 
 -- tests whether a given IR structure is a user-defined data requirement
@@ -357,7 +380,9 @@ isUserdefinedRequirement :: I.Tree -> Bool
 isUserdefinedRequirement a =
     isUserdefinedNoRequirement a ||
     isUserdefinedReadRequirement a ||
-    isUserdefinedWriteRequirement a
+    isUserdefinedWriteRequirement a ||
+    isUserdefinedElementReadRequirement a ||
+    isUserdefinedElementWriteRequirement a
 
 
 -- collects user-defined requirements

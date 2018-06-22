@@ -45,21 +45,32 @@ int main() {
 		grid[{2,3}] = 10;
 	}
 
-	// test that the no-more-dependencies clause is accepted
+	// test that the no-dependencies clause is accepted
 	{
 		cba_expect_data_requirements("{}");
-		no_more_dependencies();
+		no_dependencies();
 		grid[{2,3}] = 10;
 	}
 
-	// test that no-more-requirements works together with user defined requirements
+	// test that no-requirements works together with user defined requirements
 	{
 		cba_expect_data_requirements("{Requirement { v0[instantiate_fun(target_type, IMP_single)(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), num_cast(4, type_lit(int<8>)), num_cast(5, type_lit(int<8>))), type_lit(cpp_ref)))] RW }}");
 		needs_write_access(grid,GridRegion<2>::single({4,5}));
-		no_more_dependencies();
+		no_dependencies();
 		grid[{2,3}] = 10;
 	}
 
+	// test indirect read-requirement specification
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), num_cast(2, type_lit(int<8>)), num_cast(3, type_lit(int<8>))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RO }}");
+		needs_read_access_on(grid[{2,3}]);
+	}
+
+	// test that no-requirements works together with user defined requirements
+	{
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(v0, type_lit(cpp_ref))[ref_kind_cast(instantiate_fun(target_type, IMP_single)(ref_cast(ref_kind_cast(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2::(ref_temp(type_lit(IMP_allscale_colon__colon_utils_colon__colon_Vector_long_2)), num_cast(2, type_lit(int<8>)), num_cast(3, type_lit(int<8>))), type_lit(cpp_ref)), type_lit(t), type_lit(f), type_lit(cpp_ref))) materialize , type_lit(cpp_ref))] RW }}");
+		needs_write_access_on(grid[{2,3}]);
+	}
 
 	return 0;
 }

@@ -82,7 +82,9 @@ namespace detail {
 		// user defined data requirements
 		{"allscale::api::core::sema::needs_read_access", RequirementMapper("data_item_read_requirement")},
 		{"allscale::api::core::sema::needs_write_access", RequirementMapper("data_item_write_requirement")},
-		{"allscale::api::core::sema::no_more_dependencies", SimpleCallMapper("data_item_no_dependencies")},
+		{"allscale::api::core::sema::needs_read_access_on", SimpleCallMapper("data_item_read_requirement_on")},
+		{"allscale::api::core::sema::needs_write_access_on", SimpleCallMapper("data_item_write_requirement_on")},
+		{"allscale::api::core::sema::no_dependencies", SimpleCallMapper("data_item_no_dependencies")},
 	};
 
 

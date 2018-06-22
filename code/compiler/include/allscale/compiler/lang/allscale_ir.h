@@ -90,6 +90,12 @@ namespace lang {
 		LANG_EXT_LITERAL(DataItemWriteRequirement, "data_item_write_requirement",
 			"(ref<'data_item, 'c, 'v, 'k>, 'region) -> unit")
 
+		LANG_EXT_LITERAL(DataItemReadRequirementOn, "data_item_read_requirement_on",
+			"(ref<'elem, t, f, cpp_ref>) -> unit")
+
+		LANG_EXT_LITERAL(DataItemWriteRequirementOn, "data_item_write_requirement_on",
+			"(ref<'elem, f, f, cpp_ref>) -> unit")
+
 		LANG_EXT_LITERAL(DataItemNoDependencies, "data_item_no_dependencies", "()->unit")
 	};
 
