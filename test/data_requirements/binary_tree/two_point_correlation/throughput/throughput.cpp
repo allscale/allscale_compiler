@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
     std::cout << "Benchmarking ... " << std::flush;
     begin = now();
     pfor(std::size_t(0),points.size(),[&,points,radius](std::size_t i) {
-        sema::no_more_dependencies();
+        sema::no_dependencies();
         twoPointCorrelation(tree, points[i], radius).get();
     });
     end = now();
