@@ -26,7 +26,7 @@ add_custom_command(
 	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project -v1 --enable-tests flib:allscale-hat
 
 	# copy library to binary dir
-	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%flib:allscale-hat" ${INSIEME_HAT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%flib:allscale-hat" ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
 	DEPENDS ${allscale_hat_srcs}
 	DEPENDS insieme_hat ${INSIEME_HAT_BINARY_DIR}/libinsieme-hat.so
