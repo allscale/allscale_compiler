@@ -72,8 +72,10 @@ foreign-library allscale-hat
 
 executable datareq
     if !flag(profiling)
-      buildable: False
+      extra-libraries:  insieme_analysis
+                        stdc++
 
+    ghc-options: -rtsopts
     main-is:            datareq.hs
     hs-source-dirs:     bin/
     build-depends:      insieme-hat
