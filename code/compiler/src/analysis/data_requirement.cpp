@@ -6,6 +6,7 @@
 
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/printer/pretty_printer.h"
+#include "insieme/core/transform/node_replacer.h"
 
 #include "allscale/compiler/backend/allscale_extension.h"
 
@@ -259,19 +260,46 @@ namespace analysis {
 		return simplify(*result);
 	}
 
+	namespace {
+
+		ExpressionPtr simplifyDataItemRef(const ExpressionPtr& ref) {
+			auto& ext = ref->getNodeManager().getLangExtension<backend::AllScaleBackendModule>();
+			return insieme::core::transform::transformBottomUpGen(ref,[&](const ExpressionPtr& expr){
+
+				// special handling for nested pack/unpack calls
+				if (ext.isCallOfGetDataItemPack(expr)) {
+					auto arg = expr.as<CallExprPtr>()->getArgument(0);
+					if (ext.isCallOfGetDataItemUnpack(arg)) {
+						return arg.as<CallExprPtr>()->getArgument(0);
+					}
+				}
+
+				if (ext.isCallOfGetDataItemUnpack(expr)) {
+					auto arg = expr.as<CallExprPtr>()->getArgument(0);
+					if (ext.isCallOfGetDataItemPack(arg)) {
+						return arg.as<CallExprPtr>()->getArgument(0);
+					}
+				}
+
+				// remove nested reference casts
+				return insieme::core::lang::collapseRefCasts(expr);
+
+			}, insieme::core::transform::localReplacement);
+		}
+
+	}
+
 	DataRequirements simplify(const DataRequirements& requirements) {
 
 		// if the requirements are universal, there is nothing to do
 		if (requirements.isUniverse()) return requirements;
 
-		// step 1: reduce complexity of involved expressions
-		// TODO: remove unnecessary casts
+		// Task: aggregate dependencies on same data item
 
-		// step 2: aggregate dependencies on same data item
 		// index dependencies by mode and target
 		std::map<AccessMode,std::map<ExpressionPtr, DataRange>> index;
 		for(const auto& cur : requirements) {
-			index[cur.getMode()][cur.getDataItem()].add(cur.getRange());
+			index[cur.getMode()][simplifyDataItemRef(cur.getDataItem())].add(cur.getRange());
 		}
 		// create resulting set of dependencies
 		DataRequirements res;

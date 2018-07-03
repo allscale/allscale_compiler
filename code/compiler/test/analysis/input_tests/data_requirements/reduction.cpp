@@ -38,7 +38,7 @@ int main() {
 
 	// test an actual read access (with a constant index)
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(f), type_lit(f), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RO }}");
 
 		// some simple range to process - no requirements
 		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
@@ -48,7 +48,7 @@ int main() {
 
 	// test an actual write access (with a constant index)
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(f), type_lit(f), type_lit(plain)), type_lit(cpp_ref))[ref_kind_cast(ref_temp_init(10), type_lit(cpp_ref))] RW }}");
 
 		// some simple range to process - no requirements
 		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
@@ -58,7 +58,7 @@ int main() {
 
 	// test an actual read access (with a dependent index)
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(0, 0) materialize .x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(10-1u, 10-1u) materialize .x), type_lit(cpp_ref)))] RO }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(f), type_lit(f), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(0, 0) materialize .x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(10-1u, 10-1u) materialize .x), type_lit(cpp_ref)))] RO }}");
 
 		// some simple range to process - no requirements
 		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
@@ -68,7 +68,7 @@ int main() {
 
 	// test an actual write access (with a dependent index)
 	{
-		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_kind_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(0, 0) materialize .x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(10-1u, 10-1u) materialize .x), type_lit(cpp_ref)))] RW }}");
+		cba_expect_data_requirements("{Requirement { ref_kind_cast(ref_cast(ref_kind_cast(v0, type_lit(cpp_ref)), type_lit(f), type_lit(f), type_lit(plain)), type_lit(cpp_ref))[span(ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(0, 0) materialize .x), type_lit(cpp_ref)),ref_kind_cast(ref_temp_init(*IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_::(ref_temp(type_lit(IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_detail_colon__colon_point_factory_allscale_colon__colon_utils_colon__colon_Vector_lt_int_comma__space_2_gt_))).IMP__operator_call_(10-1u, 10-1u) materialize .x), type_lit(cpp_ref)))] RW }}");
 
 		// some simple range to process - no requirements
 		range<Vec2>(Vec2(0,0),Vec2(10,10)).forEach([&](const Vec2& x){
