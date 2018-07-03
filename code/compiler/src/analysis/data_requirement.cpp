@@ -157,13 +157,11 @@ namespace analysis {
 
 
 	DataRange DataRange::unknown() {
-		return {};
+		return set_type::getUniversal();
 	}
 
 	DataRange DataRange::empty() {
-		DataRange res = unknown();
-		res.spans = std::set<DataSpan>();
-		return res;
+		return {};
 	}
 
 	DataPoint DataRange::term(const insieme::core::ExpressionPtr& expr) {
@@ -258,7 +256,31 @@ namespace analysis {
 		auto node_hs = ctx.resolveNodeAddress(NodeAddress(stmt));
 		auto result = ctx.runAnalysis<DataRequirements*>(hat_hs_data_requirements, node_hs);
 		if(!result) throw insieme::analysis::cba::AnalysisFailure("Timeout in Data Requirements Analysis");
-		return *result;
+		return simplify(*result);
+	}
+
+	DataRequirements simplify(const DataRequirements& requirements) {
+
+		// step 1: reduce complexity of involved expressions
+		// TODO: remove unnecessary casts
+
+		// step 2: aggregate dependencies on same data item
+		// index dependencies by mode and target
+		std::map<AccessMode,std::map<ExpressionPtr, DataRange>> index;
+		for(const auto& cur : requirements) {
+			index[cur.getMode()][cur.getDataItem()].add(cur.getRange());
+		}
+		// create resulting set of dependencies
+		DataRequirements res;
+		for(const auto& outer : index) {
+			auto mode = outer.first;
+			for(const auto& cur : outer.second) {
+				res.add(DataRequirement(cur.first,cur.second,mode));
+			}
+		}
+
+		// done
+		return res;
 	}
 
 } // end namespace analysis

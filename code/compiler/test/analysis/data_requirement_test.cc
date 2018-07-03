@@ -27,8 +27,13 @@ namespace analysis {
 		// check the default constructor
 		DataRange range;
 
-		EXPECT_TRUE(range.isUnknown());
-		EXPECT_EQ("unknown",toString(range));
+		EXPECT_TRUE(range.isEmpty());
+		EXPECT_FALSE(range.isUnknown());
+		EXPECT_EQ("empty",toString(range));
+
+		EXPECT_TRUE(DataRange::unknown().isUnknown());
+		EXPECT_FALSE(DataRange::unknown().isEmpty());
+		EXPECT_EQ("unknown",toString(DataRange::unknown()));
 
 		EXPECT_EQ("empty",toString(DataRange::empty()));
 		EXPECT_EQ("empty",toString(DataRange::empty()));
@@ -43,7 +48,7 @@ namespace analysis {
 
 		// -- unknown --
 
-		auto u = range;
+		auto u = DataRange::unknown();
 		EXPECT_EQ("unknown",toString(u));
 		EXPECT_TRUE(u.isUnknown());
 		EXPECT_FALSE(u.isEmpty());
@@ -422,7 +427,7 @@ namespace analysis {
 
 		// compute stencil with fixed boundary
 		EXPECT_EQ(
-			"{Requirement { A[span(10+1,20-1u+1)] RO },Requirement { A[span(10,20-1u)] RO },Requirement { A[span(10-1,20-1u-1)] RO },Requirement { B[span(10,20-1u)] RW }}",
+			"{Requirement { A[union{span(10+1,20-1u+1),span(10,20-1u),span(10-1,20-1u-1)}] RO },Requirement { B[span(10,20-1u)] RW }}",
 			toString(getDataRequirements(mgr,
 				R"(
 					def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
@@ -447,60 +452,56 @@ namespace analysis {
 
 
 		// compute stencil with literal boundary
-		auto requirement = toString(getDataRequirements(mgr,
-			R"(
-				def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
-					let point = lit("point" : (int<4>,int<4>)->point);
-					for(int<4> i = a .. b) {
-						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
-						auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
-						auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
+		EXPECT_EQ(
+			"{Requirement { A[union{span(*x+1,*y-1u+1),span(*x,*y-1u),span(*x-1,*y-1u-1)}] RO },Requirement { B[span(*x,*y-1u)] RW }}",
+			toString(getDataRequirements(mgr,
+				R"(
+					def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
+						let point = lit("point" : (int<4>,int<4>)->point);
+						for(int<4> i = a .. b) {
+							auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+							auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+							auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-						auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
+							auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
 
-						ref = *ref1 + *ref2 + *ref3;
+							ref = *ref1 + *ref2 + *ref3;
+						}
+					};
+
+					{
+						stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
 					}
-				};
-
-				{
-					stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
-				}
-			)"
-		));
-
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y-1u)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1u-1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y-1u+1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y-1u)] RW }");
+				)"
+			))
+		);
 
 		// compute stencil with literal boundary and local variables
-		requirement = toString(getDataRequirements(mgr,
-			R"(
-				def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
-					let point = lit("point" : (int<4>,int<4>)->point);
-					for(int<4> i = a .. b) {
-						auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
-						auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
-						auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
+		EXPECT_EQ(
+				"{Requirement { A[union{span(*x+1,*y-1u+1),span(*x,*y-1u),span(*x-1,*y-1u-1)}] RO },Requirement { B[span(*x,*y-1u)] RW }}",
+				toString(getDataRequirements(mgr,
+					R"(
+						def stencil = ( A : ref<'a,f,f,cpp_ref>, B : ref<'a,f,f,cpp_ref>, a : int<4>, b : int<4> ) -> unit {
+							let point = lit("point" : (int<4>,int<4>)->point);
+							for(int<4> i = a .. b) {
+								auto ref1 = data_item_element_access(A,i-1,type_lit(ref<int<4>>));
+								auto ref2 = data_item_element_access(A, i ,type_lit(ref<int<4>>));
+								auto ref3 = data_item_element_access(A,i+1,type_lit(ref<int<4>>));
 
-						var ref<int<4>> sum = 0; 
-						sum = *ref1 + *ref2 + *ref3;
+								var ref<int<4>> sum = 0;
+								sum = *ref1 + *ref2 + *ref3;
 
-						auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
-						ref = *sum / 3;
-					}
-				};
+								auto ref = data_item_element_access(B,i,type_lit(ref<int<4>>));
+								ref = *sum / 3;
+							}
+						};
 
-				{
-					stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
-				}
-			)"
-		));
-
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x,*y-1u)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x-1,*y-1u-1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { A[span(*x+1,*y-1u+1)] RO }");
-		EXPECT_PRED2(containsSubString, requirement, "Requirement { B[span(*x,*y-1u)] RW }");
+						{
+							stencil(lit("A":ref<int<4>,f,f,cpp_ref>),lit("B":ref<int<4>,f,f,cpp_ref>),*lit("x":ref<int<4>>),*lit("y":ref<int<4>>));
+						}
+					)"
+				))
+		);
 
 	}
 

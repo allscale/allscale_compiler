@@ -101,10 +101,10 @@ namespace analysis {
 	public:
 
 		/**
-		 * Creates a new, unknown data range.
+		 * Creates a new, empty data range.
 		 */
 		DataRange()
-			: spans(set_type::getUniversal()) {}
+			: spans() {}
 
 		DataRange(const insieme::core::ExpressionPtr& expr)
 			: DataRange(DataPoint(expr)) {}
@@ -134,6 +134,12 @@ namespace analysis {
 		template<typename ... Ranges>
 		static DataRange merge(const Ranges& ... ranges) {
 			return merge(std::vector<DataRange>{ ranges ... });
+		}
+
+		// -- mutators --
+
+		void add(const DataRange& range) {
+			*this = merge(*this,range);
 		}
 
 		// -- observers --
@@ -245,12 +251,16 @@ namespace analysis {
 
 	public:
 
-		DataRequirements() : requirements(set_type::getUniversal()) {}
+		DataRequirements() : requirements() {}
 
 		DataRequirements(const set_type& requirements)
 			: requirements(requirements) {}
 
 		virtual ~DataRequirements() = default;
+
+		static DataRequirements unknown() {
+			return set_type::getUniversal();
+		}
 
 		bool isUnknown() const {
 			return requirements.isUniversal();
@@ -270,6 +280,10 @@ namespace analysis {
 
 		auto end() const {
 			return requirements.end();
+		}
+
+		void add(const DataRequirement& req) {
+			requirements.insert(req);
 		}
 
 		virtual boost::property_tree::ptree toPropertyTree() const override;
@@ -297,6 +311,11 @@ namespace analysis {
 	 * @return the list of data requirements obtained for the given statement unless timed
 	 */
 	boost::optional<DataRequirements> getDataRequirements(const insieme::core::StatementPtr& stmt);
+
+	/**
+	 * Performs a simplification of data requirements by reducing redundancies within the stated requirements.
+	 */
+	DataRequirements simplify(const DataRequirements&);
 
 } // end namespace analysis
 } // end namespace compiler
