@@ -102,8 +102,10 @@ dataRequirements addr = case I.getNode addr of
         var = Solver.mkVariable varId [con] Solver.bot
         con = Solver.createConstraint dep val var
 
-        dep _ = ( Solver.toVar <$> [beginDepVar,endDepVar,stepDepVar,bodyDepVar] )
-             ++ ( Solver.toVar <$> [beginValVar,endValVar] )
+        dep a = ( Solver.toVar <$> [beginDepVar,endDepVar,stepDepVar,bodyDepVar] )
+             ++ valVars
+          where
+            valVars = if containsIterVar a then ( Solver.toVar <$> [beginValVar,endValVar] ) else []
 
         val a = Solver.join [beginDepVal a,endDepVal a,stepDepVal a,bodyDepVal a]
 
@@ -120,6 +122,11 @@ dataRequirements addr = case I.getNode addr of
         stepDepVar  = dataRequirements step
         bodyDepVar  = dataRequirements body
 
+        -- a test whether the current dependency references the iterator variable
+        containsIterVar a = not (BSet.isUniverse bodyRequirements) && any (containsIterator iter . range) bodyRequirements
+          where
+            DataRequirements bodyRequirements = (Solver.get a bodyDepVar)
+
         -- get the symbolic value variables for the iterators
         beginValVar = symbolicValue begin
         endValVar   = symbolicValue end
@@ -134,9 +141,10 @@ dataRequirements addr = case I.getNode addr of
 
             DataRequirements bodyRequirements  = (Solver.get a bodyDepVar)
 
-            val = if (BSet.isUniverse bodyRequirements) || (BSet.isUniverse fromVals) || (BSet.isUniverse toVals)
-                  then (if BSet.null bodyRequirements then bodyRequirements else BSet.Universe)
-                  else BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements )
+            val = case () of
+              _ | not (containsIterVar a) || BSet.null bodyRequirements-> bodyRequirements
+                | BSet.isUniverse bodyRequirements || BSet.isUniverse fromVals || BSet.isUniverse toVals -> BSet.Universe
+                | otherwise -> BSet.fromList $ concat (fixRange <$> BSet.toList bodyRequirements)
 
             fixRange req = [ req { range = defineIteratorRange iter f t (range req) } | f <- BSet.toList fromVals , t <- Builder.minusOne <$> BSet.toList toVals ]
 

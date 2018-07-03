@@ -9,6 +9,7 @@ module Allscale.Analysis.Entities.DataRange (
     DataSpan(..),
     DataRange(..),
     point,
+    containsIterator,
     defineIteratorRange,
     printRange,
 ) where
@@ -18,8 +19,11 @@ import Data.Hashable
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
 import Insieme.Inspire (substituteInLocalScope)
+import Insieme.Inspire.NodeAddress
 
+import qualified Data.AbstractSet as Set
 import qualified Insieme.Inspire as IR
+import qualified Insieme.Query as Q
 import qualified Insieme.Utils.BoundSet as BSet
 
 
@@ -33,7 +37,7 @@ data DataPoint = DataPoint IR.Tree
 printPoint :: DataPoint -> String
 printPoint (DataPoint t) = pprintTree t
 
-    
+
 data DataSpan = DataSpan {
                     from :: DataPoint,
                     to   :: DataPoint
@@ -50,6 +54,14 @@ point t = DataRange $ BSet.singleton $ DataSpan p p
     p = DataPoint t
 
 
+containsIterator :: IR.Tree -> DataRange -> Bool
+containsIterator _ (DataRange spans) | BSet.isUniverse spans = False
+containsIterator i (DataRange spans) = any f $ BSet.toSet spans
+  where
+    f (DataSpan a b) = g a || g b
+    g (DataPoint t) = Set.member i $ Q.getFreeVariables t
+
+
 defineIteratorRange ::  IR.Tree             -- ^ a IR iterator variable
                      -> IR.Tree             -- ^ the start value of the iterator variable
                      -> IR.Tree             -- ^ the end value of the iterator variable
@@ -61,7 +73,7 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
     define     spans     = BSet.map go spans
       where
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
-        
+
         sub' o n t = substituteInLocalScope (\case t | t == o -> n; t -> t) t
 
 printRange :: DataRange -> String
