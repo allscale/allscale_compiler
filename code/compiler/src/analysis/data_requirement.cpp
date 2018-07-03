@@ -261,6 +261,9 @@ namespace analysis {
 
 	DataRequirements simplify(const DataRequirements& requirements) {
 
+		// if the requirements are universal, there is nothing to do
+		if (requirements.isUniverse()) return requirements;
+
 		// step 1: reduce complexity of involved expressions
 		// TODO: remove unnecessary casts
 
