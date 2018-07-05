@@ -18,8 +18,7 @@ import Control.DeepSeq
 import Data.Hashable
 import GHC.Generics (Generic)
 import Insieme.Adapter.Utils (pprintTree)
-import Insieme.Inspire (substituteInLocalScope)
-import Insieme.Inspire.NodeAddress
+import Insieme.Inspire (substitutePrunable)
 
 import qualified Data.AbstractSet as Set
 import qualified Insieme.Inspire as IR
@@ -62,6 +61,23 @@ containsIterator i (DataRange spans) = any f $ BSet.toSet spans
     g (DataPoint t) = Set.member i $ Q.getFreeVariables t
 
 
+
+substituteVariable :: IR.Tree -> IR.Tree -> IR.Tree -> IR.Tree
+substituteVariable v e t = if isFree then res else t
+  where
+    isFree = Set.member v $ Q.getFreeVariables t
+    res = substitutePrunable p s t
+
+    p n | Q.isType n = True
+    p n | Q.isLambdaExpr n = True
+    p n = not (Set.member v $ Q.getFreeVariables n)
+    p _ = False
+
+    s n | n == v = e
+    s n = n
+
+
+
 defineIteratorRange ::  IR.Tree             -- ^ a IR iterator variable
                      -> IR.Tree             -- ^ the start value of the iterator variable
                      -> IR.Tree             -- ^ the end value of the iterator variable
@@ -74,7 +90,8 @@ defineIteratorRange var from to (DataRange spans) = DataRange $ define spans
       where
         go (DataSpan (DataPoint f) (DataPoint t)) = DataSpan (DataPoint $ sub' var from f) (DataPoint $ sub' var to t)
 
-        sub' o n t = substituteInLocalScope (\case t | t == o -> n; t -> t) t
+        sub' = substituteVariable
+
 
 printRange :: DataRange -> String
 printRange (DataRange BSet.Universe) = "-all-"
