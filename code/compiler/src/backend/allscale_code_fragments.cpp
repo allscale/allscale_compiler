@@ -322,6 +322,8 @@ namespace backend {
 				auto fragment = fragmentManager->create<backend::c_ast::CCodeFragment>(getCNodeManager(), alias);
 
 				// add dependencies to parameter types
+				fragment->addDependency(resTypeInfo.declaration);
+				fragment->addRequirement(resTypeInfo.definition);
 				fragment->addDependency(nameFactory.declaration);
 				fragment->addRequirement(nameFactory.definition);
 
