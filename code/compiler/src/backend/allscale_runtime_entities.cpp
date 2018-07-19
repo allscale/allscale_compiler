@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "insieme/core/ir.h"
 #include "insieme/core/ir_builder.h"
@@ -49,8 +50,9 @@ namespace backend {
 	// -- WorkItemVariant --
 
 
-	WorkItemVariant::WorkItemVariant(const core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements)
-		: implementation(implementation), dataRequirements(requirements) {
+	WorkItemVariant::WorkItemVariant(const core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements,
+		                             const std::vector<std::string>& closureElementNames)
+		: implementation(implementation), dataRequirements(requirements), closureElementNames(closureElementNames) {
 
 		// check that the implementation is actually present
 		assert_true(implementation) << "Implementation must not be null!";
@@ -91,6 +93,10 @@ namespace backend {
 		return core::lang::ReferenceType(implementation->getFunctionType()->getParameterType(0)).getElementType().as<core::TupleTypePtr>();
 	}
 
+	const std::vector<std::string>& WorkItemVariant::getClosureElementNames() const {
+		return closureElementNames;
+	}
+
 	void WorkItemVariant::setDataRequirements(const WorkItemVariantDataRequirement& requirements) {
 		dataRequirements = requirements;
 		if (dataRequirements.valid()) {
@@ -98,7 +104,7 @@ namespace backend {
 		}
 	}
 
-	using work_item_variant_tuple = std::tuple<core::LambdaExprPtr,WorkItemVariantDataRequirement>;
+	using work_item_variant_tuple = std::tuple<core::LambdaExprPtr, WorkItemVariantDataRequirement, std::vector<std::string>>;
 
 	core::TypePtr WorkItemVariant::getEncodedType(core::NodeManager& mgr) {
 		return ie::getTypeFor<work_item_variant_tuple>(mgr);
@@ -110,12 +116,12 @@ namespace backend {
 
 	core::ExpressionPtr WorkItemVariant::toIR(core::NodeManager& mgr) const {
 		// convert this work item into a tuple
-		return ie::toIR(mgr, work_item_variant_tuple{ implementation, dataRequirements });
+		return ie::toIR(mgr, work_item_variant_tuple{ implementation, dataRequirements, closureElementNames });
 	}
 
 	WorkItemVariant WorkItemVariant::fromIR(const core::ExpressionPtr& e) {
 		auto tuple = ie::toValue<work_item_variant_tuple>(e);
-		return WorkItemVariant(std::get<0>(tuple),std::get<1>(tuple));
+		return WorkItemVariant(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple));
 	}
 
 

@@ -69,6 +69,7 @@ data ErrorCode = Timeout
                | ValidForDistributedMemory
                | InvalidForDistributedMemory
                | RefOrPtrFoundInCaptureList
+               | InvalidUseOfStdoutForDistributedMemory
   deriving (Eq, Ord, Enum, Show, Read, Generic, NFData)
 
 -- * Analysis Dispatcher

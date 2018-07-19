@@ -6,16 +6,18 @@ function cutoffWithElipsis(text, length) {
 	var $span = $('<span>');
 
 	if (text.length <= length) {
-		return $span.text(text);
+		return $span.html(backtickToCode(text));
 	}
 
+	text = backtickToCode(text);
+
 	return $span.append(
-		document.createTextNode(text.substr(0, length)),
+		$('<span>').html(text.substr(0, length)),
 		$('<a>')
 			.addClass('ellipsis')
 			.text('…')
 			.click(function(e) {
-				$(this).parent().text(text);
+				$(this).parent().html(text);
 			})
 	);
 }
@@ -37,6 +39,10 @@ function demangle(text) {
 		.replace(/_lt_/g, '〈')
 		.replace(/_gt_/g, '〉')
 		.replace(/_space_/g, '⎵');
+}
+
+function backtickToCode(text) {
+	return text.replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 function determineLevelForEntry(entry) {
@@ -82,7 +88,7 @@ function determineLevelForIssue(issue) {
 }
 
 function getHelpMessage(error_code) {
-	if (!Array.isArray(report.help_messages)) {
+	if (!report.help_messages || typeof report.help_messages !== "object") {
 		return "";
 	}
 
@@ -264,7 +270,7 @@ function createIssue(addr, issue, index) {
 							createIssueDetails(addr, issue),
 							$('<div>')
 								.addClass('entry-issue-help')
-								.text(getHelpMessage(issue.error_code)),
+								.html(getHelpMessage(issue.error_code)),
 							createSource(`entry-${addr}-issue-${index}-source`, issue.loc.address, issue.loc.location, issue.loc.source),
 							$('<div>')
 								.attr('id', `entry-${addr}-issue-${index}-backtrace`)

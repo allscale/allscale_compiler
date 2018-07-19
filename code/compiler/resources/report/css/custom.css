@@ -84,6 +84,8 @@ h1.title {
     border-bottom: solid 2px lightgrey;
     padding: 5px;
     margin-bottom: 10px;
+    background-color: #aaffaa;
+    border-radius: 4px;
 }
 
 .entry div.entry-issue-help:empty,

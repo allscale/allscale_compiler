@@ -86,9 +86,15 @@ namespace backend {
 		 */
 		WorkItemVariantDataRequirement dataRequirements;
 
+		/**
+		 * Closure element names for diagnoses.
+		 */
+		std::vector<std::string> closureElementNames;
+
 	public:
 
-		WorkItemVariant(const insieme::core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements = WorkItemVariantDataRequirement());
+		WorkItemVariant(const insieme::core::LambdaExprPtr& implementation, const WorkItemVariantDataRequirement& requirements = WorkItemVariantDataRequirement(),
+		                const std::vector<std::string>& closureElementNames = {});
 
 		insieme::core::LambdaExprPtr getImplementation() const {
 			return implementation;
@@ -101,6 +107,8 @@ namespace backend {
 		insieme::core::TypePtr getResultType() const;
 
 		insieme::core::TupleTypePtr getClosureType() const;
+
+		const std::vector<std::string>& getClosureElementNames() const;
 
 		const WorkItemVariantDataRequirement& getDataRequirements() const {
 			return dataRequirements;

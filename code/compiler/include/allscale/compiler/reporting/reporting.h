@@ -88,6 +88,7 @@ namespace reporting {
 		ValidForDistributedMemory,
 		InvalidForDistributedMemory,
 		RefOrPtrFoundInCaptureList,
+		InvalidUseOfStdoutForDistributedMemory,
 	};
 
 	std::ostream& operator<<(std::ostream& out, ErrorCode err);

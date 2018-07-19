@@ -355,14 +355,16 @@ namespace reporting {
 		case ErrorCode::ValidForDistributedMemory:                         return {Severity::Info,    {},                        Category::DistributedMemory, "Given code variant can be converted to distributed memory target code."};
 		case ErrorCode::InvalidForDistributedMemory:                       return {Severity::Error,   {},                        Category::DistributedMemory, "Given code variant can not be converted to distributed memory target code."};
 		case ErrorCode::RefOrPtrFoundInCaptureList:                        return {Severity::Warning, {},                        Category::DistributedMemory, "Use of captured reference / pointer prevents generation of distributed memory code."};
+		case ErrorCode::InvalidUseOfStdoutForDistributedMemory:            return {Severity::Warning, {Tag::Global},             Category::DistributedMemory, "Use of `std::cout` prevents generation of distributed memory code."};
 		};
 		assert_true(false) << "Unknown ErrorCode " << static_cast<int>(err);
 		return {};
 	}
 
 	boost::optional<std::string> lookupHelpMessage(ErrorCode err) {
-		switch (err) {
-		case ErrorCode::ConvertParRegionToSharedMemoryParRuntimeCode: return {{"dummy help text"}};
+		switch(err) {
+		case ErrorCode::RefOrPtrFoundInCaptureList:             return {{"<i>Hint:</i> For read-only accesses, capture by value instead. Otherwise use Data Items."}};
+		case ErrorCode::InvalidUseOfStdoutForDistributedMemory: return {{"<i>Hint:</i> For debug output use <code>std::cerr</code>, for distributed IO use the AllScale IO primitives."}};
 		default: return {};
 		}
 	}

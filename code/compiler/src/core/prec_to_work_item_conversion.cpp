@@ -1,5 +1,10 @@
 #include "allscale/compiler/core/prec_to_work_item_conversion.h"
 
+#include <fstream>
+#include <ctime>
+
+#include <boost/algorithm/string.hpp>
+
 #include "insieme/core/ir_builder.h"
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/checks/full_check.h"
@@ -24,9 +29,6 @@
 #include "allscale/compiler/analysis/data_item_access.h"
 #include "allscale/compiler/analysis/data_requirement.h"
 #include "allscale/compiler/env_vars.h"
-
-#include <fstream>
-#include <ctime>
 
 namespace allscale {
 namespace compiler {
@@ -689,7 +691,7 @@ namespace core {
 			);
 		}
 
-		WorkItemVariant getProcessVariant(const lang::PrecFunction& function) {
+		WorkItemVariant getProcessVariant(const lang::PrecFunction& function, const std::vector<std::string>& closureElementNames) {
 
 			// pick the base case implementation
 			auto lambda = getSequentialImplementation(function);
@@ -728,16 +730,16 @@ namespace core {
 			auto funType = builder.functionType(lambda->getFunctionType()->getParameterType(0), lang::TreetureType(funReturnType, false).toIRType());
 
 			// use this lambda for creating the work item variant
-			return WorkItemVariant(builder.lambdaExpr(funType, lambda->getParameterList(), body));
+			return WorkItemVariant(builder.lambdaExpr(funType, lambda->getParameterList(), body), {}, closureElementNames);
 		}
 
-		WorkItemVariant getSplitVariant(const std::string& wi_name, const lang::PrecFunction& function) {
+		WorkItemVariant getSplitVariant(const std::string& wi_name, const lang::PrecFunction& function, const std::vector<std::string>& closureElementNames) {
 
 			// pick the base case implementation
 			auto lambda = getParallelImplementation(wi_name,function);
 
 			// use this lambda for creating the work item variant
-			return WorkItemVariant(lambda);
+			return WorkItemVariant(lambda, {}, closureElementNames);
 		}
 
 
@@ -791,6 +793,7 @@ namespace core {
 
 			// start list with recursive parameter
 			core::TypeList elements;
+			std::vector<std::string> closureElementNames;
 
 			// add value version of parameter
 			auto paramType = original.getParameterType();
@@ -798,6 +801,7 @@ namespace core {
 				paramType = core::analysis::getReferencedType(paramType);
 			}
 			elements.push_back(paramType);
+			closureElementNames.push_back("<param>");
 
 			// add captured values
 			for(const auto& cur : capturedValues) {
@@ -812,6 +816,7 @@ namespace core {
 
 				// add this element to the capture tuple
 				elements.push_back(type);
+				closureElementNames.push_back(cur.second.front().field->getName()->getValue());
 			}
 
 			// and pack types into a single tuple
@@ -857,8 +862,8 @@ namespace core {
 			std::string name = format("allscale_wi_%d",index);
 
 			auto can_split = getCanSplitFunction(function);
-			auto process = getProcessVariant(function);
-			auto split = getSplitVariant(name,function);
+			auto process = getProcessVariant(function, closureElementNames);
+			auto split = getSplitVariant(name, function, closureElementNames);
 
 
 			// print debug information
@@ -1155,59 +1160,87 @@ namespace core {
 				"IMP_std_colon__colon_cerr",
 			};
 
+			std::string stripCapturePrefix(const std::string& in) {
+				const std::string prefix = "capture_";
+
+				if(!boost::starts_with(in, prefix)) {
+					return in;
+				}
+
+				return in.substr(prefix.size());
+			}
+
 			bool checkForRefOrPtrCaptures(const CallExprAddress& precCall, const std::string& variantId, const backend::WorkItemVariant& variant, reporting::ConversionReport& report) {
 				bool valid = true;
 
-				visitDepthFirstOncePrunable(variant.getClosureType(), [&](const NodePtr& node) {
-					if(node.isa<LambdaExprPtr>()) {
-						return Action::Prune;
-					}
+				auto tupletype = variant.getClosureType().as<TupleTypePtr>();
 
-					auto type = node.isa<TypePtr>();
-					if(!type) {
-						return Action::Continue;
-					}
+				for(size_t i = 0; i < tupletype.size(); ++i) {
+					visitDepthFirstOncePrunable(tupletype[i], [&](const NodePtr& node) {
 
-					// prune serializable types
-					if (isSerializable(type)) {
-						return Action::Prune;
-					}
-
-					// prune function types
-					auto funType = node.isa<FunctionTypePtr>();
-					if (funType) {
-						return Action::Prune;
-					}
-
-					bool invalid_capture_by_ref = core::lang::isReference(type)
-					                            && !core::lang::isQualifiedReference(type)
-					                            && !backend::isDataItemReference(insieme::core::analysis::getReferencedType(type)); // data items are captured by reference, this is ok
-
-					if(!invalid_capture_by_ref && !core::lang::isPointer(type)) {
-						return Action::Continue;
-					}
-
-					valid = false;
-
-					std::string msg = "Variable capture by ";
-					{
-						std::string type_string;
-
-						if(core::lang::isReference(type)) {
-							msg += "reference to ";
-							type_string = toString(*core::analysis::getReferencedType(type));
-						} else {
-							msg += "pointer pointing to ";
-							type_string = toString(*core::lang::PointerType{type}.getElementType());
+						if(node.isa<LambdaExprPtr>()) {
+							return Action::Prune;
 						}
 
-						msg += type_string;
-					}
+						auto type = node.isa<TypePtr>();
 
-					report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::RefOrPtrFoundInCaptureList, msg));
+						std::string fieldString;
+						if(auto field = node.isa<FieldPtr>()) {
+							fieldString = "variable `" + stripCapturePrefix(field->getName()->getValue()) + "` of type ";
+							type = field.getType();
+						}
 
-					return Action::Continue;
-				});
+						if(!type) {
+							return Action::Continue;
+						}
+
+						// prune serializable types
+						if (isSerializable(type)) {
+							return Action::Prune;
+						}
+
+						// prune function types
+						auto funType = node.isa<FunctionTypePtr>();
+						if (funType) {
+							return Action::Prune;
+						}
+
+						bool invalid_capture_by_ref = core::lang::isReference(type)
+													&& !core::lang::isQualifiedReference(type)
+													&& !backend::isDataItemReference(insieme::core::analysis::getReferencedType(type)); // data items are captured by reference, this is ok
+
+						if(!invalid_capture_by_ref && !core::lang::isPointer(type)) {
+							return Action::Continue;
+						}
+
+						valid = false;
+
+						std::string msg = "Invalid capture of ";
+						{
+							if(!fieldString.empty()) {
+								msg += fieldString;
+							}
+
+							std::string type_string;
+
+							if(core::lang::isReference(type)) {
+								msg += "reference to ";
+								type_string = toString(*core::analysis::getReferencedType(type));
+							} else {
+								msg += "pointer pointing to ";
+								type_string = toString(*core::lang::PointerType{type}.getElementType());
+							}
+
+							msg += "`" + type_string + "`";
+
+							msg += " transitively over `" + stripCapturePrefix(variant.getClosureElementNames().at(i)) + "`";
+						}
+
+						report.addMessage(precCall, variantId, reporting::Issue(precCall, reporting::ErrorCode::RefOrPtrFoundInCaptureList, msg));
+
+						return fieldString.empty() ? Action::Continue : Action::Prune;
+					});
+				}
 
 				return valid;
 			}
@@ -1284,8 +1317,15 @@ namespace core {
 					for(const auto& use : uses_of_global) {
 						__insieme_unused auto found = visitDepthFirstOnceInterruptible(precCall, [&](const LiteralAddress& node) {
 							if(node.getAddressedNode() == use) {
-								std::string msg = "Use of global " + use->getValue()->getValue();
-								report.addMessage(precCall, variantId, reporting::Issue(node, reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory, msg));
+								auto value = use->getValue()->getValue();
+								std::string msg = "Use of global " + value;
+
+								auto err = reporting::ErrorCode::InvalidUseOfGlobalForDistributedMemory;
+								if(value == insieme::utils::mangle("cout") || value == insieme::utils::mangle("std::cout")) {
+									err = reporting::ErrorCode::InvalidUseOfStdoutForDistributedMemory;
+								}
+
+								report.addMessage(precCall, variantId, reporting::Issue(node, err, msg));
 								return Action::Interrupt;
 							}
 							return Action::Continue;
