@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(allscale LANGUAGES C CXX)
+project(allscale_compiler LANGUAGES C CXX)
 
 # -- Module Path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake ${PROJECT_SOURCE_DIR}/../insieme/cmake ${CMAKE_MODULE_PATH})
