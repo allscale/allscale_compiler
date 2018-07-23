@@ -1150,14 +1150,22 @@ namespace core {
 		namespace {
 
 			const std::vector<std::string> INVALID_FUNCTIONS = {
-				"IMP_printf", "IMP_fprintf", "IMP_sprintf", "IMP_snprintf",
-				"IMP_vprintf", "IMP_vfprintf", "IMP_vsprintf", "IMP_vsnprintf",
+				insieme::utils::mangle("printf"),
+				insieme::utils::mangle("fprintf"),
+				insieme::utils::mangle("sprintf"),
+				insieme::utils::mangle("snprintf"),
 
-				"IMP_puts", "IMP_putchar",
+				insieme::utils::mangle("vprintf"),
+				insieme::utils::mangle("vfprintf"),
+				insieme::utils::mangle("vsprintf"),
+				insieme::utils::mangle("vsnprintf"),
+
+				insieme::utils::mangle("puts"),
+				insieme::utils::mangle("putchar"),
 			};
 
 			const std::vector<std::string> VALID_GLOBALS = {
-				"IMP_std_colon__colon_cerr",
+				insieme::utils::mangle("std::cerr"),
 			};
 
 			std::string stripCapturePrefix(const std::string& in) {
