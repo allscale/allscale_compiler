@@ -9,6 +9,7 @@
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/printer/error_printer.h"
 
+#include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/backend/allscale_extension.h"
 
@@ -63,6 +64,11 @@ namespace core {
 		EXPECT_PRED1(isSerializable, frontend::parseType(mgr,"std::vector<std::pair<std::array<int,3>,std::string>>"));
 
 		EXPECT_PRED1(isSerializable, frontend::parseType(mgr, "std::map<int,int>"));
+
+		// check core types
+		auto& ext = mgr.getLangExtension<lang::AllscaleModule>();
+		EXPECT_PRED1(isSerializable, lang::TreetureType(basic.getInt4(), false).toIRType());
+		EXPECT_PRED1(isSerializable, ext.getTaskRef());
 
 		// check runtime types
 		EXPECT_PRED1(isSerializable, backend::getDataItemReferenceType(basic.getInt8()));
@@ -266,6 +272,92 @@ namespace core {
 		EXPECT_FALSE(tryMakeSerializable(type));
 	}
 
+	TEST(AutoSerialization, SingleParent) {
+		NodeManager mgr;
+		IRBuilder builder(mgr);
+
+		TypePtr type;
+		type = frontend::parseType(mgr,
+			"struct A { "
+			"	int a;"
+			"};"
+			"struct B : public A {"
+			"	float b;"
+			"}"
+		);
+		EXPECT_TRUE(type);
+		assert_correct_ir(type);
+
+		// this one should not be serializable
+		EXPECT_FALSE(isSerializable(type)) << *type;
+
+		// but it should be possible to make it serializable
+		auto mod = tryMakeSerializable(type);
+		EXPECT_TRUE(mod);
+		EXPECT_PRED1(isSerializable, mod);
+		assert_correct_ir(mod);
+	}
+
+	TEST(AutoSerialization, Parents) {
+		NodeManager mgr;
+		IRBuilder builder(mgr);
+
+		TypePtr type;
+		type = frontend::parseType(mgr,
+			"struct A1 { "
+			"	int a;"
+			"};"
+			"struct A2 { "
+			"	bool a2;"
+			"};"
+			"struct A3 { "
+			"	double a3;"
+			"};"
+			"struct B : public A1, A2, A3 {"
+			"	float b;"
+			"}"
+		);
+		EXPECT_TRUE(type);
+		assert_correct_ir(type);
+
+		// this one should not be serializable
+		EXPECT_FALSE(isSerializable(type)) << *type;
+
+		// but it should be possible to make it serializable
+		auto mod = tryMakeSerializable(type);
+		EXPECT_TRUE(mod);
+		EXPECT_PRED1(isSerializable, mod);
+		assert_correct_ir(mod);
+	}
+
+	TEST(AutoSerialization, NestedParent) {
+		NodeManager mgr;
+		IRBuilder builder(mgr);
+
+		TypePtr type;
+		type = frontend::parseType(mgr,
+			"struct A1 { "
+			"	int a;"
+			"};"
+			"struct A2 : public A1 { "
+			"	bool a2;"
+			"};"
+			"struct B : public A2 {"
+			"	float b;"
+			"}"
+		);
+		EXPECT_TRUE(type);
+		assert_correct_ir(type);
+
+		// this one should not be serializable
+		EXPECT_FALSE(isSerializable(type)) << *type;
+
+		// but it should be possible to make it serializable
+		auto mod = tryMakeSerializable(type);
+		EXPECT_TRUE(mod);
+		EXPECT_PRED1(isSerializable, mod);
+		assert_correct_ir(mod);
+	}
 
 } // end namespace core
 } // end namespace compiler
