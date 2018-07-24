@@ -122,7 +122,7 @@ elementCount addr = case Q.getNodeType addr of
       where
         size = if isRefArray then s else Ar.one
           where
-            s = Ar.mkConst $ fromIntegral $ Q.getArraySize $ fromJust $ Q.getReferencedType addr
+            s = Ar.mkConst $ fromIntegral $ Q.getArraySize $ let Just x = Q.getReferencedType addr in x
 
 
     _ -> dataflowValue addr analysis [refNull, noChange, creation, scalar]
