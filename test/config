@@ -3,6 +3,7 @@ definitions=
 compFlags=
 compFlags[insiemecc_seq_cpp_convert]="--shared-memory-only --allow-sm-only"
 compFlags[insiemecc_seq_cpp_compile]="-DALLSCALE_WITH_HPX -DHPX_DISABLE_ASSERTS -DBOOST_DISABLE_ASSERTS"
+env[ref_cpp_execute]="NUM_WORKERS=3"
 excludeSteps="*_ocl_*","*_c_*","*_run_*"
 use_omp=0
 use_opencl=0
