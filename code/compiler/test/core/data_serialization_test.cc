@@ -120,17 +120,17 @@ namespace core {
 		auto& basic = mgr.getLangBasic();
 
 		// the auto-serialization should work fine for p
-		EXPECT_EQ(basic.getBool(), tryMakeSerializable(basic.getBool()));
+		EXPECT_EQ(basic.getBool(), detail::tryMakeSerializable(basic.getBool()));
 
-		EXPECT_EQ(basic.getInt1(), tryMakeSerializable(basic.getInt1()));
-		EXPECT_EQ(basic.getInt2(), tryMakeSerializable(basic.getInt2()));
-		EXPECT_EQ(basic.getInt4(), tryMakeSerializable(basic.getInt4()));
-		EXPECT_EQ(basic.getInt8(), tryMakeSerializable(basic.getInt8()));
+		EXPECT_EQ(basic.getInt1(), detail::tryMakeSerializable(basic.getInt1()));
+		EXPECT_EQ(basic.getInt2(), detail::tryMakeSerializable(basic.getInt2()));
+		EXPECT_EQ(basic.getInt4(), detail::tryMakeSerializable(basic.getInt4()));
+		EXPECT_EQ(basic.getInt8(), detail::tryMakeSerializable(basic.getInt8()));
 
-		EXPECT_EQ(basic.getUInt1(), tryMakeSerializable(basic.getUInt1()));
-		EXPECT_EQ(basic.getUInt2(), tryMakeSerializable(basic.getUInt2()));
-		EXPECT_EQ(basic.getUInt4(), tryMakeSerializable(basic.getUInt4()));
-		EXPECT_EQ(basic.getUInt8(), tryMakeSerializable(basic.getUInt8()));
+		EXPECT_EQ(basic.getUInt1(), detail::tryMakeSerializable(basic.getUInt1()));
+		EXPECT_EQ(basic.getUInt2(), detail::tryMakeSerializable(basic.getUInt2()));
+		EXPECT_EQ(basic.getUInt4(), detail::tryMakeSerializable(basic.getUInt4()));
+		EXPECT_EQ(basic.getUInt8(), detail::tryMakeSerializable(basic.getUInt8()));
 
 	}
 
@@ -138,13 +138,13 @@ namespace core {
 		NodeManager mgr;
 		IRBuilder builder(mgr);
 
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ref<int<4>>")));
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ref<int<4>,t,f,plain>")));
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ref<int<4>,f,f,cpp_ref>")));
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ref<int<4>,f,t,cpp_rref>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ref<int<4>>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ref<int<4>,t,f,plain>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ref<int<4>,f,f,cpp_ref>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ref<int<4>,f,t,cpp_rref>")));
 
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ptr<int<4>>")));
-		EXPECT_FALSE(tryMakeSerializable(builder.parseType("ptr<int<4>,t,f>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ptr<int<4>>")));
+		EXPECT_FALSE(detail::tryMakeSerializable(builder.parseType("ptr<int<4>,t,f>")));
 
 	}
 
@@ -163,8 +163,8 @@ namespace core {
 		EXPECT_FALSE(isSerializable(type)) << *type;
 
 		// but it should be possible to make it serializable
-		auto mod = tryMakeSerializable(type);
-		EXPECT_TRUE(mod);
+		auto mod = detail::tryMakeSerializable(type);
+		ASSERT_TRUE(mod);
 		EXPECT_PRED1(isSerializable, mod);
 		assert_correct_ir(mod);
 	}
@@ -198,7 +198,7 @@ namespace core {
 		EXPECT_TRUE(isSerializable(type)) << *type;
 
 		// it should also not change when adding serialization code
-		EXPECT_EQ(type,tryMakeSerializable(type));
+		EXPECT_EQ(type,detail::tryMakeSerializable(type));
 	}
 
 	TEST(AutoSerialization, UserDefinedSerialization2) {
@@ -221,7 +221,7 @@ namespace core {
 
 
 		// it should change when adding serialization code
-		const auto& type2 = tryMakeSerializable(type);
+		const auto& type2 = detail::tryMakeSerializable(type);
 		EXPECT_NE(type, type2);
 
 		// this one should be serializable
@@ -247,7 +247,7 @@ namespace core {
 		EXPECT_TRUE(type);
 		EXPECT_TRUE(type.as<TagTypePtr>()->isRecursive());
 		EXPECT_FALSE(isSerializable(type));
-		EXPECT_FALSE(tryMakeSerializable(type));
+		EXPECT_FALSE(detail::tryMakeSerializable(type));
 
 		// check also a mutually recursive type
 		type = builder.parseType(
@@ -269,7 +269,7 @@ namespace core {
 		EXPECT_TRUE(type);
 		EXPECT_TRUE(type.as<TagTypePtr>()->isRecursive());
 		EXPECT_FALSE(isSerializable(type));
-		EXPECT_FALSE(tryMakeSerializable(type));
+		EXPECT_FALSE(detail::tryMakeSerializable(type));
 	}
 
 	TEST(AutoSerialization, SingleParent) {
@@ -292,8 +292,7 @@ namespace core {
 		EXPECT_FALSE(isSerializable(type)) << *type;
 
 		// but it should be possible to make it serializable
-		auto mod = tryMakeSerializable(type);
-		EXPECT_TRUE(mod);
+		auto mod = addAutoSerializationCode(type).as<core::TypePtr>();
 		EXPECT_PRED1(isSerializable, mod);
 		assert_correct_ir(mod);
 	}
@@ -324,8 +323,7 @@ namespace core {
 		EXPECT_FALSE(isSerializable(type)) << *type;
 
 		// but it should be possible to make it serializable
-		auto mod = tryMakeSerializable(type);
-		EXPECT_TRUE(mod);
+		auto mod = addAutoSerializationCode(type).as<core::TypePtr>();
 		EXPECT_PRED1(isSerializable, mod);
 		assert_correct_ir(mod);
 	}
@@ -353,8 +351,7 @@ namespace core {
 		EXPECT_FALSE(isSerializable(type)) << *type;
 
 		// but it should be possible to make it serializable
-		auto mod = tryMakeSerializable(type);
-		EXPECT_TRUE(mod);
+		auto mod = addAutoSerializationCode(type).as<core::TypePtr>();
 		EXPECT_PRED1(isSerializable, mod);
 		assert_correct_ir(mod);
 	}

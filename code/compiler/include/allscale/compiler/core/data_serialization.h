@@ -59,6 +59,7 @@ namespace core {
 	 */
 	bool isSerializable(const insieme::core::TypePtr& type);
 
+namespace detail {
 	/**
 	 * Attempts to add serialization capabilities to the given type, unless it is already
 	 * serializable. If if already serializable, the given type will be returned. If the type
@@ -70,6 +71,7 @@ namespace core {
 	 * @return a serializable version of the type or null if the attempt fails
 	 */
 	insieme::core::TypePtr tryMakeSerializable(const insieme::core::TypePtr& type);
+} // end namespace detail
 
 	/**
 	 * A transformation pass adding data serialization code to every struct that can be serialized

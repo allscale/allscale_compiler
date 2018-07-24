@@ -475,6 +475,8 @@ namespace core {
 		return false;
 	}
 
+namespace detail {
+
 	TagTypeBindingPtr tryMakeSerializable(const TagTypeBindingPtr& binding) {
 		TagTypeBindingPtr notSerializable;
 
@@ -617,6 +619,8 @@ namespace core {
 		return res;
 	}
 
+} // end namespace detail
+
 
 	insieme::core::NodePtr addAutoSerializationCode(const insieme::core::NodePtr& code, const ProgressCallback&) {
 
@@ -626,7 +630,7 @@ namespace core {
 		// just apply serialization attempt on all struct types
 		return core::transform::transformBottomUp(code,[](const TypePtr& type){
 			// try adding serialization code
-			auto mod = tryMakeSerializable(type);
+			auto mod = detail::tryMakeSerializable(type);
 			return (mod) ? mod : type;
 		}, core::transform::globalReplacement);
 
