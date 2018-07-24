@@ -2,16 +2,19 @@
 
 #include <algorithm>
 #include <iostream>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "insieme/core/ir_builder.h"
 
 #include "insieme/core/analysis/ir_utils.h"
 #include "insieme/core/checks/full_check.h"
 #include "insieme/core/printer/error_printer.h"
+#include "insieme/backend/c_ast/c_ast.h"
 
 #include "allscale/compiler/lang/allscale_ir.h"
 #include "allscale/compiler/core/data_serialization.h"
 #include "allscale/compiler/backend/allscale_extension.h"
+#include "allscale/compiler/backend/allscale_backend.h"
 
 #include "../test_utils.inc"
 
@@ -377,6 +380,95 @@ namespace core {
 		auto mod = addAutoSerializationCode(type).as<core::TypePtr>();
 		EXPECT_PRED1(isSerializable, mod);
 		assert_correct_ir(mod);
+	}
+
+
+	// Helper class for passing a string directly to "compileTo"
+
+	class StringTargetCode : public insieme::backend::TargetCode {
+
+		string str;
+
+	public:
+		StringTargetCode(const string& str) : insieme::backend::TargetCode(nullptr), str(str) {
+		}
+
+		virtual std::ostream& printTo(std::ostream& out) const override {
+			return out << str;
+		}
+	};
+
+	TEST(AutoSerialization, Correctness) {
+
+		// Tests correctness of autoserialization
+		// First compile code fragment using classes which need their serialization code generated
+		// Then add code for testing the serialization and compiles the result
+		// Result code of the execution of the program is 0 if serialization/deserialization is correct
+
+		NodeManager mgr;
+		auto prog = frontend::parseCode(mgr, R"(
+			struct A1 {
+				int a;
+			};
+			struct A2 : public A1 {
+				bool a2;
+			};
+			struct C {
+				double c;
+			};
+			struct B : public A2, public C {
+				float b;
+			};
+
+			int main() {
+				B b;
+			}
+		)");
+
+		// generate output code string
+		auto result = allscale::compiler::core::convert(prog);
+		assert_true(result.result) << "Conversion of input code failed in the core:\n" << result.report;
+		auto targetCode = backend::convert(result.result);
+		auto targetCodeString = toString(*targetCode);
+
+		// change output code to add serialization testing
+		boost::algorithm::replace_first(targetCodeString, "int32_t main(", "int32_t gen_main(");
+		targetCodeString += R"(
+
+		int main() {
+
+			IMP_B b;
+			b.a = 42;
+			b.a2 = true;
+			b.b = 1.3f;
+			b.c = 2.6;
+
+			auto archive = allscale::utils::serialize(b);
+			IMP_B bl = allscale::utils::deserialize<IMP_B>(archive);
+
+			return !(bl.a == b.a && bl.a2 == b.a2 && bl.b == b.b && bl.c == b.c);
+		}
+		)";
+
+		// we want to test non-HPX serialization
+		targetCodeString = "#undef ALLSCALE_WITH_HPX" + targetCodeString;
+
+		//std::cout << "Output code:\n" << targetCodeString << "\n===\n";
+
+		// compile to temporary
+		auto newTargetCode = std::make_shared<StringTargetCode>(targetCodeString);
+		auto tmp = boost::filesystem::unique_path(boost::filesystem::temp_directory_path() / "allscale-trg-%%%%%%%%");
+		bool res = backend::compileTo(newTargetCode, tmp);
+
+		ASSERT_TRUE(res) << "Failed to compile modified source";
+
+		// execute and check result
+
+		auto ret = system(tmp.c_str());
+		EXPECT_EQ(ret, 0) << "Deserialization result not equal to original";
+
+		// delete the temporary
+		boost::filesystem::remove(tmp);
 	}
 
 } // end namespace core
