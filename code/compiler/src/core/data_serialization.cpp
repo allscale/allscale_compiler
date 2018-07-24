@@ -139,12 +139,6 @@ namespace core {
 			auto record = binding->getRecord().isa<StructPtr>();
 			if (!record) return {};
 
-			// block out derived classes for now
-			if (!record->getParents().empty()) {
-				// TODO: add support for parents
-				return {};
-			}
-
 			// create a reader instance
 			auto reader = builder.variable(
 				core::lang::ReferenceType::create(ext.getArchiveReader(),false,false,core::lang::ReferenceType::Kind::CppReference),
@@ -154,13 +148,8 @@ namespace core {
 			// build up body
 			std::vector<StatementPtr> stmts;
 			std::vector<DeclarationPtr> valueDecls;
-			for(const auto& field : record->getFields()) {
 
-				// get the element type
-				auto elementType = field->getType();
-
-				// TODO: export this in a general utility or replace by general utility
-
+			auto loadAndAssign = [&](const core::TypePtr& elementType) {
 				// test whether this operation requires a materialization
 				bool needsMaterialization = elementType.isa<TagTypePtr>();
 
@@ -184,6 +173,15 @@ namespace core {
 				// record new declaration for init
 				auto call = builder.callExpr(refExt.getRefMoveReference(), core::lang::buildRefKindCast(decl->getVariable(), core::lang::ReferenceType::Kind::CppReference));
 				valueDecls.push_back(utils::buildPassByValueDeclaration(call));
+			};
+
+			// handle parents
+			for(const auto& parent : record->getParents()) {
+				loadAndAssign(parent->getType());
+			}
+			// as well as fields
+			for(const auto& field : record->getFields()) {
+				loadAndAssign(field->getType());
 			}
 
 			// the return (and this) type
@@ -194,10 +192,11 @@ namespace core {
 
 			// build constructor
 			core::LambdaExprPtr ctor;
-			// only if we do have fields
-			if(!record->getFields()->empty()) {
-				// and if we have any other non-defaulted constructor already
-				if(::any(record->getConstructors()->getElements(), [](const auto& ctor){ return !core::analysis::isaDefaultConstructor(ctor); })) {
+			// only if we do have fields or parents
+			if(!record->getFields()->empty() || !record->getParents()->empty()) {
+				// and if we have any other non-defaulted constructor already or we do have any parents
+				if(!record->getParents()->empty() ||
+						::any(record->getConstructors()->getElements(), [](const auto& ctor){ return !core::analysis::isaDefaultConstructor(ctor); })) {
 					bool failed = false;
 					unsigned variableId = 0;
 					auto defaultCtorType = core::analysis::buildDefaultDefaultConstructorType(builder.refType(retType));
@@ -210,6 +209,33 @@ namespace core {
 					auto thisVar = builder.variable(builder.refType(builder.refType(retType)), variableId++);
 					ctorVars.push_back(thisVar);
 
+					// for each parent
+					for(const auto& parent : record->getParents()) {
+						const auto& parentType = parent->getType();
+						// create the parameter variable
+						auto paramVar = builder.variable(builder.refType(parentType, false, false, core::lang::ReferenceType::Kind::CppRValueReference), variableId++);
+						ctorParamTypes.push_back(paramVar->getType());
+						ctorVars.push_back(paramVar);
+
+						// and the initialization in the body
+						auto parentCast = core::lang::buildRefParentCast(builder.deref(thisVar), parentType);
+						if(const auto& parentTagType = parentType.isa<core::TagTypePtr>()) {
+							auto parentTypeCtorInternal = core::analysis::getMoveConstructor(parentTagType);
+							if(!parentTypeCtorInternal) {
+								failed = true;
+								break;
+							}
+							auto parentTypeCtor = parentTagType->peel(parentTypeCtorInternal);
+							body.push_back(builder.callExpr(parentTypeCtor, parentCast, core::lang::buildRefMove(paramVar)));
+						} else {
+							auto parentTypeCtor = builder.getLiteralForConstructor(core::analysis::buildDefaultMoveConstructorType(builder.refType(parentType)));
+							if(insieme::annotations::c::hasIncludeAttached(parentType)) {
+								insieme::annotations::c::attachInclude(parentTypeCtor, insieme::annotations::c::getAttachedInclude(parentType));
+							}
+							body.push_back(builder.callExpr(parentTypeCtor, parentCast, core::lang::buildRefMove(paramVar)));
+						}
+					}
+
 					// for each field
 					for(const auto& field : record->getFields()) {
 						const auto& fieldType = field->getType();
@@ -220,7 +246,7 @@ namespace core {
 
 						// and the initialization in the body
 						auto fieldAccess = builder.callExpr(refExt.getRefMemberAccess(), builder.deref(thisVar),
-																								builder.getIdentifierLiteral(field->getName()), builder.getTypeLiteral(fieldType));
+						                                    builder.getIdentifierLiteral(field->getName()), builder.getTypeLiteral(fieldType));
 						if(const auto& fieldTagType = fieldType.isa<core::TagTypePtr>()) {
 							auto fieldTypeCtorInternal = core::analysis::getMoveConstructor(fieldTagType);
 							if(!fieldTypeCtorInternal) {
@@ -301,12 +327,6 @@ namespace core {
 			auto record = binding->getRecord().isa<StructPtr>();
 			if (!record) return nullptr;
 
-			// block out derived classes for now
-			if (!record->getParents().empty()) {
-				// TODO: add support for parents
-				return MemberFunctionPtr();
-			}
-
 			// create the this pointer
 			auto selfVar = builder.variable(
 				core::lang::ReferenceType::create(
@@ -328,6 +348,25 @@ namespace core {
 
 			// build up body
 			std::vector<StatementPtr> stmts;
+			auto createWriteCall = [&](const core::TypePtr& type, const core::ExpressionPtr& expr) {
+				return builder.callExpr(
+						ext.getWrite(),
+						core::lang::toPlainReference(writer),
+						builder.getTypeLiteral(type),
+						expr
+				);
+			};
+
+			// serializing parent classes is done by serializing the this pointer as every parent type
+			for(const auto& parent : record->getParents()) {
+				const auto& parentType = parent->getType();
+				stmts.push_back(
+						createWriteCall(parentType,
+														core::lang::buildRefKindCast(core::lang::buildRefParentCast(self, parentType), core::lang::ReferenceType::Kind::CppReference)
+						)
+				);
+			}
+
 			for(const auto& field : record->getFields()) {
 				// read the current field
 				auto access = core::lang::buildRefKindCast(
@@ -340,16 +379,8 @@ namespace core {
 						core::lang::ReferenceType::Kind::CppReference
 				);
 
-				// create a call to the writer
-				auto write = builder.callExpr(
-						ext.getWrite(),
-						core::lang::toPlainReference(writer),
-						builder.getTypeLiteral(field->getType()),
-						access
-				);
-
-				// add to body statements
-				stmts.push_back(write);
+				// add call to writer to body statements
+				stmts.push_back(createWriteCall(field->getType(), access));
 			}
 
 			// create body

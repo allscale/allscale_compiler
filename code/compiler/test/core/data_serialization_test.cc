@@ -272,6 +272,29 @@ namespace core {
 		EXPECT_FALSE(detail::tryMakeSerializable(type));
 	}
 
+	TEST(AutoSerialization, InterceptedParent) {
+		NodeManager mgr;
+		IRBuilder builder(mgr);
+
+		TypePtr type;
+		type = frontend::parseType(mgr,
+			"#include <vector>",
+			"struct B : public std::vector<int> {"
+			"	float b;"
+			"}"
+		);
+		EXPECT_TRUE(type);
+		assert_correct_ir(type);
+
+		// this one should not be serializable
+		EXPECT_FALSE(isSerializable(type)) << *type;
+
+		// but it should be possible to make it serializable
+		auto mod = addAutoSerializationCode(type).as<core::TypePtr>();
+		EXPECT_PRED1(isSerializable, mod);
+		assert_correct_ir(mod);
+	}
+
 	TEST(AutoSerialization, SingleParent) {
 		NodeManager mgr;
 		IRBuilder builder(mgr);
