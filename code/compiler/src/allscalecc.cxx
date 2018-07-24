@@ -189,9 +189,9 @@ int main(int argc, char** argv) {
 
 	// Step 4: apply source-to-source conversions
 	std::cout << "Converting to " << (conversionConfig.sharedMemoryOnly ? "shared" : "distributed") << " memory AllScale Runtime code ... \n" << std::flush;
-	auto summary = allscale::compiler::core::convert(conversionConfig,program,[&](const allscale::compiler::core::ProgressUpdate& update){
+	auto summary = allscale::compiler::core::convert(conversionConfig, program, [&](const allscale::compiler::core::ProgressUpdate& update) {
 		std::cout << "\t" << update.msg;
-		if (update.totalSteps > 0) {
+		if(update.totalSteps > 0) {
 			std::cout << " ("<< update.completedSteps << "/" << update.totalSteps << ")";
 		}
 		std::cout << std::endl;
@@ -204,12 +204,12 @@ int main(int argc, char** argv) {
 	{
 		auto report_filename = boost::filesystem::path(commonOptions.outFile).concat("_report.html");
 		summary.report.toHTML(report_filename.string());
-		std::cout << "Full HTML report located at: " << boost::filesystem::current_path() / report_filename << "\n\n";
+		std::cout << "Full HTML report located at: " << report_filename << "\n\n";
 	}
 
 	// abort if not successful so far
-	if (!summary.successful()) {
-		if (!ignoreAnalysisFailures) {
+	if(!summary.successful()) {
+		if(!ignoreAnalysisFailures) {
 			std::cout << "Conversion aborted due to errors (see report, use --ignore-analysis-failure to force code generation).\n";
 			return EXIT_FAILURE;
 		}
