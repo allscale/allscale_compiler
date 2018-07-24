@@ -481,13 +481,10 @@ namespace core {
 		// check for null
 		if (!binding) return notSerializable;
 
-
 		// check that it is a struct
 		auto record = binding->getRecord().as<StructPtr>();
 		if (!record) return notSerializable;
 
-		auto target = "IMP_allscale_colon__colon_api_colon__colon_user_colon__colon_algorithm_colon__colon_one_on_one_dependency_int";
-		if(record->getName() && record->getName()->getValue() == target) std::cout << "&&&&& tryMakeSerializable for target\n";
 
 		// Part I: check that the serialization is allowed
 
@@ -496,31 +493,16 @@ namespace core {
 
 		// start with parent types
 		for(const auto& cur : record->getParents()) {
-			if (!isSerializable(cur->getType())) {
-				if(record->getName()->getValue() == target) {
-					std::cout << " ====== Fail because of parent " << dumpReadable(cur) << std::endl;
-				}
-
-				return notSerializable;
-			}
+			if (!isSerializable(cur->getType())) return notSerializable;
 		}
 
 		// check field types
 		for(const auto& cur : record->getFields()) {
-			if(!isSerializable(cur->getType())) {
-				if(record->getName()->getValue() == target) {
-					std::cout << " ====== Fail because of field " << dumpReadable(cur) << std::endl;
-				}
-
-				return notSerializable;
-			}
+			if (!isSerializable(cur->getType())) return notSerializable;
 
 			// field that do not have copy constructor can also not be serialized
 			if (auto tagType = cur->getType().isa<TagTypePtr>()) {
 				if (!core::analysis::hasMoveConstructor(tagType)) {
-					if(record->getName()->getValue() == target) {
-						std::cout << " ====== Fail because of field not having move " << dumpReadable(cur) << std::endl;
-					}
 					return notSerializable;
 				}
 			}
@@ -529,7 +511,6 @@ namespace core {
 		// also check that there is no load / store function
 		if (hasLoadFunction(binding) || hasStoreFunction(binding)) return notSerializable;
 
-		if(record->getName() && record->getName()->getValue() == target) std::cout << "&&&&& tryMakeSerializable asshat\n";
 
 		// Part II: add load/store member functions
 
@@ -540,12 +521,8 @@ namespace core {
 		auto ctor = loadRes.second;
 		auto store = tryBuildStoreFunction(res);
 
-		if(record->getName() && record->getName()->getValue() == target) std::cout << (!!load) << " | " << (!!store) << "\n";
-
 		// if one of those could not be created => fail conversion (the ctor is optional)
 		if (!load || !store) return notSerializable;
-
-		if(record->getName() && record->getName()->getValue() == target) std::cout << "&&&&& tryMakeSerializable for target almost success\n";
 
 		// get a dummy-tag-type for the next steps
 		IRBuilder builder(binding.getNodeManager());
@@ -596,12 +573,8 @@ namespace core {
 			replacements[TagTypeBindingAddress(res)->getRecord()->getMemberFunctions()] = MemberFunctions::get(mgr,memberFuns);
 		}
 
-
-		if(record->getName() && record->getName()->getValue() == target) std::cout << "&&&&& tryMakeSerializable for target SUCCESS\n";
-
 		// conduct replacement
 		return core::transform::replaceAll(mgr,replacements).as<TagTypeBindingPtr>();
-
 	}
 
 	TypePtr tryMakeSerializable(const TypePtr& type) {
