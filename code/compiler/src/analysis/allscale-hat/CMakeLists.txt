@@ -23,10 +23,10 @@ add_custom_target(allscale_hat DEPENDS liballscale-hat.so)
 add_custom_command(
 	OUTPUT liballscale-hat.so
 
-	COMMAND ${cabal} new-build -j --builddir=${INSIEME_HAT_BINARY_DIR}/dist-newstyle --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project -v1 --enable-tests flib:allscale-hat
+	COMMAND ${cabal} new-build --project-file=${INSIEME_HAT_BINARY_DIR}/cabal.project flib:allscale-hat
 
 	# copy library to binary dir
-	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%flib:allscale-hat" ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+	COMMAND ${runhaskell} "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${cabal_file} "%flib%opt:allscale-hat" ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 
 	DEPENDS ${allscale_hat_srcs}
 	DEPENDS insieme_hat ${INSIEME_HAT_BINARY_DIR}/libinsieme-hat.so
@@ -54,7 +54,7 @@ if(BUILD_DOCS)
 	add_custom_command(
 		TARGET allscale_hat
 		POST_BUILD
-		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${INSIEME_HAT_BINARY_DIR} "%comp:allscale-hat"
+		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${INSIEME_HAT_BINARY_DIR} "%library%opt"
 		DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${allscale_hat_srcs} insieme_hat
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
