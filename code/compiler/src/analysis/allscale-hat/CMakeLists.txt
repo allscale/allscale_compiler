@@ -54,7 +54,7 @@ if(BUILD_DOCS)
 	add_custom_command(
 		TARGET allscale_hat
 		POST_BUILD
-		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${INSIEME_HAT_BINARY_DIR} "%library%opt"
+		COMMAND ${haskell_env} "${INSIEME_HAT_SOURCE_DIR}/scripts/hat-haddock" ${cabal_file} "%library%opt" ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 		DEPENDS "${INSIEME_HAT_SOURCE_DIR}/scripts/copyLib.hs" ${allscale_hat_srcs} insieme_hat
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 	)
