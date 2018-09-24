@@ -19,8 +19,8 @@ int main() {
     const int N = 1000;
     const int T = 100;
 
-    Grid<int> dataA(N);
-    Grid<int> dataB(N);
+    Grid<int,1> dataA(N);
+    Grid<int,1> dataB(N);
 
     // initialize first vector
     pfor(0,N,[&](int i){
@@ -31,11 +31,11 @@ int main() {
     for(int t=0; t<T; t++) {
 
         // handle buffer swapping
-        Grid<int>& A = (t % 2) ? dataA : dataB;
-        Grid<int>& B = (t % 2) ? dataB : dataA;
+        Grid<int,1>& A = (t % 2) ? dataB : dataA;
+        Grid<int,1>& B = (t % 2) ? dataA : dataB;
 
         // update state
-        pfor(1,N-1,[t,&A,&B](int i) {
+        pfor(0,N,[t,&A,&B](int i) {
             // check the last state
             if (i > 1)   expect_eq(t,A[i-1]);
             expect_eq(t,A[i]);
