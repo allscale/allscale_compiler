@@ -262,7 +262,11 @@ namespace frontend {
 							|| include == coreIncludePath + "/prec.h"
 							|| include == coreIncludePath + "/treeture.h"
 							|| boost::starts_with(include, coreIncludePath + "/impl")) {
-						assert_fail() << "Found attached include of core API to \"" << include << "\" on node: " << dumpReadable(node);
+						assert_fail() << "Found attached include of core API to \"" << include << "\" on node: " << dumpReadable(node)
+								<< "\n\nInvestigate whether:\n"
+								<< "  - we forgot to map something, which should have been mapped in the AllScale frontend\n"
+								<< "  - we forgot to intercept something which should have been intercepted\n"
+								<< "  - we should include some more headers in pfor.h and the like. See API commit message d006bb9";
 					}
 				}
 			});
