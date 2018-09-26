@@ -192,6 +192,56 @@ namespace frontend {
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// FINAL POSTPROCESSING
 
+	insieme::core::tu::IRTranslationUnit AllscaleExtension::IRVisit(insieme::core::tu::IRTranslationUnit& tu) {
+		core::IRBuilder builder(tu.getNodeManager());
+
+		/*
+		 * We fix all user-defined store and load functions for serializable types which have template parameters.
+		 * These functions get a wrong name from the frontend ("IMP_store_returns_void" and "IMP_load_returns_CLASSNAME"), which prevents the
+		 * auto-serialization facilities from identifying them correctly and thus new ones might be generated if possible or that step will fail.
+		 * Eventually, in the backend these types might then not be serializable or do something else upon serialization.
+		 * We thus rename them to the names they would have gotten if the type hadn't been templated in the first place.
+		 */
+		const auto desiredStoreName = builder.stringValue("IMP_store");
+		const auto desiredLoadName = builder.stringValue("IMP_load");
+		const auto archiveReaderType = builder.refType(builder.genericType("IMP_allscale_colon__colon_utils_colon__colon_ArchiveReader"), false, false, core::lang::ReferenceType::Kind::CppReference);
+		const auto archiveWriterType = builder.refType(builder.genericType("IMP_allscale_colon__colon_utils_colon__colon_ArchiveWriter"), false, false, core::lang::ReferenceType::Kind::CppReference);
+
+		for(const auto& typeMapping : tu.getTypes()) {
+			// we iterate over all types in the irTU
+			auto type = typeMapping.second;
+
+			// check all member functions
+			for(const auto& memberFun : type->getRecord()->getMemberFunctions()) {
+				const auto& name = memberFun->getName();
+				// if the name starts with "IMP_store_", has 2 arguments and accepts an ArchiveWriter, we rename it
+				if(boost::starts_with(name->getValue(), "IMP_store_")) {
+					const auto paramTypes = memberFun->getImplementation()->getType().as<core::FunctionTypePtr>()->getParameterTypeList();
+					if(paramTypes.size() == 2 && paramTypes[1] == archiveWriterType) {
+						type = core::transform::replaceAllGen(tu.getNodeManager(), type, name, desiredStoreName, core::transform::globalReplacement);
+						break;
+					}
+				}
+			}
+			// check all static member functions
+			for(const auto& staticMemberFun : type->getRecord()->getStaticMemberFunctions()) {
+				const auto& name = staticMemberFun->getName();
+				// if the name starts with "IMP_load_", has 1 argument and accepts an ArchiveReader, we rename it
+				if(boost::starts_with(name->getValue(), "IMP_load_")) {
+					const auto paramTypes = staticMemberFun->getImplementation()->getType().as<core::FunctionTypePtr>()->getParameterTypeList();
+					if(paramTypes.size() == 1 && paramTypes[0] == archiveReaderType) {
+						type = core::transform::replaceAllGen(tu.getNodeManager(), type, name, desiredLoadName, core::transform::globalReplacement);
+						break;
+					}
+				}
+			}
+
+			// replace the type in the TU. This doesn't change anything if we didn't modify it
+			tu.replaceType(typeMapping.first, type);
+		}
+		return tu;
+	}
+
 	insieme::core::ProgramPtr AllscaleExtension::IRVisit(insieme::core::ProgramPtr& progIn) {
 		core::IRBuilder builder(progIn->getNodeManager());
 		const auto& refExt = progIn->getNodeManager().getLangExtension<core::lang::ReferenceExtension>();
