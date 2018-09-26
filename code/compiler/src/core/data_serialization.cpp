@@ -400,14 +400,6 @@ namespace core {
 			);
 		}
 
-		LambdaExprPtr buildDefaultDefaultConstructor(const TagTypeBindingPtr& binding) {
-			// create this type
-			auto thisType = getThisType(binding);
-			// create the new default constructor
-			auto record = binding->getRecord().isa<StructPtr>();
-			return core::analysis::buildDefaultDefaultConstructor(thisType,record->getParents(),record->getFields());
-		}
-
 		MemberFunctionPtr buildDefaultCopyAssign(const TagTypeBindingPtr& binding) {
 			// create this type
 			auto thisType = getThisType(binding);
