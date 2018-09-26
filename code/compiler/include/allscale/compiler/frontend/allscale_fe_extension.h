@@ -41,6 +41,8 @@ namespace frontend {
 
 		// TU and Program
 
+		virtual insieme::core::tu::IRTranslationUnit IRVisit(insieme::core::tu::IRTranslationUnit& tu) override;
+
 		virtual insieme::core::ProgramPtr IRVisit(insieme::core::ProgramPtr& prog) override;
 
 
