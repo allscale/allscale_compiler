@@ -533,7 +533,7 @@ namespace detail {
 		for(const auto& cur : record->getFields()) {
 			if (!isSerializable(cur->getType())) return notSerializable;
 
-			// field that do not have copy constructor can also not be serialized
+			// field that do not have move constructor can also not be serialized
 			if (auto tagType = cur->getType().isa<TagTypePtr>()) {
 				if (!core::analysis::hasMoveConstructor(tagType)) {
 					return notSerializable;
@@ -563,12 +563,6 @@ namespace detail {
 		bindings[binding->getTag()] = binding->getRecord();
 		auto dummyTagType = builder.tagType(binding->getTag(),builder.tagTypeDefinition(bindings));
 
-		// get a new default constructor if necessary
-		LambdaExprPtr newDefaultCtor;
-		if (!core::analysis::hasDefaultConstructor(dummyTagType)) {
-			newDefaultCtor = buildDefaultDefaultConstructor(binding);
-		}
-
 		// get a new copy assignment operator if needed
 		MemberFunctionPtr newCopyAssignment;
 		if (!core::analysis::hasCopyAssignment(dummyTagType)) {
@@ -591,10 +585,9 @@ namespace detail {
 			replacements[TagTypeBindingAddress(res)->getRecord()->getStaticMemberFunctions()] = StaticMemberFunctions::get(mgr,staticMemberFuns);
 		}
 
-		if(ctor || newDefaultCtor) {
+		if(ctor) {
 			auto ctors = record->getConstructors()->getChildList();
 			if (ctor) ctors.push_back(ctor);
-			if (newDefaultCtor) ctors.push_back(newDefaultCtor);
 			replacements[TagTypeBindingAddress(res)->getRecord()->getConstructors()] = Expressions::get(mgr,ctors);
 		}
 
