@@ -34,6 +34,9 @@ namespace backend {
 		// extra definitions to be forwarded to the backend compiler
 		std::vector<std::string> definitions;
 
+		std::string standardOutput = "/dev/stdout";
+		std::string standardErrorOutput = "/dev/stderr";
+
 	};
 
 	/**

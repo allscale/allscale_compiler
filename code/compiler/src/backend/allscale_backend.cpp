@@ -137,6 +137,9 @@ namespace backend {
 
 		compiler.addFlag("-Wl,-rpath=" + HPX_LIBRARY_DIR + ":" + ALLSCALE_RUNTIME_LIBRARY_DIR + ":" + BOOST_LIBRARY_DIR + ":" + HWLOC_LIBRARY_DIR);
 
+		compiler.setStandardOutput(config.standardOutput);
+		compiler.setStandardErrorOutput(config.standardErrorOutput);
+
 		// run compiler on target code
 		return ic::compileToBinary(*code,targetBinary.string(),compiler);
 	}

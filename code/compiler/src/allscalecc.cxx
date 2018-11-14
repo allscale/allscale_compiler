@@ -52,6 +52,8 @@ int main(int argc, char** argv) {
 	// If set, analysis failures will be ignored and target code will be anyway created
 	bool ignoreAnalysisFailures = false;
 
+	bool verboseBackendCompilerOutput = false;
+
 	// -------------- processing ---------------
 
 	// Step 1: parse input parameters
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
 	parser.addFlag("ignore-analysis-failure",       ignoreAnalysisFailures,                 "ignore analysis failures and generate code anyway");
 	parser.addFlag("shared-memory-only",            conversionConfig.sharedMemoryOnly,      "only create shared memory code (may also be enabled through " ALLSCALE_SHARED_MEMORY_ONLY " environment variable)");
 	parser.addFlag("allow-sm-only",                 conversionConfig.allowSharedMemoryOnly, "do not fail when no distributed memory version can be obtained (development only)");
+	parser.addFlag("verbose-be-compiler-output",    verboseBackendCompilerOutput,           "directly show backend compiler output / error output instead of writing them to files");
 	auto options = parser.parse(argc, argv);
 
 	// if options are invalid, exit non-zero
@@ -256,6 +259,12 @@ int main(int argc, char** argv) {
 	compilerConfig.optimization_level = opt_level;
 	compilerConfig.checkDataItemAccesses = conversionConfig.checkDataItemAccesses;
 	compilerConfig.definitions = definitions;
+
+	if(!verboseBackendCompilerOutput) {
+		compilerConfig.standardOutput = commonOptions.outFile.string() + "_backend_compiler_output";
+		compilerConfig.standardErrorOutput = commonOptions.outFile.string() + "_backend_compiler_error_output";
+	}
+
 	auto ok = allscale::compiler::backend::compileTo(code, commonOptions.outFile.string(), compilerConfig);
 	std::cout << timer.step() << "s\n";
 
