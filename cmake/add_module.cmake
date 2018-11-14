@@ -69,7 +69,7 @@ macro(add_module_library module)
 
 	if(MSVC)
 		msvc_source_group("Source Files" "${${module}_srcs}" STRIP src)
-		msvc_source_group("Header Files" "${${module}_incs}" STRIP include/${PROJECT_NAME}/${module})
+		msvc_source_group("Header Files" "${${module}_incs}" STRIP include/allscale/${module})
 	endif()
 endmacro()
 
