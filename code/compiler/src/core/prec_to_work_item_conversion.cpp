@@ -1355,6 +1355,7 @@ namespace core {
 
 		ExpressionPtr integrateDataRequirements(const ConversionConfig& config, const ExpressionPtr& precFun, reporting::ConversionReport& report, const CallExprAddress& precCall, std::size_t precIndex) {
 			static const bool debug = std::getenv(ALLSCALE_DEBUG_ANALYSIS);
+			static const bool print_stats = std::getenv(ALLSCALE_ANALYSIS_PRINT_STATS);
 			static const char* dump_stats = std::getenv(ALLSCALE_DUMP_DETAILED_ANALYSIS_STATS);
                         std::fstream stats_file;
 
@@ -1470,13 +1471,15 @@ namespace core {
 					report.addMessage(precCall, variantId, issue);
 				}
 
-				context.dumpStatistics();
-                                if(dump_stats) {
-                                        context.dumpStatisticsToFile(stats_postfix, dump_stats);
-                                }
+				if (print_stats) {
+					context.dumpStatistics();
+				}
+				if(dump_stats) {
+					context.dumpStatisticsToFile(stats_postfix, dump_stats);
+				}
 
 				// run diagnosis
-                                c_start = std::clock();
+				c_start = std::clock();
 				auto issues = analysis::runDiagnostics(context, NodeAddress(target));
                                 if(dump_stats) {
                                         std::clock_t c_end = std::clock();
@@ -1488,12 +1491,13 @@ namespace core {
                                 }
 				report.addMessages(precCall, variantId, issues);
 
-				context.dumpStatistics();
-                                if(dump_stats) {
-                                        context.dumpStatisticsToFile(stats_postfix + "_diag", dump_stats);
-
-                                        std::cerr << "Wrote machine readable solver stats to file: " << dump_stats << std::endl;
-                                }
+				if (print_stats) {
+					context.dumpStatistics();
+				}
+				if(dump_stats) {
+					context.dumpStatisticsToFile(stats_postfix + "_diag", dump_stats);
+					std::cerr << "Wrote machine readable solver stats to file: " << dump_stats << std::endl;
+				}
 
 
 				// integrate data item access instrumentation
@@ -1524,7 +1528,7 @@ namespace core {
 
 			}
 
-                        stats_file.close();
+			stats_file.close();
 
 			// update work item description
 			auto newWorkItemDesc = desc.toIR(mgr);

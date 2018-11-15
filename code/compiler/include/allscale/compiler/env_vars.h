@@ -17,5 +17,8 @@
 // enable debugging of allscale data requirement analysis
 #define ALLSCALE_DEBUG_ANALYSIS "ALLSCALE_DEBUG_ANALYSIS"
 
+// causes analysis statistics to be printed after every stage
+#define ALLSCALE_ANALYSIS_PRINT_STATS "ALLSCALE_ANALYSIS_PRINT_STATS"
+
 // if set dump solver time statistics to given file
 #define ALLSCALE_DUMP_DETAILED_ANALYSIS_STATS "ALLSCALE_DUMP_DETAILED_ANALYSIS_STATS"
