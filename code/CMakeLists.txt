@@ -28,17 +28,17 @@ include(dependencies/zlib)
 include(dependencies/cabal)
 include(dependencies/ghc)
 
-# -- CMake Modules
-include(add_module)
-include(file_globs)
-include(msvc_source_group)
-include(nproc)
-
 # -- Insieme
 set(ANALYSIS_HASKELL ON CACHE BOOL "Haskell-based Analysis Toolkit Switch" FORCE)
 set(BUILD_RUNTIME OFF CACHE BOOL "Insieme Runtime Switch" FORCE)
 list(APPEND HAT_PACKAGE_PATHS_LIST "${CMAKE_CURRENT_SOURCE_DIR}/compiler/src/analysis/allscale-hat/")
 add_subdirectory(../insieme/code ${PROJECT_BINARY_DIR}/insieme)
+
+# -- CMake Modules
+include(add_module)
+include(file_globs)
+include(msvc_source_group)
+include(nproc)
 
 # -- AllScale Runtime
 include(allscale_runtime)
