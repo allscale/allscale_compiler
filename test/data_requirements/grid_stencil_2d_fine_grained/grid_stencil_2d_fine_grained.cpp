@@ -17,8 +17,8 @@ void expect_eq(int a, int b) {
 
 int main() {
 
-    const int N = 10;
-    const int T = 100;
+    const int N = 100;
+    const int T = 10;
 
     Grid<int,2> dataA({N,N});
     Grid<int,2> dataB({N,N});
@@ -57,5 +57,5 @@ int main() {
     // wait for completions
     ref.wait();
 
-	return 0;
+    return 0;
 }
