@@ -1026,8 +1026,11 @@ namespace core {
 							if (ext.isCallOfRefCast(inner)) {
 								auto tuple = inner.as<CallExprPtr>()->getArgument(0);
 
-								// skip all those casts
-								return builder.refMember(tuple,field);
+								// skip all but (potential) outermost casts
+								return insieme::core::lang::buildRefCast(
+										builder.refMember(tuple,field),
+										call->getType()
+									);
 							}
 						}
 					}
