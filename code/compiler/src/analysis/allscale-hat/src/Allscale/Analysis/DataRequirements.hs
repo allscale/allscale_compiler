@@ -158,19 +158,22 @@ dataRequirements addr = case I.getNode addr of
         var = Solver.mkVariable varId [con] Solver.bot
         con = Solver.createConstraint dep val var
 
-        dep _ = [Solver.toVar referenceVar]
-        val a = DataRequirements $ BSet.map go $ referenceVal a
+        dep _ = [Solver.toVar referenceVar, Solver.toVar argumentRequirements]
+        val a = Solver.merge argReqs ctorReqs
           where
-            go (ElementReference ref range) = DataRequirement {
-                dataItemRef = ref,
-                range       = range,
-                accessMode  = mode
-            }
+            argReqs = Solver.get a argumentRequirements
+            ctorReqs = DataRequirements $ BSet.map go $ referenceVal a
+              where
+                go (ElementReference ref range) = DataRequirement {
+                    dataItemRef = ref,
+                    range       = range,
+                    accessMode  = mode
+                }
 
-            mode = case () of
-                _ | Sema.callsImplicitCopyConstructor addr -> ReadOnly
-                  | Sema.callsImplicitMoveConstructor addr -> ReadWrite
-                  | otherwise -> error "Unsupported implicit constructor call"
+                mode = case () of
+                    _ | Sema.callsImplicitCopyConstructor addr -> ReadOnly
+                      | Sema.callsImplicitMoveConstructor addr -> ReadWrite
+                      | otherwise -> error "Unsupported implicit constructor call"
 
         referenceVar = elementReferenceValue $ I.goDown 1 addr
         referenceVal a = toSet dataItemRefs
@@ -181,6 +184,7 @@ dataRequirements addr = case I.getNode addr of
 
             toSet (ElementReferenceSet s) = s
 
+        argumentRequirements = dataRequirements $ I.goDown 1 addr
 
     -- check for user defined requirements
     _ | hasUserRequirements -> var
