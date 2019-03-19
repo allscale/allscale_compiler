@@ -1,0 +1,19 @@
+Bootstrap: debootstrap
+OSVersion: stretch
+
+MirrorURL: http://ftp.at.debian.org/debian
+
+%post
+    apt-get -y update
+    apt-get -y install git htop vim-nox sudo
+
+    mkdir /opt/allscale
+    cd /opt/allscale
+
+    git clone --recursive https://github.com/allscale/allscale_compiler.git
+    cd allscale_compiler
+
+    apt-get -y install $(cat scripts/environment/system_packages_$(arch))
+
+    export THIRD_PARTY_LIBS=/opt/allscale/third_party_libs
+    insieme/scripts/dependencies/installer llvm boost cudd gmp zlib ghc cabal

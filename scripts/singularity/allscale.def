@@ -1,0 +1,25 @@
+Bootstrap: localimage
+From: allscale_build.simg
+
+%post
+    export THIRD_PARTY_LIBS=/opt/allscale/third_party_libs
+
+    cd /opt/allscale/allscale_compiler
+
+    git fetch
+    git checkout master
+    git submodule update --init --recursive
+
+    mkdir build
+    cd build
+
+    ../insieme/scripts/dependencies/third_party_linker
+
+    cmake ../code
+    make -j$(nproc)
+
+    ctest -j$(nproc)
+
+%environment
+    export LC_ALL=C.UTF-8
+    export PATH="/opt/allscale/allscale_compiler/build/compiler:$PATH"
